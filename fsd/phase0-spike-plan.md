@@ -1,6 +1,19 @@
 # Phase 0 — Floor spike plan
 
-Status: **DRAFT — waiting for Gianni's approval.** Nothing below has been run yet.
+Status: **APPROVED by Gianni 2026-10-30.** Spike kit ready in `spike/` (how to run: `spike/README.md`). Nothing has run on the floor machine yet.
+
+## Verified while building the kit (2026-10-30, from official sources — not yet on the floor)
+
+| Fact | Source | Consequence |
+|---|---|---|
+| Official llama.cpp macOS x64 release binaries target **macOS 13.3** | llama.cpp `b12015` `.github/workflows/release.yml` (`CMAKE_OSX_DEPLOYMENT_TARGET=13.3`) | Prebuilt route dropped; S2 builds from source with target 11.0 |
+| `GGML_ACCELERATE` uses `ACCELERATE_NEW_LAPACK` (macOS 13.3 SDK headers) | llama.cpp `b12015` `ggml/src/ggml-cpu/CMakeLists.txt` | Build with `-DGGML_ACCELERATE=OFF -DGGML_BLAS=OFF` on Xcode 13.2 |
+| llama.cpp needs CMake ≥ 3.14 and C++17 | llama.cpp `b12015` `CMakeLists.txt` | CMake 3.31.12 universal tarball from cmake.org (SHA-256 pinned) |
+| llama-server supports `response_format: {"type":"json_schema","schema":…}`, `chat_template_kwargs`, `--reasoning-budget`, `-c`, `-t`, `-np`, `--no-webui` | llama.cpp `b12015` `tools/server/README.md` | Used in S3 |
+| python-build-standalone Intel macOS builds target **macOS 10.15** | `astral-sh/python-build-standalone` tag `20261026`, `cpython-unix/targets.yml` | Floor-compatible on paper; S1 confirms with `otool` |
+| Pinned CPython **3.12.16** (+20261026) | same tag, `pythonbuild/downloads.json` | — |
+| Models: `Qwen3-1.7B` Q4_K_M (1.28 GB) and `granite-4.0-micro` 3B Q4_K_M (2.10 GB), both **Apache-2.0**; Granite lists German, French, Italian, English | Hugging Face API + model card | SmolLM3-3B rejected: no German in its language list |
+| Synthetic QR-bills decode byte-exact with an independent decoder (OpenCV) | `spike/tools/make_fixtures.py`, run in the cloud | Fixtures valid for S6; QR payload uses CRLF (kept byte-exact via `.gitattributes`) |
 
 Goal: turn every `UNVERIFIED` item in the brief into a fact measured on the **floor machine**
 (MacBook Pro 15" Mid 2014, macOS 11.7.x, Intel Haswell, Xcode 13.2.x), before any spec or product code.
@@ -58,22 +71,18 @@ Fallback: older 3.12 patch release, or 3.11 (ADR documents the trade-off).
 
 ### S2 — llama.cpp on the floor (1–2 h)
 
-Two routes, both tested, pinned to one release tag:
-
-| Route | How | Check |
-|---|---|---|
-| A — prebuilt | official release asset `llama-<tag>-bin-macos-x64.zip` | `otool -l … LC_BUILD_VERSION` minos ≤ 11.0, `./llama-server --version` runs |
-| B — build on floor | cmake from cmake.org (universal .dmg, no Homebrew) + Xcode 13.2 clang | builds `llama-server`, `llama-bench` |
+Build from source only (official prebuilt binaries need macOS 13.3 — verified, see top).
+CMake 3.31.12 from cmake.org (no Homebrew) + Xcode 13.2 clang. `spike/s2-llama.sh` tries tags newest first:
+`b12015 b11000 b10000 b9000 b6000`, and stops at the first that builds.
 
 ```bash
-git clone --depth 1 --branch <TAG> https://github.com/ggml-org/llama.cpp ~/spike/llama.cpp && cd ~/spike/llama.cpp
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_METAL=OFF -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DLLAMA_CURL=OFF
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DBUILD_SHARED_LIBS=OFF \
+  -DGGML_NATIVE=ON -DGGML_METAL=OFF -DGGML_ACCELERATE=OFF -DGGML_BLAS=OFF -DGGML_OPENMP=OFF \
+  -DLLAMA_OPENSSL=OFF -DLLAMA_CURL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF
 cmake --build build -j 4 --target llama-server llama-bench
-otool -l build/bin/llama-server | grep -A4 LC_BUILD_VERSION
 ```
 
-Pass: one route gives a working `llama-server` on macOS 11 Intel. If the latest tag fails with Xcode 13.2,
-bisect release tags until one builds; the ADR records the last working tag and why.
+Pass: a working `llama-server` on macOS 11 Intel; the ADR records the tag and any build error of newer tags.
 Note for later (assumed): the shipped binary will be built in CI with `CMAKE_OSX_DEPLOYMENT_TARGET=11.0`; the spike proves it runs.
 
 ### S3 — Model speed and memory (2–3 h incl. downloads)
@@ -168,11 +177,11 @@ Also: socket at `~/Library/Application Support/DT3 Agent/engine.sock` — mode `
 
 ### S8 — App toolchain smoke test (1 h)
 
-Minimal Xcode 13.2 project: `NSStatusItem` + `NSPopover` hosting a SwiftUI view, deployment target 11.0, `ARCHS="x86_64 arm64"`.
+Minimal app built with Xcode 13.2 `swiftc` per architecture + `lipo` (no project file needed for the spike): `NSStatusItem` + `NSPopover` hosting SwiftUI, target 11.0. Also measures whether the Automation permission survives a rebuild, ad-hoc vs. self-signed (R9).
 
 ```bash
-xcodebuild -scheme SpikeMenu -configuration Release ARCHS="x86_64 arm64" ONLY_ACTIVE_ARCH=NO build
-lipo -info <path>/SpikeMenu.app/Contents/MacOS/SpikeMenu
+./spike/run.sh s8 1    # build 1, ad-hoc signed, then click "Ask DEVONthink 3"
+./spike/run.sh s8 2    # simulated update: is the Automation permission kept?
 ```
 
 Evidence: universal binary, runs on floor, Dark Mode + VoiceOver reads the menu item, screenshot.
@@ -199,7 +208,7 @@ Evidence: universal binary, runs on floor, Dark Mode + VoiceOver reads the menu 
 
 | # | Risk | Impact | Mitigation |
 |---|---|---|---|
-| R1 | Floor machine likely has **16 GB**, not 8 GB → it cannot prove the 8 GB promise directly | 8 GB claim untested | Budget by peak RSS (engine + model ≤ ~3 GB, assumed), test under `memory_pressure`, plus one real 8 GB machine before release |
+| R1 | Floor machine has **16 GB** (confirmed, Q2), not 8 GB → it cannot prove the 8 GB promise directly | 8 GB claim untested | Budget by peak RSS (engine + model ≤ ~3 GB, assumed), test under `memory_pressure`, plus one real 8 GB machine before release |
 | R2 | TCC Automation prompt for a background process may never appear or attach to the wrong binary | Engine cannot talk to DT3 | S5 decides; fallback: the signed app sends AppleEvents |
 | R3 | Current llama.cpp may not build with Xcode 13.2 or may target newer macOS | No local AI on floor | Pin last working tag; CI-built binary with deployment target 11.0 |
 | R4 | `Application("DNtp")` may resolve to DT4 when both are installed | Writes into the wrong app | Address DT3 by path/bundle id, check `version()` |
@@ -207,3 +216,13 @@ Evidence: universal binary, runs on floor, Dark Mode + VoiceOver reads the menu 
 | R6 | Model licenses (Llama, Gemma, some Qwen sizes) are not Apache/MIT | Redistribution/terms issues | Recommend only permissive models by default; show license before download |
 | R7 | "DT3" in the product name may still read as DEVONthink branding | Trademark complaint | Final name in Phase 8 with a trademark screen; "not affiliated" note |
 | R8 | GitHub Intel macOS runners retire after Fall 2027 | No Intel CI | Documented; floor machine remains the Intel test |
+| R9 | **No Apple Developer ID (Q7)** → no notarization | Gatekeeper blocks the downloaded app (macOS 15+: only via System Settings → "Open Anyway"); Automation and Keychain grants may reset on every update (ad-hoc signature changes) | S8 measures ad-hoc vs. self-signed certificate across a simulated update; ADR decides; build-from-source path documented |
+| R10 | Bundle ID prefix not decided (Q9) | Changes TCC grants, paths and LaunchAgent label later | Spike uses neutral `spike.dt3agent`; decide before Phase 2 (see below) |
+
+---
+
+## Open decisions
+
+| # | Decision | Recommendation | Why |
+|---|---|---|---|
+| D1 (Q9) | Bundle ID prefix | **One** ID for all users: `codes.modular.dt3agent` | Reverse-DNS of the domain you own (`modular.codes` → `codes.modular`). Two IDs = two apps for macOS: separate permissions, settings and data; a user switching plan loses them. Business support is a service, not a different binary |

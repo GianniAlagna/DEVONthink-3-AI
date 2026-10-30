@@ -1,0 +1,17 @@
+Muster Treuhand AG
+Musterstrasse 1, 8000 Zurich
+CHE-123.456.788 VAT
+
+Erika Beispiel
+Beispielweg 7, 3000 Bern
+
+Zurich, 20 January 2026
+
+Invoice no. 2026-0007
+
+Payroll services December 2025    CHF 925.07
+VAT 8.1 %                         CHF  74.93
+Total                             CHF 1'000.00
+
+Payable within 30 days, by 19 February 2026.
+IBAN CH44 3199 9123 0008 8901 2
