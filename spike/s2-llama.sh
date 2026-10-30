@@ -6,11 +6,12 @@
 . "$(dirname "$0")/lib.sh"
 
 log "== S2 llama.cpp"
+need_clt
 cd "$WORK" || exit 1
 fetch "https://cmake.org/files/v3.31/cmake-$CMAKE_VER-macos10.10-universal.tar.gz" \
       "$WORK/cmake-$CMAKE_VER.tar.gz" "$CMAKE_SHA256" || exit 1
 [ -x "$CMAKE" ] || run tar xzf "$WORK/cmake-$CMAKE_VER.tar.gz" -C "$WORK"
-run "$CMAKE" --version | head -1
+"$CMAKE" --version | head -1
 
 tags=${1:-$LLAMA_TAGS}
 jobs=$(sysctl -n hw.physicalcpu)

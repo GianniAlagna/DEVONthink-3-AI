@@ -17,6 +17,19 @@ They only measure. Product code comes after Phase 1.
 | 6 | In DT3: create database **`DT3Agent-Spike`** (name must contain `Spike`) | Optional 2nd one: `DT3Agent-Spike-2` |
 | 7 | Plug in the power cable, close other apps | Measurements are cleaner |
 
+### Install Command Line Tools (needed for S2, S6, S8)
+
+Your first run showed: the folder `/Library/Developer/CommandLineTools` exists but is **broken** (`xcrun` missing). Repair it once (~15 min, ~1 GB):
+
+| # | Do this | Check |
+|---|---|---|
+| a | Remove the broken install (asks your Mac password; Apple's documented reinstall procedure): `sudo rm -rf /Library/Developer/CommandLineTools` | No output |
+| b | Start the installer: `xcode-select --install` | A window opens → **Install** → **Agree** |
+| c | If the window says "not available": download **Command Line Tools for Xcode 13.2** from developer.apple.com/download/all (free Apple ID login, no paid program) and open the `.dmg` | — |
+| d | Test: `xcrun swiftc --version` and `xcrun clang --version` | Both print a version, no error |
+
+Full Xcode is **not** needed for the spike.
+
 **Keep the kit in `~/dt3agent-spike-kit`** (not in Downloads, Desktop or Documents). macOS protects those folders, and the background test service (S7/S5) could not read the scripts there.
 
 Free disk space needed: about **8 GB** (models ~3.4 GB, builds, Python).
@@ -27,6 +40,8 @@ Downloads and builds go into `~/dt3agent-spike/`. Delete that folder at the end.
 ## 2. Run the steps (in this order)
 
 Always start in the kit folder: `cd ~/dt3agent-spike-kit`. Each line is one command. Wait until it says `Done.`
+
+**Do not skip a step.** S1 installs the Python every later step needs. If a step prints `STOP` or `FAILED`, send me that log before going on.
 
 | Step | Command | Time | You do |
 |---|---|---|---|

@@ -35,7 +35,7 @@ fetch() {
     local url=$1 dest=$2 want=${3:-}
     if [ ! -s "$dest" ]; then
         log "download $url"
-        curl -fL --retry 3 --progress-bar -o "$dest.part" "$url" || { log "DOWNLOAD FAILED: $url"; rm -f "$dest.part"; return 1; }
+        curl -fsSL --retry 3 -o "$dest.part" "$url" || { log "DOWNLOAD FAILED: $url"; rm -f "$dest.part"; return 1; }
         mv "$dest.part" "$dest"
     fi
     local got
@@ -51,6 +51,17 @@ fetch() {
 # minos FILE  prints the minimum macOS version a Mach-O binary was built for
 minos() {
     otool -l "$1" | awk '/LC_BUILD_VERSION/{f=1} f&&/minos/{print "minos " $2; exit} /LC_VERSION_MIN_MACOSX/{g=1} g&&/version/{print "minos " $2; exit}'
+}
+
+# Compiler toolchain (S2, S6, S8). Command Line Tools are enough for the spike; full Xcode is not needed.
+need_clt() {
+    if ! xcrun --find clang >/dev/null 2>&1 || ! xcrun --find swiftc >/dev/null 2>&1; then
+        log "STOP: no working compiler (Command Line Tools missing or broken)."
+        log "Fix: see START-HERE.md, section 'Install Command Line Tools', then run this step again."
+        xcode-select -p 2>&1
+        exit 1
+    fi
+    log "toolchain: $(xcode-select -p) | $(xcrun clang --version | head -1) | $(xcrun swiftc --version 2>&1 | head -1)"
 }
 
 need_py() {

@@ -6,6 +6,7 @@ need_py
 BIN="$WORK/vision-probe"
 SRC="$SPIKE_DIR/vision/VisionProbe.swift"
 log "== S6 Vision"
+need_clt
 run xcrun swiftc -O -target x86_64-apple-macos11.0 "$SRC" -o "$BIN-x86_64" || exit 1
 run xcrun swiftc -O -target arm64-apple-macos11.0 "$SRC" -o "$BIN-arm64"
 if [ -f "$BIN-arm64" ]; then

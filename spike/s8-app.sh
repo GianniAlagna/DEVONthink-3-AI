@@ -7,6 +7,7 @@
 #        bash spike/run.sh s8 2 "DT3 Agent Spike Signing" build 2, self-signed certificate
 . "$(dirname "$0")/lib.sh"
 need_py
+need_clt
 
 build=${1:-1}
 identity=${2:--}      # "-" = ad-hoc
