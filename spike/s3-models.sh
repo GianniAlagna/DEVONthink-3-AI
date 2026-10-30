@@ -1,8 +1,8 @@
 # S3 - model speed, memory and JSON-schema reliability on the floor machine.
 # Models: permissive license (Apache-2.0) and German/French/Italian support, pinned by revision + SHA-256
 # (values read from the Hugging Face API on 2026-10-30).
-# Usage: ./spike/run.sh s3            all models
-#        ./spike/run.sh s3 qwen3-1.7b one model
+# Usage: bash spike/run.sh s3            all models
+#        bash spike/run.sh s3 qwen3-1.7b one model
 . "$(dirname "$0")/lib.sh"
 need_py
 [ -x "$LLAMA_BIN/llama-server" ] || { log "llama-server missing: run s2 first"; exit 1; }

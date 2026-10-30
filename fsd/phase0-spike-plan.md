@@ -217,12 +217,12 @@ Evidence: universal binary, runs on floor, Dark Mode + VoiceOver reads the menu 
 | R7 | "DT3" in the product name may still read as DEVONthink branding | Trademark complaint | Final name in Phase 8 with a trademark screen; "not affiliated" note |
 | R8 | GitHub Intel macOS runners retire after Fall 2027 | No Intel CI | Documented; floor machine remains the Intel test |
 | R9 | **No Apple Developer ID (Q7)** → no notarization | Gatekeeper blocks the downloaded app (macOS 15+: only via System Settings → "Open Anyway"); Automation and Keychain grants may reset on every update (ad-hoc signature changes) | S8 measures ad-hoc vs. self-signed certificate across a simulated update; ADR decides; build-from-source path documented |
-| R10 | Bundle ID prefix not decided (Q9) | Changes TCC grants, paths and LaunchAgent label later | Spike uses neutral `spike.dt3agent`; decide before Phase 2 (see below) |
+| R10 | ~~Bundle ID prefix not decided (Q9)~~ | Resolved: D1 decided | Spike uses `codes.modular.dt3agent.spike.*` |
 
 ---
 
-## Open decisions
+## Decisions
 
-| # | Decision | Recommendation | Why |
+| # | Decision | Status | Why |
 |---|---|---|---|
-| D1 (Q9) | Bundle ID prefix | **One** ID for all users: `codes.modular.dt3agent` | Reverse-DNS of the domain you own (`modular.codes` → `codes.modular`). Two IDs = two apps for macOS: separate permissions, settings and data; a user switching plan loses them. Business support is a service, not a different binary |
+| D1 (Q9) | Bundle ID prefix | **Decided 2026-10-30: `codes.modular.dt3agent`**, one ID for all users | Reverse-DNS of the domain you own (`modular.codes` → `codes.modular`). Two IDs = two apps for macOS: separate permissions, settings and data; a user switching plan loses them. Business support is a service, not a different binary |

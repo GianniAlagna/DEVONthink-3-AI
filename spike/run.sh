@@ -1,7 +1,7 @@
 #!/bin/bash
 # Runs one spike step and saves its full output to spike/out/<step>-<time>.log
-#   ./spike/run.sh s0          (steps: s0 s1 s2 s3 s4 s7 s5 s6 s8, in this order)
-#   ./spike/run.sh collect     (zip all logs for Claude, see spike/README.md)
+#   bash spike/run.sh s0          (steps: s0 s1 s2 s3 s4 s7 s5 s6 s8, in this order)
+#   bash spike/run.sh collect     (zip all logs for Claude, see spike/README.md)
 set -u
 cd "$(dirname "$0")/.." || exit 1
 step=${1:-}
@@ -17,7 +17,7 @@ case "$step" in
     s7) script=s7-launchd.sh ;;
     s8) script=s8-app.sh ;;
     collect) exec /bin/bash spike/collect.sh ;;
-    *) echo "usage: ./spike/run.sh s0|s1|s2|s3|s4|s7|s5|s6|s8|collect [args]"; exit 2 ;;
+    *) echo "usage: bash spike/run.sh s0|s1|s2|s3|s4|s7|s5|s6|s8|collect [args]"; exit 2 ;;
 esac
 mkdir -p spike/out
 logfile="spike/out/$step-$(date +%Y%m%d-%H%M%S).log"

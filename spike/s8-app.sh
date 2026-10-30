@@ -1,16 +1,16 @@
 # S8 - menu-bar app toolchain test + "does the Automation permission survive an update?"
 # Gianni has no Apple Developer ID (Q7), so releases can only be ad-hoc or self-signed. TCC ties a permission
 # to the code signature; this step measures what happens after a rebuild for both signing modes.
-# Usage: ./spike/run.sh s8 1                          build 1, ad-hoc signed
-#        ./spike/run.sh s8 2                          build 2, ad-hoc signed (simulated update)
-#        ./spike/run.sh s8 1 "DT3 Agent Spike Signing" build 1, self-signed certificate (optional, see README)
-#        ./spike/run.sh s8 2 "DT3 Agent Spike Signing" build 2, self-signed certificate
+# Usage: bash spike/run.sh s8 1                          build 1, ad-hoc signed
+#        bash spike/run.sh s8 2                          build 2, ad-hoc signed (simulated update)
+#        bash spike/run.sh s8 1 "DT3 Agent Spike Signing" build 1, self-signed certificate (optional, see README)
+#        bash spike/run.sh s8 2 "DT3 Agent Spike Signing" build 2, self-signed certificate
 . "$(dirname "$0")/lib.sh"
 need_py
 
 build=${1:-1}
 identity=${2:--}      # "-" = ad-hoc
-BUNDLE_ID="spike.dt3agent.menu"
+BUNDLE_ID="codes.modular.dt3agent.spike.menu"
 APP="$WORK/SpikeMenu.app"
 log "== S8 app build $build, signing identity: $identity"
 
@@ -41,7 +41,7 @@ run codesign -d -r- "$APP"
 spctl -a -vv "$APP" 2>&1 | head -3     # Gatekeeper verdict (expected: rejected, not notarized)
 
 run open "$APP"
-next="./spike/run.sh s8 2"
+next="bash spike/run.sh s8 2"
 [ "$identity" != "-" ] && next="$next '$identity'"
 cat <<EOT
 

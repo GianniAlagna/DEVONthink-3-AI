@@ -1,12 +1,12 @@
 # S7 - LaunchAgent install / restart / uninstall + Unix socket checks.
-# Usage: ./spike/run.sh s7            install, test, keep running
-#        ./spike/run.sh s7 probe      same, and the agent also sends one AppleEvent to DT3 at start (used by S5)
-#        ./spike/run.sh s7 uninstall  stop and remove the LaunchAgent
-# Label is neutral on purpose (bundle ID prefix not decided yet, Q9).
+# Usage: bash spike/run.sh s7            install, test, keep running
+#        bash spike/run.sh s7 probe      same, and the agent also sends one AppleEvent to DT3 at start (used by S5)
+#        bash spike/run.sh s7 uninstall  stop and remove the LaunchAgent
+# Label under the decided prefix codes.modular.dt3agent (D1); ".spike" keeps it apart from the product.
 . "$(dirname "$0")/lib.sh"
 need_py
 
-LABEL="spike.dt3agent.engine"
+LABEL="codes.modular.dt3agent.spike.engine"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 SOCK="$HOME/Library/Application Support/DT3 Agent Spike/engine.sock"
 DOMAIN="gui/$(id -u)"

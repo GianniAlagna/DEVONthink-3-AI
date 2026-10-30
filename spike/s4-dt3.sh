@@ -1,6 +1,6 @@
 # S4 - DEVONthink 3.9 scripting surface.
-# Usage: ./spike/run.sh s4 "DT3Agent-Spike" ["DT3Agent-Spike-2"]   probes + installs the Smart Rule / Menu probes
-#        ./spike/run.sh s4 check                                    after you triggered the Smart Rule / Menu script
+# Usage: bash spike/run.sh s4 "DT3Agent-Spike" ["DT3Agent-Spike-2"]   probes + installs the Smart Rule / Menu probes
+#        bash spike/run.sh s4 check                                    after you triggered the Smart Rule / Menu script
 . "$(dirname "$0")/lib.sh"
 need_py
 
@@ -16,7 +16,7 @@ fi
 
 db=${1:-}
 db2=${2:-}
-[ -n "$db" ] || { log "usage: ./spike/run.sh s4 \"<Spike database name>\" [\"<second Spike database>\"]"; exit 2; }
+[ -n "$db" ] || { log "usage: bash spike/run.sh s4 \"<Spike database name>\" [\"<second Spike database>\"]"; exit 2; }
 
 log "== S4 DT3 scripting surface"
 log "-- dictionary (kept local in $WORK/dt3.sdef, not committed)"
@@ -65,6 +65,6 @@ NEXT (manual, 3 minutes - see spike/README.md step S4):
     Action: Execute Script > External > "DT3Agent Spike Enqueue". Save.
  2. Select 2-3 records in the Spike database, right-click > Apply Rules > your rule.
  3. Select 2 records, then the Scripts menu (scroll icon) > "DT3Agent Spike Enqueue".
- 4. Run: ./spike/run.sh s4 check
+ 4. Run: bash spike/run.sh s4 check
 EOT
 log "== S4 done"

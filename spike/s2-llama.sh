@@ -2,7 +2,7 @@
 # Verified facts behind this script (llama.cpp b12015, .github/workflows/release.yml + CMake files):
 #   - official macOS x64 release binaries target macOS 13.3 -> cannot run on macOS 11, so no prebuilt route
 #   - GGML_ACCELERATE uses ACCELERATE_NEW_LAPACK (macOS 13.3 SDK) -> must be OFF with Xcode 13.2
-# Usage: ./spike/run.sh s2 [TAG]   (default: try $LLAMA_TAGS newest first, stop at the first that builds)
+# Usage: bash spike/run.sh s2 [TAG]   (default: try $LLAMA_TAGS newest first, stop at the first that builds)
 . "$(dirname "$0")/lib.sh"
 
 log "== S2 llama.cpp"

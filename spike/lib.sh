@@ -54,5 +54,5 @@ minos() {
 }
 
 need_py() {
-    [ -x "$PY" ] || { log "Bundled Python missing: run ./spike/run.sh s1 first"; exit 1; }
+    [ -x "$PY" ] || { log "Bundled Python missing: run bash spike/run.sh s1 first"; exit 1; }
 }

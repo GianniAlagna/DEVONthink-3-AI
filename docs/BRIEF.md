@@ -17,7 +17,7 @@ Source of truth from the owner (Gianni), received 2026-10-30. Sections 0–11 ar
 | Q6 | Apple Silicon test Mac | **Yes** | Used before each release |
 | Q7 | Apple Developer Program | **No, and not planned** | **Changes 7, 8.3, 8.4:** no Developer ID signing, no notarization. Distribution = ad-hoc or self-signed app + build-from-source. Consequences measured in Phase 0 (S8) and decided in an ADR |
 | Q8 | `tccutil reset AppleEvents` on floor machine | **Yes** | Used in S5 |
-| Q9 | Bundle ID prefix | Proposed: `modular.codes.dt3agent` (business) / `Gianni.Alagna.dt3agent` (individuals) — **to clear before start** | Open: see `fsd/phase0-spike-plan.md` → Open decisions. The spike uses the neutral prefix `spike.dt3agent` |
+| Q9 | Bundle ID prefix | **One ID for all users: `codes.modular.dt3agent`** (decided 2026-10-30, following the recommendation) | Same app for individuals and businesses; support plan is a service. Spike uses `codes.modular.dt3agent.spike.*` so test permissions never mix with the product |
 | Q10 | Keep the brief in the repo | **Yes** | This file |
 | Plan | Phase 0 spike plan incl. Step 5 (TCC test) | **Approved** | Spike kit built |
 
