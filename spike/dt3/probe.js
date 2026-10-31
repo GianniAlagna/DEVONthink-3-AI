@@ -45,12 +45,6 @@ function info() {
     check(results, 'id', function () { return dt3().id(); });
     check(results, 'isDT3', function () { return String(dt3().version()).indexOf('3.') === 0; });
     check(results, 'databases', function () { return dt3().databases().map(function (d) { return d.name(); }); });
-    check(results, 'commands present', function () {
-        const a = dt3();
-        return ['createRecordWith', 'createLocation', 'getRecordWithUuid', 'addCustomMetaData', 'getCustomMetaData',
-            'replicate', 'duplicate', 'move', 'importPath', 'ocr', 'convertImage', 'selectedRecords', 'lookupRecordsWithFile']
-            .map(function (c) { return c + ':' + (typeof a[c]); });
-    });
     return results;
 }
 
@@ -74,8 +68,11 @@ function selftest(dbName, fixtures, db2Name) {
     check(results, 'create markdown via plainText', function () {
         return describe(app.createRecordWith({ name: 'spike-md-plaintext', type: 'markdown', plainText: '# Spike\n\nGrüezi Zürich' }, { in: group }));
     });
-    check(results, 'create txt via plainText', function () {
-        txt = app.createRecordWith({ name: 'spike-txt', type: 'txt', plainText: 'Spike text record äöü éèà' }, { in: group });
+    check(results, 'create txt via plainText (run 2: stays empty)', function () {
+        return describe(app.createRecordWith({ name: 'spike-txt-plaintext', type: 'txt', plainText: 'Spike text record äöü éèà' }, { in: group }));
+    });
+    check(results, 'create txt via content', function () {
+        txt = app.createRecordWith({ name: 'spike-txt', type: 'txt', content: 'Spike text record äöü éèà ' + stamp }, { in: group });
         return describe(txt);
     });
 
@@ -104,7 +101,18 @@ function selftest(dbName, fixtures, db2Name) {
         const d = app.duplicate({ record: txt, to: target });
         return { uuid: d.uuid(), differentUuid: d.uuid() !== txt.uuid(), duplicatesOfOriginal: txt.numberOfDuplicates() };
     });
-    check(results, 'duplicates() list', function () { return txt.duplicates().map(function (r) { return r.uuid(); }); });
+    check(results, 'duplicates() list after 3 s', function () {
+        delay(3);
+        return { list: txt.duplicates().map(function (r) { return r.uuid(); }), numberOfDuplicates: txt.numberOfDuplicates() };
+    });
+    check(results, 'same text created twice -> duplicates?', function () {
+        const body = 'Identical body for duplicate detection ' + stamp;
+        const a = app.createRecordWith({ name: 'spike-dup-a', type: 'txt', content: body }, { in: group });
+        const b = app.createRecordWith({ name: 'spike-dup-b', type: 'txt', content: body }, { in: group });
+        delay(3);
+        return { aHash: a.contentHash(), bHash: b.contentHash(), aDuplicates: a.numberOfDuplicates(),
+                 aList: a.duplicates().map(function (r) { return r.uuid(); }), bUuid: b.uuid() };
+    });
     check(results, 'move to target', function () { const m = app.move({ record: md, to: target }); return m.location(); });
 
     if (db2Name) {
@@ -124,25 +132,36 @@ function selftest(dbName, fixtures, db2Name) {
         return describe(n);
     });
 
-    check(results, 'reminder via make', function () {
-        const r = app.make({ new: 'reminder', withProperties: { schedule: 'once', dueDate: new Date(Date.now() + 86400000), alarm: 'notification' }, at: txt });
-        return String(r);
+    const due = new Date(Date.now() + 86400000);
+    check(results, 'reminder A: set property to app.Reminder()', function () {
+        txt.reminder = app.Reminder({ schedule: 'once', dueDate: due, alarm: 'notification' });
+        return 'set';
+    });
+    check(results, 'reminder B: make at record.reminder', function () {
+        return String(app.make({ new: 'reminder', withProperties: { schedule: 'once', dueDate: due, alarm: 'notification' }, at: md.reminder }));
     });
     check(results, 'reminder read', function () { const r = txt.reminder(); return r ? { schedule: r.schedule(), due: r.dueDate().toISOString(), alarm: r.alarm() } : null; });
 
-    check(results, 'importPath qrbill PDF', function () {
-        pdf = app.importPath(fixtures + '/qrbill-qrr.pdf', { to: group });
+    check(results, 'import qrbill PDF', function () {
+        pdf = app.import(fixtures + '/qrbill-qrr.pdf', { to: group });
         return describe(pdf);
     });
-    check(results, 'importPath image-only PDF', function () {
-        ocrRec = app.importPath(fixtures + '/ocr-de.pdf', { to: group });
+    check(results, 'import image-only PDF (no text layer expected)', function () {
+        ocrRec = app.import(fixtures + '/ocr-de.pdf', { to: group });
         return describe(ocrRec);
     });
-    check(results, 'ocr command (Pro/Server only?)', function () {
-        const r = app.ocr({ file: fixtures + '/ocr-de.pdf', to: group, waitingForReply: true });
+    check(results, 'ocr A: file + to', function () {
+        const r = app.ocr({ file: fixtures + '/ocr-de.pdf', to: group });
         return r ? describe(r) : null;
     });
-
+    check(results, 'ocr B: direct path + to', function () {
+        const r = app.ocr(fixtures + '/ocr-fr.pdf', { to: group });
+        return r ? describe(r) : null;
+    });
+    check(results, 'convertImage (OCR an existing record)', function () {
+        const r = app.convertImage({ record: ocrRec, to: group });
+        return r ? describe(r) : null;
+    });
     return results;
 }
 

@@ -16,7 +16,7 @@ APP="$WORK/SpikeMenu.app"
 log "== S8 app build $build, signing identity: $identity"
 
 osascript -e 'tell application "SpikeMenu" to quit' >/dev/null 2>&1
-[ "$build" = "1" ] && run tccutil reset AppleEvents "$BUNDLE_ID"   # clean start for each signing mode
+[ "$build" = "1" ] && { tccutil reset AppleEvents "$BUNDLE_ID" 2>/dev/null || true; }   # clean start; unknown id on first run is fine
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
 for arch in x86_64 arm64; do

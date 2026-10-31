@@ -61,7 +61,21 @@ need_clt() {
         xcode-select -p 2>&1
         exit 1
     fi
-    log "toolchain: $(xcode-select -p) | $(xcrun clang --version | head -1) | $(xcrun swiftc --version 2>&1 | head -1)"
+    # Floor run 2: Swift 5.4.2 (CLT 12.5.1) next to a MacOSX12.1 SDK built for Swift 5.5 -> pick an SDK that compiles.
+    local probe="$WORK/sdkprobe.swift" sdk
+    echo 'import Foundation; print(1)' > "$probe"
+    if ! xcrun swiftc -typecheck "$probe" >/dev/null 2>&1; then
+        for sdk in $(ls -d "$(xcode-select -p)"/SDKs/MacOSX1*.sdk 2>/dev/null | sort -r); do
+            [ -L "$sdk" ] && continue
+            if SDKROOT="$sdk" xcrun swiftc -typecheck "$probe" >/dev/null 2>&1; then
+                export SDKROOT="$sdk"
+                log "WARN: default SDK does not match the Swift compiler; using $sdk (fix: Command Line Tools for Xcode 13.2)"
+                break
+            fi
+        done
+        [ -n "${SDKROOT:-}" ] || { log "STOP: no SDK matches the Swift compiler. Fix: install Command Line Tools for Xcode 13.2 (START-HERE.md)."; exit 1; }
+    fi
+    log "toolchain: $(xcode-select -p) | $(xcrun clang --version | head -1) | $(xcrun swiftc --version 2>&1 | head -1) | SDK ${SDKROOT:-default}"
 }
 
 need_py() {

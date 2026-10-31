@@ -11,6 +11,7 @@ log "CPU features relevant for llama.cpp (want AVX1.0 AVX2 FMA F16C):"
 sysctl -n machdep.cpu.features machdep.cpu.leaf7_features | tr ' ' '\n' | grep -xE 'AVX1.0|AVX2|FMA|F16C|BMI2' | sort -u | tr '\n' ' '; echo
 run xcode-select -p
 pkgutil --pkg-info=com.apple.pkg.CLTools_Executables 2>&1 | grep -E "version|No receipt"
+ls -l "$(xcode-select -p)/SDKs" 2>&1
 run xcodebuild -version
 run swift --version
 run xcrun --show-sdk-version

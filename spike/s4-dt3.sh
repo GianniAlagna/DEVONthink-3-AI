@@ -20,14 +20,16 @@ db2=${2:-}
 
 log "== S4 DT3 scripting surface"
 log "-- dictionary (kept local in $WORK/dt3.sdef, not committed)"
-sdef "/Applications/DEVONthink 3.app" > "$WORK/dt3.sdef"
+sdef_file=$(find "/Applications/DEVONthink 3.app/Contents/Resources" -maxdepth 2 -name '*.sdef' | head -1)
+if [ -n "$sdef_file" ]; then cp "$sdef_file" "$WORK/dt3.sdef"; log "dictionary file: $(basename "$sdef_file")"
+else sdef "/Applications/DEVONthink 3.app" > "$WORK/dt3.sdef"; fi   # sdef tool needs full Xcode
 log "commands:";   grep -oE '<command name="[^"]+"' "$WORK/dt3.sdef" | cut -d'"' -f2 | sort -u | tr '\n' ',' ; echo
 log "classes:";    grep -oE '<class name="[^"]+"' "$WORK/dt3.sdef" | cut -d'"' -f2 | sort -u | tr '\n' ',' ; echo
 log "record properties:"
 awk '/<class name="record"/{f=1} f&&/<\/class>/{exit} f' "$WORK/dt3.sdef" | grep -oE '<property name="[^"]+"' | cut -d'"' -f2 | tr '\n' ','; echo
 log "reminder class:"
 awk '/<class name="reminder"/{f=1} f&&/<\/class>/{exit} f' "$WORK/dt3.sdef" | grep -oE '<property name="[^"]+"' | cut -d'"' -f2 | tr '\n' ','; echo
-for c in "replicate" "duplicate" "create record with" "add custom meta data" "ocr" "convert image"; do
+for c in "replicate" "duplicate" "create record with" "add custom meta data" "ocr" "convert image" "import" "make"; do
     log "command '$c' parameters:"
     awk -v c="$c" '$0 ~ "<command name=\""c"\""{f=1} f&&/<\/command>/{exit} f' "$WORK/dt3.sdef" | grep -oE '<(parameter|direct-parameter|result)[^>]*>' | sed -E 's/description="[^"]*"//'
 done

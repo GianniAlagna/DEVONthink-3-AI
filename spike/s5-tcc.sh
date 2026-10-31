@@ -22,7 +22,7 @@ sleep 90
 log "-- agent log"
 grep -E 'start|dt3 probe' "$WORK/agent.log"
 log "-- TCC decisions in the unified log (last 5 min)"
-log show --last 5m --style compact --predicate 'subsystem == "com.apple.TCC" AND eventMessage CONTAINS[c] "AppleEvents"' 2>/dev/null | tail -25
+/usr/bin/log show --last 5m --style compact --predicate 'subsystem == "com.apple.TCC" AND eventMessage CONTAINS[c] "AppleEvents"' 2>/dev/null | tail -25
 cat <<'EOT'
 
 NEXT (manual):

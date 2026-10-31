@@ -17,16 +17,16 @@ They only measure. Product code comes after Phase 1.
 | 6 | In DT3: create database **`DT3Agent-Spike`** (name must contain `Spike`) | Optional 2nd one: `DT3Agent-Spike-2` |
 | 7 | Plug in the power cable, close other apps | Measurements are cleaner |
 
-### Install Command Line Tools (needed for S2, S6, S8)
+### Command Line Tools (needed for S2, S6, S8)
 
-Your first run showed: the folder `/Library/Developer/CommandLineTools` exists but is **broken** (`xcrun` missing). Repair it once (~15 min, ~1 GB):
+Run 2 showed: compiler **Swift 5.4.2** (Command Line Tools 12.5.1) next to an SDK made for **Swift 5.5** → Swift builds fail.
+The kit now picks a matching SDK by itself. The clean fix (and the version the project targets) is **Command Line Tools for Xcode 13.2**:
 
 | # | Do this | Check |
 |---|---|---|
-| a | Remove the broken install (asks your Mac password; Apple's documented reinstall procedure): `sudo rm -rf /Library/Developer/CommandLineTools` | No output |
-| b | Start the installer: `xcode-select --install` | A window opens → **Install** → **Agree** |
-| c | If the window says "not available": download **Command Line Tools for Xcode 13.2** from developer.apple.com/download/all (free Apple ID login, no paid program) and open the `.dmg` | — |
-| d | Test: `xcrun swiftc --version` and `xcrun clang --version` | Both print a version, no error |
+| a | Sign in at developer.apple.com/download/all (free Apple ID, no paid program) | — |
+| b | Search **Command Line Tools for Xcode 13.2**, download the `.dmg`, open it, run the installer | Installs over the old version |
+| c | Test: `xcrun swiftc --version` | Shows **Swift version 5.5.2** |
 
 Full Xcode is **not** needed for the spike.
 
