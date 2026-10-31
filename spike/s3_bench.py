@@ -1,7 +1,9 @@
 """S3 - measure one running llama-server: speed, schema compliance, field accuracy. Stdlib only.
 
-API used (llama.cpp b12015 tools/server/README.md): POST /v1/chat/completions with
-response_format {"type": "json_schema", "schema": ...} and chat_template_kwargs {"enable_thinking": false}.
+API used: POST /v1/chat/completions with chat_template_kwargs {"enable_thinking": false} and
+response_format {"type": "json_schema", "json_schema": {"schema": ...}} (OpenAI form).
+Floor run 3: the README form {"type": "json_schema", "schema": ...} is silently ignored in b12015 -
+tools/server/server-common.cpp:1392-1394 reads the schema only from response_format.json_schema.schema.
 """
 import argparse
 import json
@@ -70,7 +72,7 @@ def ask(url: str, text: str) -> tuple[dict, float]:
         "temperature": 0,
         "max_tokens": 512,
         "cache_prompt": False,
-        "response_format": {"type": "json_schema", "schema": SCHEMA},
+        "response_format": {"type": "json_schema", "json_schema": {"name": "document_fields", "schema": SCHEMA}},
         "chat_template_kwargs": {"enable_thinking": False},
     }
     req = urllib.request.Request(url + "/v1/chat/completions", data=json.dumps(body).encode("utf-8"),

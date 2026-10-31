@@ -30,7 +30,7 @@ import plistlib, sys
 path, bundle_id, build = sys.argv[1:4]
 with open(path, "wb") as f:
     plistlib.dump({
-        "CFBundleIdentifier": bundle_id, "CFBundleName": "SpikeMenu", "CFBundleExecutable": "SpikeMenu",
+        "CFBundleInfoDictionaryVersion": "6.0", "CFBundleIdentifier": bundle_id, "CFBundleName": "SpikeMenu", "CFBundleExecutable": "SpikeMenu",
         "CFBundlePackageType": "APPL", "CFBundleShortVersionString": "0.0." + build, "CFBundleVersion": build,
         "LSMinimumSystemVersion": "11.0", "LSUIElement": True,
         "NSAppleEventsUsageDescription": "Spike test: read the DEVONthink 3 version.",
@@ -41,6 +41,12 @@ codesign -dv --verbose=4 "$APP" 2>&1 | grep -E 'Identifier|Signature|Authority|C
 run codesign -d -r- "$APP"
 spctl -a -vv "$APP" 2>&1 | head -3     # Gatekeeper verdict (expected: rejected, not notarized)
 
+# Run 3: open failed with -10827 "executable is missing" although lipo had written it: Launch Services
+# still held the record of the run-2 bundle (created without a binary). Re-register before opening.
+LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+chmod 755 "$APP/Contents/MacOS/SpikeMenu"
+ls -l "$APP/Contents/MacOS/"
+run "$LSREGISTER" -f "$APP"
 run open "$APP"
 next="bash spike/run.sh s8 2"
 [ "$identity" != "-" ] && next="$next '$identity'"

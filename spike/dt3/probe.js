@@ -55,7 +55,7 @@ function selftest(dbName, fixtures, db2Name) {
     const db = app.databases.whose({ name: dbName })()[0];
     if (!db) throw new Error('Database not open: ' + dbName);
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-    let group, target, other, md, txt, pdf, ocrRec;
+    let group, target, other, md, txt;
 
     check(results, 'createLocation group', function () { group = app.createLocation('/_spike/' + stamp, { in: db }); return group.uuid(); });
     check(results, 'createLocation target', function () { target = app.createLocation('/_spike/' + stamp + '/target', { in: db }); return target.uuid(); });
@@ -101,18 +101,6 @@ function selftest(dbName, fixtures, db2Name) {
         const d = app.duplicate({ record: txt, to: target });
         return { uuid: d.uuid(), differentUuid: d.uuid() !== txt.uuid(), duplicatesOfOriginal: txt.numberOfDuplicates() };
     });
-    check(results, 'duplicates() list after 3 s', function () {
-        delay(3);
-        return { list: txt.duplicates().map(function (r) { return r.uuid(); }), numberOfDuplicates: txt.numberOfDuplicates() };
-    });
-    check(results, 'same text created twice -> duplicates?', function () {
-        const body = 'Identical body for duplicate detection ' + stamp;
-        const a = app.createRecordWith({ name: 'spike-dup-a', type: 'txt', content: body }, { in: group });
-        const b = app.createRecordWith({ name: 'spike-dup-b', type: 'txt', content: body }, { in: group });
-        delay(3);
-        return { aHash: a.contentHash(), bHash: b.contentHash(), aDuplicates: a.numberOfDuplicates(),
-                 aList: a.duplicates().map(function (r) { return r.uuid(); }), bUuid: b.uuid() };
-    });
     check(results, 'move to target', function () { const m = app.move({ record: md, to: target }); return m.location(); });
 
     if (db2Name) {
@@ -132,36 +120,56 @@ function selftest(dbName, fixtures, db2Name) {
         return describe(n);
     });
 
-    const due = new Date(Date.now() + 86400000);
-    check(results, 'reminder A: set property to app.Reminder()', function () {
-        txt.reminder = app.Reminder({ schedule: 'once', dueDate: due, alarm: 'notification' });
-        return 'set';
-    });
-    check(results, 'reminder B: make at record.reminder', function () {
-        return String(app.make({ new: 'reminder', withProperties: { schedule: 'once', dueDate: due, alarm: 'notification' }, at: md.reminder }));
-    });
-    check(results, 'reminder read', function () { const r = txt.reminder(); return r ? { schedule: r.schedule(), due: r.dueDate().toISOString(), alarm: r.alarm() } : null; });
+    return results;
+}
 
-    check(results, 'import qrbill PDF', function () {
-        pdf = app.import(fixtures + '/qrbill-qrr.pdf', { to: group });
-        return describe(pdf);
-    });
-    check(results, 'import image-only PDF (no text layer expected)', function () {
-        ocrRec = app.import(fixtures + '/ocr-de.pdf', { to: group });
-        return describe(ocrRec);
-    });
-    check(results, 'ocr A: file + to', function () {
-        const r = app.ocr({ file: fixtures + '/ocr-de.pdf', to: group });
-        return r ? describe(r) : null;
-    });
-    check(results, 'ocr B: direct path + to', function () {
-        const r = app.ocr(fixtures + '/ocr-fr.pdf', { to: group });
-        return r ? describe(r) : null;
-    });
-    check(results, 'convertImage (OCR an existing record)', function () {
-        const r = app.convertImage({ record: ocrRec, to: group });
-        return r ? describe(r) : null;
-    });
+// Run 3: one of the checks below crashed osascript (segfault, rc 139). Each now runs in its own
+// osascript process (s4-dt3.sh loops over EXTRAS), so a crash is pinned to exactly one check.
+const EXTRAS = ['dupdetect', 'reminderA', 'reminderB', 'import', 'ocrA', 'ocrB', 'convert'];
+
+function extra(name, dbName, fixtures) {
+    if (!dbName || dbName.indexOf('Spike') < 0) throw new Error('Refusing: database name must contain "Spike"');
+    const app = dt3();
+    const db = app.databases.whose({ name: dbName })()[0];
+    if (!db) throw new Error('Database not open: ' + dbName);
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const group = app.createLocation('/_spike/' + stamp + '-' + name, { in: db });
+    const rec = app.createRecordWith({ name: 'spike-' + name, type: 'txt', content: 'Spike ' + name + ' ' + stamp }, { in: group });
+    const due = new Date(Date.now() + 86400000);
+    const results = [];
+    const steps = {
+        dupdetect: function () {
+            const body = 'Identical body for duplicate detection ' + stamp;
+            const a = app.createRecordWith({ name: 'spike-dup-a', type: 'txt', content: body }, { in: group });
+            const b = app.createRecordWith({ name: 'spike-dup-b', type: 'txt', content: body }, { in: group });
+            delay(3);
+            return { aHash: a.contentHash(), bHash: b.contentHash(), aDuplicates: a.numberOfDuplicates(),
+                     aList: a.duplicates().map(function (r) { return r.uuid(); }), bUuid: b.uuid() };
+        },
+        reminderA: function () {
+            rec.reminder = app.Reminder({ schedule: 'once', dueDate: due, alarm: 'notification' });
+            const r = rec.reminder();
+            return r ? { schedule: r.schedule(), due: r.dueDate().toISOString(), alarm: r.alarm() } : null;
+        },
+        reminderB: function () {
+            app.make({ new: 'reminder', withProperties: { schedule: 'once', dueDate: due, alarm: 'notification' }, at: rec.reminder });
+            const r = rec.reminder();
+            return r ? { schedule: r.schedule(), due: r.dueDate().toISOString(), alarm: r.alarm() } : null;
+        },
+        import: function () {
+            return [describe(app.import(fixtures + '/qrbill-qrr.pdf', { to: group })),
+                    describe(app.import(fixtures + '/ocr-de.pdf', { to: group }))];
+        },
+        ocrA: function () { const r = app.ocr({ file: fixtures + '/ocr-de.pdf', to: group }); return r ? describe(r) : null; },
+        ocrB: function () { const r = app.ocr(fixtures + '/ocr-fr.pdf', { to: group }); return r ? describe(r) : null; },
+        convert: function () {
+            const img = app.import(fixtures + '/ocr-it.pdf', { to: group });
+            const r = app.convertImage({ record: img, to: group });
+            return r ? describe(r) : null;
+        },
+    };
+    if (!steps[name]) throw new Error('unknown extra: ' + name);
+    check(results, name, steps[name]);
     return results;
 }
 
@@ -176,7 +184,9 @@ function run(argv) {
     let out;
     if (cmd === 'info') out = info();
     else if (cmd === 'selftest') out = selftest(argv[1], argv[2], argv[3]);
+    else if (cmd === 'extra') out = extra(argv[1], argv[2], argv[3]);
+    else if (cmd === 'extras') out = EXTRAS;
     else if (cmd === 'read') out = read(argv[1]);
-    else throw new Error('usage: info | selftest <SpikeDB> <fixturesDir> [<SpikeDB2>] | read <uuid>');
+    else throw new Error('usage: info | selftest <SpikeDB> <fixturesDir> [<SpikeDB2>] | extra <name> <SpikeDB> <fixturesDir> | extras | read <uuid>');
     return JSON.stringify(out, null, 1);
 }
