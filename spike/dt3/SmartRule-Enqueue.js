@@ -7,6 +7,7 @@ function performsmartrule(records) {
     const dir = $.NSHomeDirectory().js + '/dt3agent-spike/smartrule';
     $.NSFileManager.defaultManager.createDirectoryAtPathWithIntermediateDirectoriesAttributesError($(dir), true, $(), $());
     const file = dir + '/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.json';
-    $(JSON.stringify({ ts: new Date().toISOString(), entry: 'smartrule', uuids: uuids }))
+    // Run 4 wrote uuids: [] -> also record how many records DT3 passed in
+    $(JSON.stringify({ ts: new Date().toISOString(), entry: 'smartrule', count: records.length, uuids: uuids }))
         .writeToFileAtomicallyEncodingError($(file), true, $.NSUTF8StringEncoding, $());
 }

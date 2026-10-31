@@ -33,7 +33,7 @@ with open(path, "wb") as f:
         "CFBundleInfoDictionaryVersion": "6.0", "CFBundleIdentifier": bundle_id, "CFBundleName": "SpikeMenu", "CFBundleExecutable": "SpikeMenu",
         "CFBundlePackageType": "APPL", "CFBundleShortVersionString": "0.0." + build, "CFBundleVersion": build,
         "LSMinimumSystemVersion": "11.0", "LSUIElement": True,
-        "NSAppleEventsUsageDescription": "Spike test: read the DEVONthink 3 version.",
+        "NSAppleEventsUsageDescription": "Spike test: count the open DEVONthink 3 databases.",
     }, f)
 EOF
 run codesign --force --sign "$identity" --timestamp=none "$APP"
@@ -53,7 +53,7 @@ next="bash spike/run.sh s8 2"
 cat <<EOT
 
 NEXT (manual):
- 1. Click the new menu-bar icon (magnifier on a page) > "Ask DEVONthink 3 for its version".
+ 1. Click the new menu-bar icon (magnifier on a page) > "Ask DEVONthink 3 for its databases".
  2. Note: did macOS ask for permission? What does the popover show? Screenshot.
  3. Build $build done. If this was build 1, now run build 2 with the same signing and repeat 1-2:
       $next

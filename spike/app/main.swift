@@ -7,11 +7,12 @@ final class Model: ObservableObject {
     @Published var status = "Idle"
 
     func askDT3() {
-        // Constant script text, nothing interpolated.
-        let source = "tell application id \"com.devon-technologies.think3\" to return version"
+        // Constant script text, nothing interpolated. Run 4: "version" is answered locally by AppleScript
+        // without an Apple event (no Automation entry appeared), so ask for something only DT3 can answer.
+        let source = "tell application id \"com.devon-technologies.think3\" to return (count of databases) as text"
         var error: NSDictionary?
         if let result = NSAppleScript(source: source)?.executeAndReturnError(&error), let v = result.stringValue {
-            status = "DEVONthink \(v)"
+            status = "DT3 open databases: \(v)"
         } else {
             let code = error?[NSAppleScript.errorNumber] ?? "?"
             let text = error?[NSAppleScript.errorMessage] ?? ""
@@ -30,7 +31,7 @@ struct PopoverView: View {
             Text(model.status)
                 .font(.callout)
                 .accessibilityLabel(Text("Status: \(model.status)"))
-            Button("Ask DEVONthink 3 for its version") { model.askDT3() }
+            Button("Ask DEVONthink 3 for its databases") { model.askDT3() }
                 .keyboardShortcut("r")
             Button("Quit") { NSApp.terminate(nil) }
                 .keyboardShortcut("q")
