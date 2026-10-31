@@ -1,11 +1,21 @@
 # S4 - DEVONthink 3.9 scripting surface.
 # Usage: bash spike/run.sh s4 "DT3Agent-Spike" ["DT3Agent-Spike-2"]   probes + installs the Smart Rule / Menu probes
+#        bash spike/run.sh s4 rules                                    reinstall only the Smart Rule probes
 #        bash spike/run.sh s4 check                                    after you triggered the Smart Rule / Menu script
 . "$(dirname "$0")/lib.sh"
 need_py
 
 SCRIPTS_BASE="$HOME/Library/Application Scripts/$( /usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' '/Applications/DEVONthink 3.app/Contents/Info.plist' )"
 PROBE="$SPIKE_DIR/dt3/probe.js"
+
+if [ "${1:-}" = "rules" ]; then   # reinstall only the Smart Rule probes (JXA + AppleScript)
+    log "== S4 rules: install Smart Rule probes"
+    mkdir -p "$SCRIPTS_BASE/Smart Rules" "$WORK/smartrule"
+    run osacompile -l JavaScript -o "$SCRIPTS_BASE/Smart Rules/DT3Agent Spike Enqueue.scpt" "$SPIKE_DIR/dt3/SmartRule-Enqueue.js"
+    run osacompile -o "$SCRIPTS_BASE/Smart Rules/DT3Agent Spike Enqueue AS.scpt" "$SPIKE_DIR/dt3/SmartRule-Enqueue.applescript"
+    ls -l "$SCRIPTS_BASE/Smart Rules/"
+    exit 0
+fi
 
 if [ "${1:-}" = "check" ]; then
     log "== S4 check: files written by the Smart Rule / Menu probes"

@@ -16,7 +16,7 @@ Legend: **verified** = measured on the floor machine.
 | S5 Automation (TCC) | ✅ verified | grant on `python3.12` survives agent restarts **and a Mac restart** |
 | S6 Vision | ✅ verified | OCR de/fr/it/en 0.966–1.000, QR-bill byte-exact |
 | S7 LaunchAgent + socket | ✅ verified | KeepAlive restart < 15 s, socket `0600`, invalid JSON-RPC rejected |
-| S8 Menu-bar app | ✅ opens, real Apple event works; 🟡 update behaviour to confirm | run 5: `count of databases` → **macOS asked for permission**, popover "DT3 open databases: 3"; build 2 has a new cdhash (`1d67e02f…` → `536f77d0…`) — whether it asked again is to be confirmed by Gianni |
+| S8 Menu-bar app | ✅ opens, real Apple event works; 🟡 update behaviour to confirm | run 5: `count of databases` → **macOS asked for permission**, popover "DT3 open databases: 3"; build 2 has a new cdhash (`1d67e02f…` → `536f77d0…`) and **macOS asked again** (confirmed by Gianni) → ad-hoc signing loses the permission on every update; self-signed certificate test pending |
 
 ## S3 — models (floor, 4 threads, ctx 8192, temperature 0)
 
@@ -54,7 +54,7 @@ Field errors (identical in every run — deterministic at temperature 0):
 | Reminder | ❌ setting `reminder` **crashes osascript** (segfault); `make` → "index too large" | B5: reminders via macOS Reminders/Calendar (EventKit, user picks) or AppleScript — spike in Phase 4 |
 | AppleEvent round trip | median **220 ms** | batch reads per record |
 | Menu script | ✅ `run()` + `selectedRecords()` → UUID written, returned at once | — |
-| Smart Rule script | 🟡 `performsmartrule` called and returned at once, but **0 records** passed (run 4); run 5 produced no new Smart Rule file (rule not re-applied) | re-test: apply the rule to 2–3 documents |
+| Smart Rule script | ❌ run 4: called with **0 records**; run 5: applied to documents, **no trace at all** | kit v6: JXA probe that logs even on error + AppleScript variant |
 
 ## S5 — Automation permission (TCC)
 
