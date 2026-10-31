@@ -1,6 +1,6 @@
 # ADR-0004: DT3 3.9 scripting surface
 
-Status: **Proposed** (Phase 0, 2026-10-31) — accepted when Gianni approves the spike report.
+Status: **Accepted** (2026-10-31, Phase 0 approved by Gianni).
 
 ## Context
 The DT3 adapter must use only commands verified on DT3 3.9.17.

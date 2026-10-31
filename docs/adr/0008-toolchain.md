@@ -1,6 +1,6 @@
 # ADR-0008: Floor toolchain
 
-Status: **Proposed** (Phase 0, 2026-10-31) — accepted when Gianni approves the spike report.
+Status: **Accepted** (2026-10-31, Phase 0 approved by Gianni).
 
 ## Context
 Brief §2.2: Xcode 13.2.x max, Swift 5.5.

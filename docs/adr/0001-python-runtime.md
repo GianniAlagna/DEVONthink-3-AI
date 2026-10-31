@@ -1,6 +1,6 @@
 # ADR-0001: Bundled Python runtime
 
-Status: **Proposed** (Phase 0, 2026-10-31) — accepted when Gianni approves the spike report.
+Status: **Accepted** (2026-10-31, Phase 0 approved by Gianni).
 
 ## Context
 The engine must run offline on macOS 11 Intel without compiled dependencies (brief §2.3, §3.1).

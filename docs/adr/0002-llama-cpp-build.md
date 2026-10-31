@@ -1,6 +1,6 @@
 # ADR-0002: llama.cpp build
 
-Status: **Proposed** (Phase 0, 2026-10-31) — accepted when Gianni approves the spike report.
+Status: **Accepted** (2026-10-31, Phase 0 approved by Gianni).
 
 ## Context
 Official llama.cpp macOS x64 release binaries target macOS 13.3 (verified in `.github/workflows/release.yml`, tag b12015) and cannot run on the floor.

@@ -4,7 +4,7 @@ Floor machine: MacBook Pro 15" Mid 2014 · macOS 11.7.11 (20G1443) · i7-4770HQ 
 Toolchain: Command Line Tools for Xcode 13.2 (Swift 5.5.2, clang 13.0.0, SDK 12.1). Six runs (kit v1–v6).
 Legend: **verified** = measured on the floor machine.
 
-**Gate:** Gianni reviews this report and the ADRs in `docs/adr/` (all *Proposed*). Approval → Phase 1 (spec + plan).
+**Gate passed:** Gianni approved Phase 0 on 2026-10-31; ADRs accepted. Next: Phase 1 (spec + plan).
 
 ## 1. Result in one table
 
@@ -74,7 +74,7 @@ rm -rf ~/dt3agent-spike ~/dt3agent-spike-kit
 ```
 Then in DT3: delete the Spike database and the two test Smart Rules; in Finder: the three `DT3Agent Spike Enqueue*.scpt` files in `~/Library/Application Scripts/com.devon-technologies.think3/`. Keep the **"DT3 Agent Spike Signing"** certificate only if you want to reuse it for tests; the product certificate is created separately (ADR-0010).
 
-## 7. ADR index (all Proposed)
+## 7. ADR index (all Accepted)
 
 | ADR | Decision |
 |---|---|

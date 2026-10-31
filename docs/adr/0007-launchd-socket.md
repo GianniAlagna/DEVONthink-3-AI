@@ -1,6 +1,6 @@
 # ADR-0007: Engine process and socket
 
-Status: **Proposed** (Phase 0, 2026-10-31) — accepted when Gianni approves the spike report.
+Status: **Accepted** (2026-10-31, Phase 0 approved by Gianni).
 
 ## Context
 The engine must run when the app is closed and talk to the app safely.

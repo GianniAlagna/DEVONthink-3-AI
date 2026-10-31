@@ -1,6 +1,6 @@
 # ADR-0009: Rules first, AI second
 
-Status: **Proposed** (Phase 0, 2026-10-31) — accepted when Gianni approves the spike report.
+Status: **Accepted** (2026-10-31, Phase 0 approved by Gianni).
 
 ## Context
 Brief §3.2-1. S3 showed deterministic AI errors on language, amount and date.

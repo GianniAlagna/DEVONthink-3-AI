@@ -1,6 +1,6 @@
 # ADR-0006: Vision helper
 
-Status: **Proposed** (Phase 0, 2026-10-31) — accepted when Gianni approves the spike report.
+Status: **Accepted** (2026-10-31, Phase 0 approved by Gianni).
 
 ## Context
 DT3 OCR is not usable from scripts (ADR-0004); QR-bill decode needs a reliable reader.

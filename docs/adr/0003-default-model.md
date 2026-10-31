@@ -1,6 +1,6 @@
 # ADR-0003: Default model
 
-Status: **Proposed** (Phase 0, 2026-10-31) — accepted when Gianni approves the spike report.
+Status: **Accepted** (2026-10-31, Phase 0 approved by Gianni).
 
 ## Context
 8 GB floor, ≤ 3B parameters, permissive license only (owner decision Q3), de/fr/it/en.

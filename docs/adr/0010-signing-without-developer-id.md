@@ -1,6 +1,6 @@
 # ADR-0010: Signing without an Apple Developer ID
 
-Status: **Proposed** (Phase 0, 2026-10-31) — accepted when Gianni approves the spike report.
+Status: **Accepted** (2026-10-31, Phase 0 approved by Gianni).
 
 ## Context
 Owner decision Q7: no Apple Developer Program. Ad-hoc signatures change identity with every build.
