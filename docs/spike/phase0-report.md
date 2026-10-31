@@ -27,7 +27,7 @@ Legend: **verified** = measured on the floor machine.
 
 \* ~210–250 prompt tokens + ~215–245 generated tokens per request. Memory pressure (`memory_pressure -l warn`): no measurable slowdown.
 
-- **Root cause of 0 % valid:** the request used `response_format: {"type":"json_schema","schema":…}` (as in the llama.cpp README). In b12015 the server reads the schema only from `response_format.json_schema.schema` (`tools/server/server-common.cpp:1392-1394`), so it silently fell back to "any JSON object". Kit v4 uses the OpenAI form.
+- **Root cause of 0 % valid:** the request used `response_format: {"type":"json_schema","schema":…}` (as in the llama.cpp README). In b12015 the server reads the schema only from `response_format.json_schema.schema` (`tools/server/server-common.cpp:1392-1394`), so it silently fell back to "any JSON object". Kit v4 uses the OpenAI form. **Fix verified in the cloud** with llama-server b12015 + Qwen3-0.6B: 4/4 responses schema-valid (before: 0/40).
 - **Even unconstrained**, both models extracted sender, date, invoice number, total, due date and IBAN correctly from the German invoice (Qwen wrote the due date as "17. Mai 2026", not ISO).
 - **Inference:** a 1-page document costs ~30 s (1.7B) / ~45 s (3B) on the floor; longer documents scale mostly with output length, which the schema will cut. Background processing is viable; interactive chat on the floor will feel slow → LAN server recommendation stands.
 
