@@ -20,6 +20,7 @@ Source of truth from the owner (Gianni), received 2026-10-30. Sections 0–11 ar
 | Q9 | Bundle ID prefix | **One ID for all users: `codes.modular.dt3agent`** (decided 2026-10-30, following the recommendation) | Same app for individuals and businesses; support plan is a service. Spike uses `codes.modular.dt3agent.spike.*` so test permissions never mix with the product |
 | Q10 | Keep the brief in the repo | **Yes** | This file |
 | Plan | Phase 0 spike plan incl. Step 5 (TCC test) | **Approved** | Spike kit built |
+| Q7 follow-up | Signing without Developer ID | **Proposed (ADR-0010):** project self-signed certificate — keeps the DT3 permission across updates (S8, verified) | Replaces the notarized-DMG lines in 7, 8.3, 8.4 once accepted |
 
 ---
 

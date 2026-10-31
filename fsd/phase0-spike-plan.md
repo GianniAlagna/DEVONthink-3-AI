@@ -1,6 +1,6 @@
 # Phase 0 — Floor spike plan
 
-Status: **APPROVED by Gianni 2026-10-30.** Spike kit ready in `spike/` (how to run: `spike/README.md`). Nothing has run on the floor machine yet.
+Status: **EXECUTED** — 6 floor runs, final report in `docs/spike/phase0-report.md`, ADRs in `docs/adr/`. Plan **APPROVED by Gianni 2026-10-30.** Spike kit ready in `spike/` (how to run: `spike/README.md`). Nothing has run on the floor machine yet.
 
 ## Verified while building the kit (2026-10-30, from official sources — not yet on the floor)
 
