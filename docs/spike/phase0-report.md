@@ -1,4 +1,4 @@
-# Phase 0 spike report — run 4 (2026-10-31), near-final
+# Phase 0 spike report — run 5 (2026-10-31), near-final
 
 Floor machine: MacBook Pro 15" Mid 2014 · macOS 11.7.11 (20G1443) · i7-4770HQ (4C/8T, AVX2/FMA/F16C) · 16 GB · DT3 3.9.17.
 Toolchain: Command Line Tools for Xcode 13.2 (Swift 5.5.2, clang 13.0.0, SDK 12.1).
@@ -16,7 +16,7 @@ Legend: **verified** = measured on the floor machine.
 | S5 Automation (TCC) | ✅ verified | grant on `python3.12` survives agent restarts **and a Mac restart** |
 | S6 Vision | ✅ verified | OCR de/fr/it/en 0.966–1.000, QR-bill byte-exact |
 | S7 LaunchAgent + socket | ✅ verified | KeepAlive restart < 15 s, socket `0600`, invalid JSON-RPC rejected |
-| S8 Menu-bar app | 🟡 opens and works; permission test inconclusive | app asked DT3 for `version`, which AppleScript answers **without** an Apple event (no Automation entry appeared) → kit v5 asks `count of databases` |
+| S8 Menu-bar app | ✅ opens, real Apple event works; 🟡 update behaviour to confirm | run 5: `count of databases` → **macOS asked for permission**, popover "DT3 open databases: 3"; build 2 has a new cdhash (`1d67e02f…` → `536f77d0…`) — whether it asked again is to be confirmed by Gianni |
 
 ## S3 — models (floor, 4 threads, ctx 8192, temperature 0)
 
@@ -54,7 +54,7 @@ Field errors (identical in every run — deterministic at temperature 0):
 | Reminder | ❌ setting `reminder` **crashes osascript** (segfault); `make` → "index too large" | B5: reminders via macOS Reminders/Calendar (EventKit, user picks) or AppleScript — spike in Phase 4 |
 | AppleEvent round trip | median **220 ms** | batch reads per record |
 | Menu script | ✅ `run()` + `selectedRecords()` → UUID written, returned at once | — |
-| Smart Rule script | 🟡 `performsmartrule` called and returned at once, but **0 records** passed | kit v5 logs the record count; re-test on documents (not groups) |
+| Smart Rule script | 🟡 `performsmartrule` called and returned at once, but **0 records** passed (run 4); run 5 produced no new Smart Rule file (rule not re-applied) | re-test: apply the rule to 2–3 documents |
 
 ## S5 — Automation permission (TCC)
 
