@@ -12,7 +12,7 @@ from dt3agent.bridge import Bridge, BridgeError
 
 
 def log(message: str) -> None:
-    print(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} engine {message}", file=sys.stderr, flush=True)
+    print(f"{time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())} engine {message}", file=sys.stderr, flush=True)
 
 
 def main(argv: list[str] | None = None) -> int:

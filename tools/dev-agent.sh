@@ -33,6 +33,11 @@ python)
 install)
     mode=${2:-osakit}
     uuid=${3:-}
+    uuid=${uuid#x-devonthink-item://}   # accept the full link from Edit > Copy Item Link
+    uuid=${uuid%%\?*}
+    if [ -n "$uuid" ] && ! echo "$uuid" | grep -Eq '^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$'; then
+        echo "Not a DEVONthink record ID: $uuid (copy it with Edit > Copy Item Link)"; exit 2
+    fi
     [ -x "$PY" ] || { echo "Python not found at $PY - run: tools/dev-agent.sh python"; exit 1; }
     stop
     tools/build-swift.sh build
