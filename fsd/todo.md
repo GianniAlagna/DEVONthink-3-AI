@@ -14,7 +14,7 @@ Status: **APPROVED by Gianni 2026-11-03.** Phase 2 in progress. Sizes: XS 1 file
 - [x] **T3: config + store + audit** — done 2026-11-03
   - Acceptance: atomic config write with backup · SQLite WAL with migrations · audit JSONL never contains a sentinel text
   - Verify: `pytest engine/tests/unit -k "config or store or audit"` · Depends on: T2 · Size: M
-- [ ] **T4: queue + intake (spool + pull)**
+- [x] **T4: queue + intake (spool + pull)** — done 2026-11-03
   - Acceptance: spool file → one job; duplicate spool for same UUID → one job · partial/failed retry with back-off · pull by `additionDate` via fake adapter
   - Verify: unit + integration tests · Depends on: T3 · Size: M
 - [ ] **T5: engine-host (Swift) + bridge verbs `info`, `read`, `set_tags`** (risks P2, P3)
