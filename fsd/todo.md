@@ -17,7 +17,7 @@ Status: **APPROVED by Gianni 2026-11-03.** Phase 2 in progress. Sizes: XS 1 file
 - [x] **T4: queue + intake (spool + pull)** — done 2026-11-03
   - Acceptance: spool file → one job; duplicate spool for same UUID → one job · partial/failed retry with back-off · pull by `additionDate` via fake adapter
   - Verify: unit + integration tests · Depends on: T3 · Size: M
-- [ ] **T5: engine-host (Swift) + bridge verbs `info`, `read`, `set_tags`** (risks P2, P3)
+- [x] **T5: engine-host (Swift) + bridge verbs `info`, `read`, `set_tags`** (risks P2, P3) — done 2026-11-03: floor shows "DT3 Agent Engine" in Automation, `read ok` via OSAKit (`set_tags` floor check in T6)
   - Acceptance: launchd starts the host, host starts Python, restarts it on crash · Automation entry shows "DT3 Agent Engine", not python3.12 · arguments reach DT3 without string building
   - Verify: floor run + screenshot of Automation list · Depends on: T2 · Files: `app/EngineHost/*`, `tools/build-swift.sh` · Size: M
 - [ ] **T6: dt3-adapter + fake adapter + undo**
