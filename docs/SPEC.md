@@ -101,7 +101,8 @@ rpc ── app ── installer
 - DT3 scripts write `{uuid}.json` (UUID only + timestamp) atomically into `~/Library/Application Support/DT3 Agent/spool/` and return at once.
 - Engine ingests the spool (poll every 2 s while active), deletes the spool file after the job is committed.
 - Fallback (verified API): pull records with `additionDate` > last pull from enabled groups, every N minutes (configurable, default 5).
-- `UNVERIFIED` (T1): which trigger works for Smart Rules on DT3 3.9.17 (run 4–6 found the rule did not call the external script).
+- Verified (T1): an external **AppleScript** Smart Rule script (`dt3-scripts/SmartRule-Enqueue.applescript`, rule action "Apply Script › External") receives all matching records — if it was installed while DT3 was not running.
+- The engine skips spool files younger than 2 s (the script writes in place).
 
 ### 4.7 `queue`
 - States: `queued → running → done | review | failed | partial`. `partial` and `failed` retry with back-off (max 5).

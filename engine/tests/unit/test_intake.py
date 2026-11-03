@@ -1,4 +1,6 @@
 import json
+import os
+import time
 from datetime import UTC, datetime
 
 import pytest
@@ -18,7 +20,10 @@ def queue(tmp_path):
 
 def drop(spool, name, payload):
     spool.mkdir(exist_ok=True)
-    (spool / name).write_text(payload if isinstance(payload, str) else json.dumps(payload), encoding="utf-8")
+    f = spool / name
+    f.write_text(payload if isinstance(payload, str) else json.dumps(payload), encoding="utf-8")
+    old = time.time() - 60
+    os.utime(f, (old, old))  # written a minute ago, i.e. complete
 
 
 def test_spool_files_become_jobs_and_are_removed(tmp_path, queue):
@@ -39,6 +44,15 @@ def test_bad_spool_files_are_set_aside_not_queued(tmp_path, queue):
     assert intake.ingest_spool(spool, queue) == 0
     assert queue.counts() == {}
     assert sorted(p.name for p in (spool / "rejected").iterdir()) == ["bad.json", "big.json", "evil.json"]
+
+
+def test_file_still_being_written_is_left_for_the_next_poll(tmp_path, queue):
+    spool = tmp_path / "spool"
+    spool.mkdir()
+    (spool / "new.json").write_text(json.dumps({"uuid": A}), encoding="utf-8")  # mtime = now
+    assert intake.ingest_spool(spool, queue) == 0
+    assert (spool / "new.json").exists() and not (spool / "rejected").exists()
+    assert intake.ingest_spool(spool, queue, min_age=0) == 1
 
 
 class FakeAdapter:
