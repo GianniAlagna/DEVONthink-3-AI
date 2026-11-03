@@ -1,7 +1,7 @@
 #!/bin/bash
-# Floor test for Phase 2 T5: run the engine host as a LaunchAgent and check whose name the Automation
+# Floor test for Phase 2 T5/T6: run the engine host as a LaunchAgent and check whose name the Automation
 # permission carries. Developer tool, not the installer (that is Phase 5).
-# Usage: tools/dev-agent.sh python | install [osakit|osascript] [record-UUID] | status | uninstall
+# Usage: tools/dev-agent.sh python | install [osakit|osascript] [record-UUID] [tag] | status | uninstall
 set -euo pipefail
 cd "$(dirname "$0")/.."
 REPO=$(pwd)
@@ -33,21 +33,25 @@ python)
 install)
     mode=${2:-osakit}
     uuid=${3:-}
+    check=${4:-read}   # read: read the record · tag: add DT3Agent-Test, wait 20 s, undo, verify (T6)
     uuid=${uuid#x-devonthink-item://}   # accept the full link from Edit > Copy Item Link
     uuid=${uuid%%\?*}
     if [ -n "$uuid" ] && ! echo "$uuid" | grep -Eq '^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$'; then
         echo "Not a DEVONthink record ID: $uuid (copy it with Edit > Copy Item Link)"; exit 2
     fi
+    case "$check" in read|tag) ;; *) echo "Last argument must be read or tag"; exit 2;; esac
+    [ "$check" = tag ] && [ -z "$uuid" ] && { echo "tag needs a record ID"; exit 2; }
     [ -x "$PY" ] || { echo "Python not found at $PY - run: tools/dev-agent.sh python"; exit 1; }
     stop
     tools/build-swift.sh build
     tccutil reset AppleEvents codes.modular.dt3agent.engine 2>/dev/null || true   # this app only
     mkdir -p "$(dirname "$LOG")" "$HOME/Library/LaunchAgents"
     : > "$LOG"
-    "$PY" -I - "$PLIST" "$LABEL" "$APP/Contents/MacOS/DT3AgentEngine" "$PY" "$REPO/engine" "$mode" "$LOG" "$uuid" <<'PYEOF'
+    "$PY" -I - "$PLIST" "$LABEL" "$APP/Contents/MacOS/DT3AgentEngine" "$PY" "$REPO/engine" "$mode" "$LOG" "$uuid" "$check" <<'PYEOF'
 import plistlib, sys
-plist, label, host, py, engine, mode, log, uuid = sys.argv[1:9]
-args = [host, "--python", py, "--engine-dir", engine, "--mode", mode, "--"] + (["--read", uuid] if uuid else [])
+plist, label, host, py, engine, mode, log, uuid, check = sys.argv[1:10]
+flag = "--tag-undo" if check == "tag" else "--read"
+args = [host, "--python", py, "--engine-dir", engine, "--mode", mode, "--"] + ([flag, uuid] if uuid else [])
 with open(plist, "wb") as f:
     plistlib.dump({"Label": label, "ProgramArguments": args, "RunAtLoad": True, "KeepAlive": True,
                    "StandardOutPath": log, "StandardErrorPath": log}, f)
@@ -65,7 +69,7 @@ uninstall)
     echo "LaunchAgent removed. Log kept at: $LOG"
     ;;
 *)
-    echo "usage: tools/dev-agent.sh python | install [osakit|osascript] [record-UUID] | status | uninstall"
+    echo "usage: tools/dev-agent.sh python | install [osakit|osascript] [record-UUID] [tag] | status | uninstall"
     exit 2
     ;;
 esac
