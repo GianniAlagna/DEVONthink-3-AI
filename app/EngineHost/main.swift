@@ -53,7 +53,8 @@ function run(argv) {
 """
 
 /// Runs the DT3 handlers either in-process via OSAKit or via /usr/bin/osascript as a child of this host.
-/// UNVERIFIED (Phase 2 T5): which mode works on macOS 11 and keeps the Automation entry on this app.
+/// Verified on macOS 11 (Phase 2 T5): OSAKit (default) passes parameters and keeps the Automation entry on this app;
+/// osascript is the fallback.
 final class DT3Bridge {
     enum Mode: String { case osakit, osascript }
     let mode: Mode
