@@ -1,6 +1,6 @@
 # Plan — DT3 Agent
 
-Status: **DRAFT — waiting for Gianni's approval (Phase 1 gate).** Spec: `docs/SPEC.md`. Tasks: `fsd/todo.md`.
+Status: **APPROVED by Gianni 2026-11-03.** Phase 2 in progress. Spec: `docs/SPEC.md`. Tasks: `fsd/todo.md`.
 
 ## 1. Approach
 

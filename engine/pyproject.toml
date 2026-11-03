@@ -1,0 +1,17 @@
+[project]
+name = "dt3agent"
+version = "0.0.1"
+description = "Private, offline AI engine for DEVONthink 3 (standard library only)"
+license = "Apache-2.0"
+requires-python = ">=3.12"
+dependencies = []  # runtime must stay standard-library only (ADR-0001, tests/test_stdlib_only.py)
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]

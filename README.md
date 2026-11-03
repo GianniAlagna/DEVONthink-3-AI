@@ -2,7 +2,7 @@
 
 **Local agentic AI for DEVONthink 3 users on macOS.** Names, tags and files your documents, reads Swiss QR-bills, finds duplicates, flags deadlines and lets you chat with your archive — **100 % on your Mac, no cloud, no telemetry, no token limits.**
 
-> **Status: in development (Phase 1 of 8).** The architecture is proven on real hardware (Phase 0), the spec is being finalised. There is **no installable app yet**. Watch or star the repo to follow progress — contributors welcome (see below).
+> **Status: in development (Phase 2 of 8).** The architecture is proven on real hardware (Phase 0) and the spec is approved (Phase 1); the walking skeleton is being built. There is **no installable app yet**. Watch or star the repo to follow progress — contributors welcome (see below).
 
 *Working name. DT3 Agent is an independent open-source project and is **not affiliated with, endorsed by or sponsored by DEVONtechnologies**. "DEVONthink" is a trademark of its owner and is used here only to describe compatibility.*
 
@@ -89,8 +89,8 @@ Design decisions are recorded as ADRs in [`docs/adr/`](docs/adr/).
 | Phase | Content | Status |
 |---|---|---|
 | 0 | Floor spike on the 2014 MacBook Pro | ✅ done |
-| 1 | Spec + plan ([`docs/SPEC.md`](docs/SPEC.md), [`fsd/plan.md`](fsd/plan.md)) | 🔄 in review |
-| 2 | Walking skeleton: trigger → queue → AI → tag → undo | ⏳ |
+| 1 | Spec + plan ([`docs/SPEC.md`](docs/SPEC.md), [`fsd/plan.md`](fsd/plan.md)) | ✅ approved |
+| 2 | Walking skeleton: trigger → queue → AI → tag → undo | 🔄 in progress |
 | 3 | Block A — inbox pipeline, naming, review, duplicates | ⏳ |
 | 4 | Block B — Swiss QR-bill, UID, deadlines, urgent letters | ⏳ |
 | 5 | Menu-bar app, onboarding, settings, 4 languages | ⏳ |
