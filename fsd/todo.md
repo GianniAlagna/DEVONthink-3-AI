@@ -11,7 +11,7 @@ Status: **APPROVED by Gianni 2026-11-03.** Phase 2 in progress. Sizes: XS 1 file
 - [x] **T2: Repo skeleton + CI** — done 2026-11-03 (CI result: see PR)
   - Acceptance: `engine/` package, `pytest` + `ruff` pass in CI on `macos-15-intel` and `macos-15` · stdlib-only test for runtime imports
   - Verify: CI green · Depends on: — · Files: `engine/pyproject.toml`, `engine/tests/test_stdlib_only.py`, `.github/workflows/ci.yml` · Size: S
-- [ ] **T3: config + store + audit**
+- [x] **T3: config + store + audit** — done 2026-11-03
   - Acceptance: atomic config write with backup · SQLite WAL with migrations · audit JSONL never contains a sentinel text
   - Verify: `pytest engine/tests/unit -k "config or store or audit"` · Depends on: T2 · Size: M
 - [ ] **T4: queue + intake (spool + pull)**
