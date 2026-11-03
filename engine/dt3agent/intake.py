@@ -4,21 +4,32 @@ DT3 scripts only write a tiny JSON file and return at once (brief §2.6).
 """
 import json
 import os
+import time
 from pathlib import Path
 
 from dt3agent.audit import UUID_RE
 from dt3agent.queue import Queue
 
 MAX_SPOOL_BYTES = 4096
+MIN_AGE_SECONDS = 2.0  # DT3 scripts write files in place; skip ones that may still be open
 
 
-def ingest_spool(spool: Path, queue: Queue, source: str = "spool") -> int:
-    """Queue every valid spool file and remove it; invalid files go to spool/rejected/. Returns new jobs."""
+def ingest_spool(spool: Path, queue: Queue, source: str = "spool", min_age: float = MIN_AGE_SECONDS) -> int:
+    """Queue every valid spool file and remove it; invalid files go to spool/rejected/. Returns new jobs.
+
+    Files younger than `min_age` seconds are left for the next poll (the writer may not be done).
+    """
     spool = Path(spool)
     if not spool.is_dir():
         return 0
     before = sum(queue.counts().values())
+    now = time.time()
     for f in sorted(spool.glob("*.json")):
+        try:
+            if now - f.stat().st_mtime < min_age:
+                continue
+        except OSError:
+            continue
         uuid = _read_uuid(f)
         if uuid is None:
             rejected = spool / "rejected"

@@ -19,7 +19,7 @@ Legend: **verified** = measured on the floor machine.
 | S6 Vision | ✅ | OCR de/fr/it/en 0.966–1.000; QR-bill byte-exact → ADR-0006 |
 | S7 LaunchAgent + socket | ✅ | KeepAlive, `0600`, schema-checked JSON-RPC → ADR-0007 |
 | S8 Menu-bar app + signing | ✅ | universal app opens; **self-signed certificate keeps the DT3 permission across updates** → ADR-0008, ADR-0010 |
-| Smart Rule entry point | ❌ open | see §4 |
+| Smart Rule entry point | ✅ resolved in T1 | external AppleScript, DT3 restarted after install — see §4 |
 
 ## 2. Key numbers
 
@@ -46,16 +46,16 @@ Legend: **verified** = measured on the floor machine.
 | F6 | llama.cpp README's `response_format` form is ignored by the server | Use `response_format.json_schema.schema` (ADR-0002) |
 | F7 | `plainText` creates empty records | Always `content` (ADR-0004) |
 
-## 4. Open item: Smart Rule entry point
+## 4. Smart Rule entry point — RESOLVED in Phase 2 T1 (2026-11-03)
 
 | Run | What happened |
 |---|---|
-| 4 | JXA `performsmartrule` ran once and returned at once, with **0 records** |
-| 5, 6 | Applied to documents: **no file** from the JXA nor the AppleScript probe; DT3 Log empty |
-| Menu script | ✅ works (`run()` + `selectedRecords()`, UUID written) |
+| Phase 0 runs 4–6 | External scripts were installed **while DT3 was running**: rule ran with 0 records or not at all |
+| **T1** | Script installed with **DT3 quit**, DT3 started, rule **"Apply Script › External"** on demand over 3 documents → script received **count=3** and all 3 UUIDs |
+| T1 rule B | Pasted AppleScript into the **JavaScript** variant of the rule editor → `SyntaxError: Unexpected identifier 'performSmartRule'` (wrong language chosen; not needed since A works) |
+| Menu script | ✅ works (Phase 0) |
 
-**Assessment:** DT3 does not run the external scripts for the configured rule (conditions, scope or script binding), not a crash in the script. **Risk for Phase 2** (walking skeleton starts with "Smart Rule → queue").
-**Mitigation:** Phase 2 task 1 = Smart Rule on the floor with screenshots of the rule editor; fallback paths that are already verified: Menu script, and engine-side pull of new records by `additionDate` (AppleEvents verified).
+**Decision:** v1 uses an **external AppleScript Smart Rule script** (`dt3-scripts/SmartRule-Enqueue.applescript`) that writes one spool file per record. The installer must install it while DT3 is **not running** (or ask the user to restart DT3 once). The DT3 3.9 UI label is **"Apply Script"**, not "Execute Script". Pull by `additionDate` stays as fallback.
 
 ## 5. Not covered (by design or deferred)
 

@@ -4,7 +4,7 @@ Status: **APPROVED by Gianni 2026-11-03.** Phase 2 in progress. Sizes: XS 1 file
 
 ## Phase 2 — Walking skeleton (CLI only)
 
-- [ ] **T1: DT3 trigger resolved** (risk P1)
+- [x] **T1: DT3 trigger resolved** (risk P1) — done 2026-11-03: external AppleScript works after a DT3 restart (report §4)
   - Acceptance: a documented way in which DT3 3.9.17 hands UUIDs to an external script **or** the decision to use pull + Menu script in v1 · evidence in `docs/spike/phase0-report.md` §4
   - Verify: floor run with rule-editor screenshots; `spike/run.sh s4 check` shows UUIDs
   - Depends on: — · Files: `dt3-scripts/*`, report · Size: S
