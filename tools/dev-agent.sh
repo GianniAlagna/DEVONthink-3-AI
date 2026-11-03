@@ -1,24 +1,39 @@
 #!/bin/bash
 # Floor test for Phase 2 T5: run the engine host as a LaunchAgent and check whose name the Automation
 # permission carries. Developer tool, not the installer (that is Phase 5).
-# Usage: tools/dev-agent.sh install [osakit|osascript] [record-UUID] | status | uninstall
+# Usage: tools/dev-agent.sh python | install [osakit|osascript] [record-UUID] | status | uninstall
 set -euo pipefail
 cd "$(dirname "$0")/.."
 REPO=$(pwd)
 LABEL="codes.modular.dt3agent.engine.dev"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 LOG="$HOME/Library/Logs/DT3 Agent/engine-dev.log"
-PY="${DT3A_PYTHON:-$HOME/dt3agent-spike/python/bin/python3}"   # bundled runtime from the Phase 0 kit
+DEV="$HOME/dt3agent-dev"
+PY="${DT3A_PYTHON:-$DEV/python/bin/python3}"
+# Pinned runtime (ADR-0001); the checksum list comes from the same release and is checked before unpacking.
+PY_TAG="20261026"
+PY_ASSET="cpython-3.12.16+20261026-$(uname -m)-apple-darwin-install_only.tar.gz"
 APP="$REPO/build/DT3 Agent Engine.app"
 DOMAIN="gui/$(id -u)"
 
 stop() { launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true; rm -f "$PLIST"; }
 
 case "${1:-}" in
+python)
+    mkdir -p "$DEV"
+    base="https://github.com/astral-sh/python-build-standalone/releases/download/$PY_TAG"
+    curl -fsSL -o "$DEV/SHA256SUMS" "$base/SHA256SUMS"
+    curl -fsSL -o "$DEV/$PY_ASSET" "$base/$(echo "$PY_ASSET" | sed 's/+/%2B/')"
+    want=$(awk -v a="$PY_ASSET" '$2==a{print $1}' "$DEV/SHA256SUMS")
+    got=$(shasum -a 256 "$DEV/$PY_ASSET" | awk '{print $1}')
+    [ -n "$want" ] && [ "$want" = "$got" ] || { echo "SHA-256 mismatch for $PY_ASSET - stopped"; rm -f "$DEV/$PY_ASSET"; exit 1; }
+    rm -rf "$DEV/python" && tar xzf "$DEV/$PY_ASSET" -C "$DEV"
+    "$PY" -I -c 'import sys; print("Python", sys.version.split()[0], "ready")'
+    ;;
 install)
     mode=${2:-osakit}
     uuid=${3:-}
-    [ -x "$PY" ] || { echo "Python not found at $PY (set DT3A_PYTHON)"; exit 1; }
+    [ -x "$PY" ] || { echo "Python not found at $PY - run: tools/dev-agent.sh python"; exit 1; }
     stop
     tools/build-swift.sh build
     tccutil reset AppleEvents codes.modular.dt3agent.engine 2>/dev/null || true   # this app only
@@ -45,7 +60,7 @@ uninstall)
     echo "LaunchAgent removed. Log kept at: $LOG"
     ;;
 *)
-    echo "usage: tools/dev-agent.sh install [osakit|osascript] [record-UUID] | status | uninstall"
+    echo "usage: tools/dev-agent.sh python | install [osakit|osascript] [record-UUID] | status | uninstall"
     exit 2
     ;;
 esac
