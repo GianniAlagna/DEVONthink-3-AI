@@ -1,0 +1,4 @@
+qrbill==1.2.0
+reportlab==5.1.0
+svglib==2.3.2
+pillow==13.0.0

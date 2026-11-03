@@ -1,0 +1,31 @@
+SPC
+0200
+1
+CH4431999123000889012
+S
+Muster Treuhand AG
+Musterstrasse
+1
+8000
+Zürich
+CH
+
+
+
+
+
+
+
+1957.04
+CHF
+S
+Erika Beispiel
+Beispielweg
+7
+3000
+Bern
+CH
+QRR
+210000000003139471430009017
+Rechnung 2026-0417
+EPD

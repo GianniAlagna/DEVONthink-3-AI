@@ -1,0 +1,17 @@
+Muster Treuhand AG
+Musterstrasse 1, 8000 Zürich
+CHE-123.456.788 TVA
+
+Erika Beispiel
+Beispielweg 7, 3000 Berne
+
+Zurich, le 3 mars 2026
+
+Facture n° 2026-0042
+
+Tenue de la comptabilité 2025     CHF 231.25
+TVA 8,1 %                         CHF  18.73
+Total                             CHF 249.98
+
+Payable dans les 30 jours, au plus tard le 2 avril 2026.
+IBAN CH58 0079 1123 0008 8901 2

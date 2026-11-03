@@ -1,0 +1,3 @@
+# QR payloads must stay byte-exact (CRLF inside); never convert line endings
+fixtures/spike/*.payload.txt -text
+*.pdf binary

@@ -1,0 +1,17 @@
+Muster Treuhand AG
+Musterstrasse 1, 8000 Zurigo
+CHE-123.456.788 IVA
+
+Erika Beispiel
+Beispielweg 7, 3000 Berna
+
+Zurigo, 9 febbraio 2026
+
+Fattura n. 2026-0031
+
+Consulenza fiscale 2025           CHF 462.50
+IVA 8,1 %                         CHF  37.46
+Totale                            CHF 499.96
+
+Pagabile entro 30 giorni, entro l'11 marzo 2026.
+IBAN CH58 0079 1123 0008 8901 2

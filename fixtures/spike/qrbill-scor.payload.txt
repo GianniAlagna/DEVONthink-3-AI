@@ -1,0 +1,31 @@
+SPC
+0200
+1
+CH5800791123000889012
+S
+Muster Treuhand AG
+Musterstrasse
+1
+8000
+Zürich
+CH
+
+
+
+
+
+
+
+249.98
+CHF
+S
+Erika Beispiel
+Beispielweg
+7
+3000
+Bern
+CH
+SCOR
+RF18539007547034
+Facture 2026-0042
+EPD
