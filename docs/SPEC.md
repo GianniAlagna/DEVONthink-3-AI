@@ -1,6 +1,6 @@
 # Spec: DT3 Agent (working name)
 
-Status: **DRAFT — waiting for Gianni's approval (Phase 1 gate). No product code before approval.**
+Status: **APPROVED by Gianni 2026-11-03** (Phase 1 gate passed). Changes to this spec go through a PR before the code that depends on them.
 Sources: `docs/BRIEF.md` (incl. owner decisions), `docs/spike/phase0-report.md`, `docs/adr/0001…0010` (accepted).
 Legend: **verified** = measured on the floor machine in Phase 0 · `UNVERIFIED` = to be proven in the named task.
 

@@ -1,6 +1,6 @@
 # Todo — Phase 2 (walking skeleton) in detail, later phases as epics
 
-Status: **DRAFT — waiting for Gianni's approval.** Sizes: XS 1 file · S 1–2 · M 3–5 · L 5–8 (split).
+Status: **APPROVED by Gianni 2026-11-03.** Phase 2 in progress. Sizes: XS 1 file · S 1–2 · M 3–5 · L 5–8 (split).
 
 ## Phase 2 — Walking skeleton (CLI only)
 
@@ -8,7 +8,7 @@ Status: **DRAFT — waiting for Gianni's approval.** Sizes: XS 1 file · S 1–2
   - Acceptance: a documented way in which DT3 3.9.17 hands UUIDs to an external script **or** the decision to use pull + Menu script in v1 · evidence in `docs/spike/phase0-report.md` §4
   - Verify: floor run with rule-editor screenshots; `spike/run.sh s4 check` shows UUIDs
   - Depends on: — · Files: `dt3-scripts/*`, report · Size: S
-- [ ] **T2: Repo skeleton + CI**
+- [x] **T2: Repo skeleton + CI** — done 2026-11-03 (CI result: see PR)
   - Acceptance: `engine/` package, `pytest` + `ruff` pass in CI on `macos-15-intel` and `macos-15` · stdlib-only test for runtime imports
   - Verify: CI green · Depends on: — · Files: `engine/pyproject.toml`, `engine/tests/test_stdlib_only.py`, `.github/workflows/ci.yml` · Size: S
 - [ ] **T3: config + store + audit**
