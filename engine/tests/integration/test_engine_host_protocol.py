@@ -29,9 +29,13 @@ def test_engine_asks_info_then_reads_record_and_logs_no_content():
         assert answer(proc, {"ok": True, "result": {"version": "3.9.17", "databases": ["Inbox"]}})["verb"] == "info"
         req = answer(proc, {"ok": True, "result": {"uuid": UUID, "name": "SECRET-NAME-4711", "tags": []}})
         assert req == {"id": 2, "verb": "read", "args": {"uuid": UUID}}
+        lines = []
+        while not any("read ok" in x for x in lines):  # wait for the log line, then stop (no race)
+            lines.append(proc.stderr.readline())
     finally:
         proc.terminate()
-        _, err = proc.communicate(timeout=5)
+        _, rest = proc.communicate(timeout=5)
+    err = "".join(lines) + rest
     assert "dt3 version=3.9.17" in err and "read ok" in err
     assert "SECRET-NAME-4711" not in err
 
