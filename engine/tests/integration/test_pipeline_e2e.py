@@ -18,7 +18,7 @@ A = "FB2DEBBE-8F8B-4049-8F4E-CE5FD12F20D8"
 
 def test_spool_to_tag_to_undo(tmp_path):
     dt3 = FakeDT3({A: {"name": "SECRET-NAME", "tags": [], "contentHash": "h1", "text": "Rechnung Nr. 4711"}})
-    server = FakeLlamaServer(reply=json.dumps({"tags": ["Invoice"]}))
+    server = FakeLlamaServer(reply=json.dumps({"tags": ["invoice"]}))
     try:
         con = store.open_db(tmp_path / "engine.db", queuemod.MIGRATIONS + MIGRATIONS)
         q = queuemod.Queue(con, lambda: datetime(2026, 11, 4, tzinfo=UTC))

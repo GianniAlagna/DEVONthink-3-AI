@@ -29,7 +29,7 @@ Status: **APPROVED by Gianni 2026-11-03.** Phase 2 in progress. Sizes: XS 1 file
 - [x] **T8: pipeline skeleton + dry-run** — done 2026-11-04 (fakes end to end; floor in the T9 demo)
   - Acceptance: UUID → read → fake AI tag → (dry-run: planned only | live: write with undo) · idempotency by contentHash
   - Verify: integration test end-to-end with fakes · Depends on: T6, T7 · Size: M
-- [ ] **T9: CLI + rpc minimal + LaunchAgent install (Phase 2 gate)**
+- [ ] **T9: CLI + rpc minimal + LaunchAgent install (Phase 2 gate)** — code done 2026-11-04; floor demo pending (`docs/floor/phase2-gate.md`)
   - Acceptance: `dt3agent status|process|undo|pause|resume` · socket `0600` · install/uninstall commands
   - Verify: floor demo: new document → tag written → undo · Depends on: T8 · Size: M
 

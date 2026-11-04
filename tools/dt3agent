@@ -1,0 +1,8 @@
+#!/bin/bash
+# dt3agent command line for floor tests: runs engine/dt3agent/cli.py with the pinned Python (ADR-0001).
+# Usage: tools/dt3agent status | process <UUID or item link> | undo | pause | resume | live on|off
+set -euo pipefail
+ENGINE="$(cd "$(dirname "$0")/.." && pwd)/engine"
+PY="${DT3A_PYTHON:-$HOME/dt3agent-dev/python/bin/python3}"
+[ -x "$PY" ] || { echo "Python not found at $PY - run: bash tools/dev-agent.sh python"; exit 1; }
+exec "$PY" -I -c 'import runpy, sys; sys.path.insert(0, sys.argv[1]); del sys.argv[1]; sys.argv[0] = "dt3agent"; runpy.run_module("dt3agent.cli", run_name="__main__")' "$ENGINE" "$@"

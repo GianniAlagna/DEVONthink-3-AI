@@ -48,3 +48,13 @@ def test_import_that_drops_enabled_scopes_needs_confirmation(tmp_path):
         config.import_config(path, smaller)
     config.import_config(path, smaller, confirm_shrink=True)
     assert config.load(path)["scopes"] == []
+
+
+def test_tag_vocabulary_is_checked():
+    import pytest as _pytest
+
+    from dt3agent import config as _config
+    assert "Rechnung" in _config.DEFAULTS["tags"]["vocabulary"]
+    for bad in (["ok", ""], ["x" * 65], "Rechnung", [1], ["a\nb"]):
+        with _pytest.raises(_config.ConfigError):
+            _config.validate({"tags": {"vocabulary": bad}})

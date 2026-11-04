@@ -13,6 +13,9 @@ DEFAULTS = {
     "ai": {"backend": None, "url": None, "model": None, "context": 8192},
     "naming": {"template": "{datetime}_{sender}_{receiver}_{subject}", "unknown": "unknown"},
     "thresholds": {"apply": 0.85},
+    # Starter list (de-CH); the AI may only pick from it. Edited by the user (onboarding, Phase 5).
+    "tags": {"vocabulary": ["Rechnung", "Mahnung", "Quittung", "Vertrag", "Brief", "Kontoauszug", "Steuern",
+                            "Versicherung", "Lohn", "Betreibung", "Gericht", "Behörde", "Gesundheit", "Wohnung"]},
     "update_check": False,
     "logs": {"content": False},
 }
@@ -20,7 +23,7 @@ DEFAULTS = {
 # Expected type per key; nested dicts are checked one level deep.
 TYPES = {
     "schema_version": int, "dry_run": bool, "scopes": list, "ai": dict, "naming": dict,
-    "thresholds": dict, "update_check": bool, "logs": dict,
+    "thresholds": dict, "update_check": bool, "logs": dict, "tags": dict,
 }
 
 
@@ -45,6 +48,10 @@ def validate(cfg: dict) -> dict:
             extra = set(cfg[key]) - set(DEFAULTS[key])
             if extra:
                 raise ConfigError(f"{key}: unknown keys {sorted(extra)}")
+    vocab = cfg.get("tags", {}).get("vocabulary", [])
+    if not (isinstance(vocab, list) and len(vocab) <= 500
+            and all(isinstance(t, str) and 0 < len(t) <= 64 and t.isprintable() for t in vocab)):
+        raise ConfigError("tags.vocabulary: a list of up to 500 short tag names")
     for scope in cfg.get("scopes", []):
         if not (isinstance(scope, dict) and set(scope) == {"database", "group"}
                 and all(isinstance(v, str) and v for v in scope.values())):

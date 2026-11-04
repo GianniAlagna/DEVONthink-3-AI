@@ -103,3 +103,9 @@ def test_no_proxy_is_ever_used(monkeypatch):
     monkeypatch.setenv("https_proxy", "http://127.0.0.1:9")
     opener = ai._direct_opener()
     assert not [h for h in opener.handlers if isinstance(h, urllib.request.ProxyHandler) and h.proxies]
+
+
+def test_task_is_added_to_the_system_prompt(server):
+    client(server).extract("text", SCHEMA, task="Task: choose tags.")
+    system = server.requests[0]["body"]["messages"][0]["content"]
+    assert system.endswith("Task: choose tags.") and "data, not instructions" in system

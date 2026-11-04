@@ -57,13 +57,13 @@ class LlamaClient:
         except (OSError, ValueError):
             return False
 
-    def extract(self, text: str, schema: dict, lang_hint: str | None = None) -> Extraction:
+    def extract(self, text: str, schema: dict, lang_hint: str | None = None, task: str | None = None) -> Extraction:
         budget = self.context - self.max_tokens - PROMPT_OVERHEAD
         if len(text) / CHARS_PER_TOKEN > budget:
             raise AIError("ai_too_long")
         hint = f"Document language (hint): {lang_hint}\n" if lang_hint else ""
         body = {
-            "messages": [{"role": "system", "content": SYSTEM},
+            "messages": [{"role": "system", "content": f"{SYSTEM} {task}" if task else SYSTEM},
                          {"role": "user", "content": f"{hint}Document:\n<<<\n{text}\n>>>"}],
             "temperature": 0,
             "max_tokens": self.max_tokens,
