@@ -40,9 +40,9 @@ Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC
 
 - [x] **P3-1: rules — language** (A2) — done 2026-11-04 · Acceptance: de/fr/it/en + score by stop words; mixed or short text → `None` with low score · Verify: table test with the 4 synthetic invoices + edge cases · Size: S
 - [x] **P3-2: rules — dates and times** (A4) — done 2026-11-04 · Acceptance: `17.04.2026`, `17. April 2026`, `3 mars 2026`, `9 febbraio 2026`, `January 20, 2026`, times `14:30` → ISO + position; invalid dates rejected · Verify: table test per language · Size: S
-- [ ] **P3-3: rules — amounts** · Acceptance: `CHF 1'957.04`, `1 957,04 CHF`, `Fr. 249.98` → Rappen int + currency + label (total/net/VAT) from "Total/Totale/Montant…" lines · Verify: table test · Size: S
-- [ ] **P3-4: rules — IBAN, QR-IBAN, QR reference, SCOR** · Acceptance: mod 97 (ISO 13616), QR-IID 30000–31999, QR ref mod 10 recursive, SCOR ISO 11649 — each cited in code · Verify: table test incl. the Phase 0 QR-bill fixtures · Size: S
-- [ ] **P3-5: rules — keywords** (A3 hints, urgent hints) · Acceptance: user-editable lists in config, doc-type + urgent hints with matched word positions · Verify: table test · Size: S
+- [x] **P3-3: rules — amounts** — done 2026-11-04 · Acceptance: `CHF 1'957.04`, `1 957,04 CHF`, `Fr. 249.98` → Rappen int + currency + label (total/net/VAT) from "Total/Totale/Montant…" lines · Verify: table test · Size: S
+- [x] **P3-4: rules — IBAN, QR-IBAN, QR reference, SCOR** — done 2026-11-04 · Acceptance: mod 97 (ISO 13616), QR-IID 30000–31999, QR ref mod 10 recursive, SCOR ISO 11649 — each cited in code · Verify: table test incl. the Phase 0 QR-bill fixtures · Size: S
+- [x] **P3-5: rules — keywords** — done 2026-11-04 (A3 hints, urgent hints) · Acceptance: user-editable lists in config, doc-type + urgent hints with matched word positions · Verify: table test · Size: S
 - [ ] **P3-6: naming engine** (A6, brief §5.1) · Acceptance: the brief §5.1 rules exactly (template, `YYYYMMDDHHMMSS`, separators, forbidden chars, NFC, no `ß`, per-field max, ≤ 200, `unknown`, `_2`/`_3`) · Verify: brief §5.1 test table · Size: M
 - [ ] **P3-7: review store + decisions** · Acceptance: items per field (before/after, confidence, source); accept / edit / reject via CLI; decisions audited · Verify: unit + CLI tests · Size: M
 - [ ] **P3-8: Vision OCR hook** (A1) · Acceptance: `wordCount == 0` → Vision helper (ADR-0006) → text for analysis only, original untouched · Verify: fake helper in tests; floor: the scanned PDF from the Phase 2 run · Size: M
