@@ -35,12 +35,26 @@ DOMAIN="gui/$(id -u)"
 
 stop() { launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true; rm -f "$PLIST"; }
 stop_llama() { launchctl bootout "$DOMAIN/$LLAMA_LABEL" 2>/dev/null || true; rm -f "$LLAMA_PLIST"; }
-# fetch URL FILE SHA256: download once, keep only if the checksum matches
+sha_ok() { [ -f "$1" ] && [ "$(shasum -a 256 "$1" | awk '{print $1}')" = "$2" ]; }
+# fetch URL FILE SHA256: download once, resume after a dropped connection, keep only if the checksum matches
 fetch() {
-    [ -f "$2" ] && [ "$(shasum -a 256 "$2" | awk '{print $1}')" = "$3" ] && return 0
+    sha_ok "$2" "$3" && return 0
     mkdir -p "$(dirname "$2")"
-    curl -fL --progress-bar -o "$2.part" "$1"
-    [ "$(shasum -a 256 "$2.part" | awk '{print $1}')" = "$3" ] || { echo "SHA-256 mismatch for $(basename "$2") - stopped"; rm -f "$2.part"; exit 1; }
+    local ok=0 i
+    if sha_ok "$2.part" "$3"; then ok=1; fi
+    for i in 1 2 3 4 5 6 7 8; do
+        [ "$ok" = 1 ] && break
+        echo "Downloading $(basename "$2") (attempt $i/8)"
+        # -C -: continue where the last attempt stopped · abort a stalled transfer after 60 s below 1 KB/s
+        if curl -fL -C - --connect-timeout 30 --speed-limit 1024 --speed-time 60 --progress-bar -o "$2.part" "$1"; then
+            ok=1
+        else
+            echo "Connection dropped - continuing in 10 s"
+            sleep 10
+        fi
+    done
+    [ "$ok" = 1 ] || { echo "Download not finished. Check the internet connection, then run the same command again: it continues where it stopped."; exit 1; }
+    sha_ok "$2.part" "$3" || { echo "SHA-256 mismatch for $(basename "$2") - file removed, run the command again"; rm -f "$2.part"; exit 1; }
     mv "$2.part" "$2"
 }
 
