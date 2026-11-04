@@ -29,6 +29,10 @@ struct HostError: Error { let code: String }
 
 let jxaSource = """
 function dt3() { return Application('\(dt3BundleID)'); }
+function selected() {
+  // UNVERIFIED on the floor: DT3 3.9 application property "selected records"
+  return JSON.stringify({ uuids: dt3().selectedRecords().slice(0, 100).map(function (r) { return r.uuid(); }) });
+}
 function rec(uuid) { const r = dt3().getRecordWithUuid(uuid); if (!r) throw new Error('not_found'); return r; }
 function info() {
   const a = dt3();
@@ -49,7 +53,7 @@ function setTags(uuid, tagsJson) {
   return JSON.stringify({ uuid: r.uuid(), tags: r.tags() });
 }
 function run(argv) {
-  const verbs = { info: info, read: read, readText: readText, setTags: setTags };
+  const verbs = { info: info, selected: selected, read: read, readText: readText, setTags: setTags };
   const f = verbs[argv[0]];
   if (!f) throw new Error('unknown_verb');
   return f.apply(null, argv.slice(1));
@@ -142,6 +146,9 @@ func handle(_ request: [String: Any], bridge: DT3Bridge) throws -> Any {
     case "info":
         guard args.isEmpty else { throw HostError(code: "bad_args") }
         text = try bridge.call("info", [])
+    case "selected":
+        guard args.isEmpty else { throw HostError(code: "bad_args") }
+        text = try bridge.call("selected", [])
     case "read":
         guard args.count == 1 else { throw HostError(code: "bad_args") }
         text = try bridge.call("read", [try uuid()])

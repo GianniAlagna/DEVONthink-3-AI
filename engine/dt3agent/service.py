@@ -2,6 +2,7 @@
 
 Single-threaded on purpose: the DT3 bridge is one pipe, so rpc requests and pipeline work take turns.
 """
+import json
 import os
 import sqlite3
 from datetime import UTC, datetime
@@ -60,8 +61,8 @@ class Service:
 
     # rpc -----------------------------------------------------------------
     def handle(self, method: str, params: dict):
-        expected = {"status": set(), "process": {"uuid"}, "undo": set(), "pause": set(), "resume": set(),
-                    "live": {"on"}}
+        expected = {"status": set(), "process": {"uuid"}, "process_selected": set(), "review": set(),
+                    "undo": set(), "pause": set(), "resume": set(), "live": {"on"}}
         if method not in expected:
             raise RPCError("unknown_method")  # there is no delete method
         if set(params) != expected[method]:
@@ -82,6 +83,20 @@ class Service:
                 raise RPCError("bad_uuid")
             self.queue.enqueue(uuid, "cli")
             return {"queued": True}
+        if method == "process_selected":
+            uuids = self.adapter.selected()
+            if not uuids:
+                raise RPCError("nothing_selected")
+            for uuid in uuids:
+                self.queue.enqueue(uuid, "cli")
+            return {"queued": len(uuids)}
+        if method == "review":
+            # codes and planned tags only: raw model output may echo document text and stays in the database
+            rows = self.con.execute("SELECT id, uuid, kind, code, payload_json, created_at FROM review_items "
+                                    "WHERE decided_at IS NULL ORDER BY id DESC LIMIT 20").fetchall()
+            return [{"id": i, "uuid": u, "kind": k, "code": c, "created_at": t,
+                     "tags_add": json.loads(p).get("tags_add", []) if k == "planned" else []}
+                    for i, u, k, c, p, t in rows]
         if method == "undo":
             try:
                 return self.adapter.undo_last_batch()

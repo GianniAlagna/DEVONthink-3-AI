@@ -11,12 +11,15 @@ class FakeDT3:
         self.version = version
         self.records = {u: dict(r, uuid=u) for u, r in (records or {}).items()}
         self.calls = []
+        self.selected = []  # UUIDs selected in the fake DT3 window
 
     def call(self, verb, **args):
         validate(verb, args)  # same fence as the real bridge client
         self.calls.append((verb, args))
         if verb == "info":
             return {"version": self.version, "databases": ["DT3Agent-Test"]}
+        if verb == "selected":
+            return {"uuids": list(self.selected)}
         rec = self.records.get(args["uuid"])
         if rec is None:
             raise BridgeError("not_found")

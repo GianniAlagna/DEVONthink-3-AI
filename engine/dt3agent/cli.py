@@ -1,6 +1,7 @@
 """dt3agent command line (Phase 2 T9). Talks to the running engine over its private socket.
 
-  dt3agent status | process <UUID or item link> | undo | pause | resume | live on|off
+  dt3agent status | process [<UUID or item link>] | review | undo | pause | resume | live on|off
+  process without a record takes the records selected in DEVONthink 3.
 """
 import argparse
 import json
@@ -16,8 +17,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--data", type=Path, default=DEFAULT_DATA, help=argparse.SUPPRESS)
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("status", help="engine, DT3, AI and queue state")
-    p = sub.add_parser("process", help="queue one record (UUID or x-devonthink-item:// link)")
-    p.add_argument("record")
+    p = sub.add_parser("process", help="queue a record (UUID or item link); without one: the DT3 selection")
+    p.add_argument("record", nargs="?")
+    sub.add_parser("review", help="open review items (reason codes, planned tags)")
     sub.add_parser("undo", help="undo the last batch of changes")
     sub.add_parser("pause", help="stop processing (queue keeps filling)")
     sub.add_parser("resume", help="continue processing")
@@ -25,7 +27,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("state", choices=["on", "off"])
     a = ap.parse_args(argv)
 
-    if a.cmd == "process":
+    if a.cmd == "process" and not a.record:
+        method, params = "process_selected", {}
+    elif a.cmd == "process":
         method, params = "process", {"uuid": a.record.removeprefix("x-devonthink-item://").split("?", 1)[0]}
     elif a.cmd == "live":
         method, params = "live", {"on": a.state == "on"}
