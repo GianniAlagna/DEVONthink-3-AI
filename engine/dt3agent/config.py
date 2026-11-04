@@ -16,6 +16,21 @@ DEFAULTS = {
     # Starter list (de-CH); the AI may only pick from it. Edited by the user (onboarding, Phase 5).
     "tags": {"vocabulary": ["Rechnung", "Mahnung", "Quittung", "Vertrag", "Brief", "Kontoauszug", "Steuern",
                             "Versicherung", "Lohn", "Betreibung", "Gericht", "Behörde", "Gesundheit", "Wohnung"]},
+    # Keyword hints (SPEC §4.10), de/fr/it/en; the user edits them (Phase 5 settings)
+    "keywords": {
+        "doc_types": {
+            "invoice": ["Rechnung", "Facture", "Fattura", "Invoice"],
+            "reminder": ["Mahnung", "Zahlungserinnerung", "Rappel", "Sollecito", "Payment reminder"],
+            "contract": ["Vertrag", "Contrat", "Contratto", "Contract"],
+            "offer": ["Offerte", "Angebot", "Offre", "Offerta", "Quotation"],
+            "receipt": ["Quittung", "Beleg", "Reçu", "Quittance", "Ricevuta", "Receipt"],
+            "statement": ["Kontoauszug", "Relevé de compte", "Estratto conto", "Bank statement"],
+            "official": ["Verfügung", "Entscheid", "Décision", "Decisione", "Steuerveranlagung"],
+        },
+        "urgent": ["Zahlungsbefehl", "Betreibung", "Betreibungsamt", "Betreibungsamtes", "Pfändung", "Konkurs",
+                   "Vorladung", "Gericht", "commandement de payer", "poursuite", "office des poursuites",
+                   "tribunal", "precetto esecutivo", "esecuzione", "tribunale"],
+    },
     "update_check": False,
     "logs": {"content": False},
 }
@@ -23,7 +38,7 @@ DEFAULTS = {
 # Expected type per key; nested dicts are checked one level deep.
 TYPES = {
     "schema_version": int, "dry_run": bool, "scopes": list, "ai": dict, "naming": dict,
-    "thresholds": dict, "update_check": bool, "logs": dict, "tags": dict,
+    "thresholds": dict, "update_check": bool, "logs": dict, "tags": dict, "keywords": dict,
 }
 
 
@@ -52,6 +67,12 @@ def validate(cfg: dict) -> dict:
     if not (isinstance(vocab, list) and len(vocab) <= 500
             and all(isinstance(t, str) and 0 < len(t) <= 64 and t.isprintable() for t in vocab)):
         raise ConfigError("tags.vocabulary: a list of up to 500 short tag names")
+    kw = cfg.get("keywords", {})
+    words_ok = lambda ws: isinstance(ws, list) and all(isinstance(w, str) and w.strip() for w in ws)  # noqa: E731
+    if not (isinstance(kw.get("doc_types", {}), dict)
+            and all(isinstance(t, str) and t and words_ok(ws) for t, ws in kw.get("doc_types", {}).items())
+            and words_ok(kw.get("urgent", []))):
+        raise ConfigError("keywords: doc_types maps names to word lists; urgent is a word list")
     for scope in cfg.get("scopes", []):
         if not (isinstance(scope, dict) and set(scope) == {"database", "group"}
                 and all(isinstance(v, str) and v for v in scope.values())):
