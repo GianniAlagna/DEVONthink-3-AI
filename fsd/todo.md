@@ -38,7 +38,7 @@ Status: **APPROVED by Gianni 2026-11-03.** Phase 2 complete on the floor 2026-11
 Gate: Phase 2 **approved by Gianni 2026-11-04** ([floor report](../docs/floor/phase2-report.md)). Phase 3 sliced 2026-11-04.
 Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC §4.10).
 
-- [ ] **P3-1: rules — language** (A2) · Acceptance: de/fr/it/en + score by stop words; mixed or short text → `None` with low score · Verify: table test with the 4 synthetic invoices + edge cases · Size: S
+- [x] **P3-1: rules — language** (A2) — done 2026-11-04 · Acceptance: de/fr/it/en + score by stop words; mixed or short text → `None` with low score · Verify: table test with the 4 synthetic invoices + edge cases · Size: S
 - [ ] **P3-2: rules — dates and times** (A4) · Acceptance: `17.04.2026`, `17. April 2026`, `3 mars 2026`, `9 febbraio 2026`, `January 20, 2026`, times `14:30` → ISO + position; invalid dates rejected · Verify: table test per language · Size: S
 - [ ] **P3-3: rules — amounts** · Acceptance: `CHF 1'957.04`, `1 957,04 CHF`, `Fr. 249.98` → Rappen int + currency + label (total/net/VAT) from "Total/Totale/Montant…" lines · Verify: table test · Size: S
 - [ ] **P3-4: rules — IBAN, QR-IBAN, QR reference, SCOR** · Acceptance: mod 97 (ISO 13616), QR-IID 30000–31999, QR ref mod 10 recursive, SCOR ISO 11649 — each cited in code · Verify: table test incl. the Phase 0 QR-bill fixtures · Size: S
