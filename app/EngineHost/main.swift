@@ -47,13 +47,16 @@ function readText(uuid) {
   const t = rec(uuid).plainText() || '';
   return JSON.stringify({ uuid: uuid, text: t.slice(0, 200000), length: t.length });
 }
+function readPath(uuid) {
+  return JSON.stringify({ uuid: uuid, path: rec(uuid).path() || '' });
+}
 function setTags(uuid, tagsJson) {
   const r = rec(uuid);
   r.tags = JSON.parse(tagsJson);
   return JSON.stringify({ uuid: r.uuid(), tags: r.tags() });
 }
 function run(argv) {
-  const verbs = { info: info, selected: selected, read: read, readText: readText, setTags: setTags };
+  const verbs = { info: info, selected: selected, read: read, readText: readText, readPath: readPath, setTags: setTags };
   const f = verbs[argv[0]];
   if (!f) throw new Error('unknown_verb');
   return f.apply(null, argv.slice(1));
@@ -155,6 +158,9 @@ func handle(_ request: [String: Any], bridge: DT3Bridge) throws -> Any {
     case "read_text":
         guard args.count == 1 else { throw HostError(code: "bad_args") }
         text = try bridge.call("readText", [try uuid()])
+    case "read_path":
+        guard args.count == 1 else { throw HostError(code: "bad_args") }
+        text = try bridge.call("readPath", [try uuid()])
     case "set_tags":
         guard args.count == 2, let tags = args["tags"] as? [String], tags.count <= 100,
               tags.allSatisfy({ !$0.isEmpty && $0.count <= 255 }) else { throw HostError(code: "bad_args") }

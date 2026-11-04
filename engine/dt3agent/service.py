@@ -17,6 +17,7 @@ from dt3agent.intake import ingest_spool
 from dt3agent.rpc import RPCError
 from dt3agent.undo import MIGRATIONS as UNDO_MIGRATIONS
 from dt3agent.undo import UndoJournal
+from dt3agent.vision import VisionClient
 
 STATE_MIGRATIONS = ["CREATE TABLE state (key TEXT PRIMARY KEY, value TEXT NOT NULL)"]
 # Order is part of the schema: append only.
@@ -39,8 +40,10 @@ class Service:
         self.adapter = DT3Adapter(bridge, UndoJournal(self.undo_con), AuditLog(self.data / "audit"))
         ai_cfg = self.cfg["ai"]
         self.ai = LlamaClient(ai_cfg["url"], context=ai_cfg["context"]) if ai_cfg.get("url") else None
+        v = self.cfg["vision"]
+        self.vision = VisionClient(v["helper"], v["languages"], v["max_pages"]) if v.get("helper") else None
         self.pipeline = pipeline.Pipeline(self.adapter, self.ai, self.con, dry_run=self.cfg["dry_run"],
-                                          vocabulary=self.cfg["tags"]["vocabulary"])
+                                          vocabulary=self.cfg["tags"]["vocabulary"], vision=self.vision)
 
     # state ---------------------------------------------------------------
     def _paused(self) -> bool:

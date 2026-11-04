@@ -31,6 +31,8 @@ DEFAULTS = {
                    "Vorladung", "Gericht", "commandement de payer", "poursuite", "office des poursuites",
                    "tribunal", "precetto esecutivo", "esecuzione", "tribunale"],
     },
+    # Vision OCR helper (ADR-0006); helper path is set by the installer
+    "vision": {"helper": None, "languages": ["de-DE", "fr-FR", "it-IT", "en-US"], "max_pages": 5},
     "update_check": False,
     "logs": {"content": False},
 }
@@ -38,7 +40,7 @@ DEFAULTS = {
 # Expected type per key; nested dicts are checked one level deep.
 TYPES = {
     "schema_version": int, "dry_run": bool, "scopes": list, "ai": dict, "naming": dict,
-    "thresholds": dict, "update_check": bool, "logs": dict, "tags": dict, "keywords": dict,
+    "thresholds": dict, "update_check": bool, "logs": dict, "tags": dict, "keywords": dict, "vision": dict,
 }
 
 
