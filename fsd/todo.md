@@ -26,7 +26,7 @@ Status: **APPROVED by Gianni 2026-11-03.** Phase 2 in progress. Sizes: XS 1 file
 - [x] **T7: ai-adapter (llama.cpp) + fake AI server** — done 2026-11-04; floor real call moves into the T9 gate demo
   - Acceptance: schema request in the verified form · invalid JSON → no write, review item · explicit context size
   - Verify: integration test against fake server; floor: one real call · Depends on: T3 · Size: S
-- [ ] **T8: pipeline skeleton + dry-run**
+- [x] **T8: pipeline skeleton + dry-run** — done 2026-11-04 (fakes end to end; floor in the T9 demo)
   - Acceptance: UUID → read → fake AI tag → (dry-run: planned only | live: write with undo) · idempotency by contentHash
   - Verify: integration test end-to-end with fakes · Depends on: T6, T7 · Size: M
 - [ ] **T9: CLI + rpc minimal + LaunchAgent install (Phase 2 gate)**

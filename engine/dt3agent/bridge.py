@@ -11,7 +11,7 @@ from dt3agent.audit import UUID_RE
 MAX_TAGS = 100
 MAX_TAG_LEN = 255
 # verb -> required argument names. There is no delete verb (brief §2.7).
-VERBS = {"info": set(), "read": {"uuid"}, "set_tags": {"uuid", "tags"}}
+VERBS = {"info": set(), "read": {"uuid"}, "read_text": {"uuid"}, "set_tags": {"uuid", "tags"}}
 
 
 class BridgeError(RuntimeError):
