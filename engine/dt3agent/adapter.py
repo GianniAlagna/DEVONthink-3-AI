@@ -25,6 +25,11 @@ class DT3Adapter:
     def read(self, uuid: str) -> dict:
         return self.bridge.call("read", uuid=uuid)
 
+    def read_text(self, uuid: str) -> tuple[str, bool]:
+        """Plain text of a record and whether it is complete (the host caps very long text; never cut silently)."""
+        r = self.bridge.call("read_text", uuid=uuid)
+        return r["text"], len(r["text"]) >= r["length"]
+
     def set_tags(self, uuid: str, tags: list[str], *, batch_id: str, actor: str) -> None:
         self.check_dt3()
         old = self.read(uuid)["tags"]

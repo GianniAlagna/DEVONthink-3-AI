@@ -1,6 +1,8 @@
 """Fake DEVONthink 3 behind the bridge protocol: deterministic, in memory (SPEC §8 integration tests)."""
 from dt3agent.bridge import BridgeError, validate
 
+MAX_TEXT = 200_000  # same cap as app/EngineHost/main.swift readText
+
 
 class FakeDT3:
     """Answers the same verbs as the Swift host. Records are plain dicts keyed by UUID."""
@@ -19,7 +21,10 @@ class FakeDT3:
         if rec is None:
             raise BridgeError("not_found")
         if verb == "read":
-            return dict(rec)
+            return {k: v for k, v in rec.items() if k != "text"}
+        if verb == "read_text":  # same shape as the host: text capped at MAX_TEXT, full length reported
+            text = rec.get("text", "")
+            return {"uuid": rec["uuid"], "text": text[:MAX_TEXT], "length": len(text)}
         if verb == "set_tags":
             if not self.version.startswith("3."):  # the host refuses writes to non-DT3 (main.swift requireDT3)
                 raise BridgeError("not_dt3")
