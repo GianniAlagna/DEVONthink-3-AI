@@ -7,7 +7,7 @@ Use the **test database** only.
 | # | Do | Expected |
 |---|---|---|
 | 1 | `cd ~/dt3agent-dev-kit && bash tools/dev-agent.sh python` | `Python 3.12.16 ready` (skip if done before) |
-| 2 | `bash tools/dev-agent.sh llama` | about 6 min build + 1.9 GB download, then `llama-server running on http://127.0.0.1:8080` |
+| 2 | `bash tools/dev-agent.sh llama` | about 6 min build + 1.9 GB download, then `llama-server running on http://127.0.0.1:8080`. If the download stops, run the same command again: it continues where it stopped |
 | 3 | Quit DT3 (Cmd+Q), then `bash tools/dev-agent.sh smartrule`, then start DT3 | `Installed: Smart Rules/DT3 Agent Enqueue.scpt` |
 | 4 | In DT3: **Tools › New Smart Rule** — Search in: test database · Kind: **is any document** · Perform: **On Import** · Action: **Apply Script › External › DT3 Agent Enqueue** · Name: `DT3 Agent` | rule saved |
 | 5 | `bash tools/dev-agent.sh install osakit` | `Started (osakit, service)`; click OK if macOS asks |

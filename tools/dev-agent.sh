@@ -35,12 +35,27 @@ DOMAIN="gui/$(id -u)"
 
 stop() { launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true; rm -f "$PLIST"; }
 stop_llama() { launchctl bootout "$DOMAIN/$LLAMA_LABEL" 2>/dev/null || true; rm -f "$LLAMA_PLIST"; }
-# fetch URL FILE SHA256: download once, keep only if the checksum matches
+sha_ok() { [ -f "$1" ] && [ "$(shasum -a 256 "$1" | awk '{print $1}')" = "$2" ]; }
+# fetch URL FILE SHA256: download once, resume after a dropped connection, keep only if the checksum matches
 fetch() {
-    [ -f "$2" ] && [ "$(shasum -a 256 "$2" | awk '{print $1}')" = "$3" ] && return 0
+    sha_ok "$2" "$3" && return 0
     mkdir -p "$(dirname "$2")"
-    curl -fL --progress-bar -o "$2.part" "$1"
-    [ "$(shasum -a 256 "$2.part" | awk '{print $1}')" = "$3" ] || { echo "SHA-256 mismatch for $(basename "$2") - stopped"; rm -f "$2.part"; exit 1; }
+    local ok=0 i
+    if sha_ok "$2.part" "$3"; then ok=1; fi
+    for i in 1 2 3 4 5 6 7 8; do
+        [ "$ok" = 1 ] && break
+        echo "Downloading $(basename "$2") (attempt $i/8)"
+        # -C -: continue where the last attempt stopped · abort a stalled transfer after 60 s below 1 KB/s
+        # caffeinate -i: the Mac must not fall asleep during the download (floor: sleep dropped the connection)
+        if caffeinate -i curl -fL -C - --connect-timeout 30 --speed-limit 1024 --speed-time 60 --progress-bar -o "$2.part" "$1"; then
+            ok=1
+        else
+            echo "Connection dropped - continuing in 10 s"
+            sleep 10
+        fi
+    done
+    [ "$ok" = 1 ] || { echo "Download not finished. Check the internet connection, then run the same command again: it continues where it stopped."; exit 1; }
+    sha_ok "$2.part" "$3" || { echo "SHA-256 mismatch for $(basename "$2") - file removed, run the command again"; rm -f "$2.part"; exit 1; }
     mv "$2.part" "$2"
 }
 
@@ -67,7 +82,7 @@ llama)
         "$CMAKE" -S "$LLAMA_DIR" -B "$LLAMA_DIR/build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 \
             -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=ON -DGGML_METAL=OFF -DGGML_ACCELERATE=OFF -DGGML_BLAS=OFF \
             -DGGML_OPENMP=OFF -DLLAMA_OPENSSL=OFF -DLLAMA_CURL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF >/dev/null
-        "$CMAKE" --build "$LLAMA_DIR/build" -j "$(sysctl -n hw.physicalcpu)" --target llama-server >/dev/null
+        caffeinate -i "$CMAKE" --build "$LLAMA_DIR/build" -j "$(sysctl -n hw.physicalcpu)" --target llama-server >/dev/null
     fi
     "$LLAMA_SERVER" --version 2>&1 | head -1
     fetch "$MODEL_URL" "$MODEL" "$MODEL_SHA256"
