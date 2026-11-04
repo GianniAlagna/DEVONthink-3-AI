@@ -26,3 +26,51 @@ class FakeDT3:
             rec["tags"] = list(args["tags"])
             return {"uuid": rec["uuid"], "tags": rec["tags"]}
         raise BridgeError("verb_not_allowed")
+
+
+class FakeLlamaServer:
+    """A local HTTP server that answers like llama-server (b12015): /health and /v1/chat/completions.
+
+    `reply` is the assistant message content to return (any string, also invalid JSON); `status` the HTTP code.
+    Every request body is kept in `requests` so tests can check the exact request form.
+    """
+
+    def __init__(self, reply="{}", status=200):
+        import http.server
+        import json
+        import threading
+
+        self.reply, self.status, self.requests = reply, status, []
+        fake = self
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *args):  # keep test output clean
+                pass
+
+            def _send(self, code, obj):
+                data = json.dumps(obj).encode()
+                self.send_response(code)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+
+            def do_GET(self):
+                self._send(200, {"status": "ok"}) if self.path == "/health" else self._send(404, {})
+
+            def do_POST(self):
+                body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+                fake.requests.append({"path": self.path, "body": body})
+                if fake.status != 200:
+                    return self._send(fake.status, {"error": {"message": "fake failure"}})
+                self._send(200, {"choices": [{"message": {"role": "assistant", "content": fake.reply}}],
+                                 "timings": {"prompt_n": 42, "predicted_n": 17, "prompt_ms": 10.0,
+                                             "predicted_ms": 20.0}})
+
+        self.httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.url = f"http://127.0.0.1:{self.httpd.server_address[1]}"
+        threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
+
+    def close(self):
+        self.httpd.shutdown()
+        self.httpd.server_close()

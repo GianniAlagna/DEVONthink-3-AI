@@ -117,6 +117,8 @@ rpc ── app ── installer
 - Interface: `extract(text, schema, lang_hint) → (obj, raw, timings)`; `embed(texts)`; `chat(messages, tools=read-only)`.
 - llama.cpp: `response_format.json_schema.schema` (ADR-0002), `chat_template_kwargs.enable_thinking=false`, `-c` set explicitly.
 - Long text: chunk by tokens with overlap; never truncate silently (record `truncated=false/true`).
+- Direct connection only: no `*_proxy` variables, no macOS system proxy (document text must not pass a third party).
+- Text that cannot fit the context is refused (`ai_too_long`), never cut; failures are short codes (`ai_invalid_json`, `ai_schema_mismatch`, `ai_http_<n>`, `ai_unreachable`) and lead to a review item, never a write.
 - Output is untrusted: JSON parse → schema → allowlists (tags vocabulary, group allowlist) → only then use.
 - Model manager: download only after consent; show size + license; verify SHA-256; keep model unloaded after 5 min idle.
 

@@ -20,10 +20,10 @@ Status: **APPROVED by Gianni 2026-11-03.** Phase 2 in progress. Sizes: XS 1 file
 - [x] **T5: engine-host (Swift) + bridge verbs `info`, `read`, `set_tags`** (risks P2, P3) — done 2026-11-03: floor shows "DT3 Agent Engine" in Automation, `read ok` via OSAKit (`set_tags` floor check in T6)
   - Acceptance: launchd starts the host, host starts Python, restarts it on crash · Automation entry shows "DT3 Agent Engine", not python3.12 · arguments reach DT3 without string building
   - Verify: floor run + screenshot of Automation list · Depends on: T2 · Files: `app/EngineHost/*`, `tools/build-swift.sh` · Size: M
-- [ ] **T6: dt3-adapter + fake adapter + undo**
+- [x] **T6: dt3-adapter + fake adapter + undo** — merged 2026-11-04 (PR #7); floor tag + undo moves into the T9 gate demo
   - Acceptance: `set_tags` journals old tags first · `undo last` restores exactly · refuses when DT3 is not 3.x
   - Verify: unit tests with fake adapter; floor: tag + undo on the Spike DB · Depends on: T4, T5 · Size: M
-- [ ] **T7: ai-adapter (llama.cpp) + fake AI server**
+- [x] **T7: ai-adapter (llama.cpp) + fake AI server** — done 2026-11-04; floor real call moves into the T9 gate demo
   - Acceptance: schema request in the verified form · invalid JSON → no write, review item · explicit context size
   - Verify: integration test against fake server; floor: one real call · Depends on: T3 · Size: S
 - [ ] **T8: pipeline skeleton + dry-run**
