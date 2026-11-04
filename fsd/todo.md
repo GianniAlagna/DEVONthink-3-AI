@@ -33,12 +33,22 @@ Status: **APPROVED by Gianni 2026-11-03.** Phase 2 complete on the floor 2026-11
   - Acceptance: `dt3agent status|process|undo|pause|resume` · socket `0600` · install/uninstall commands
   - Verify: floor demo: new document → tag written → undo · Depends on: T8 · Size: M
 
-## Phase 3 — Block A (epics, sliced at phase start)
-- A-1 rules: language, dates/times, amounts, IBAN/QR-IBAN (table-driven tests)
-- A-2 naming engine (brief §5.1 test table)
-- A-3 review store + decisions
-- A-4 pipeline full A1–A9 (OCR hook to Vision stub, tags vocabulary, filing allowlist, summary)
-- A-5 duplicates + case folders (A10)
+## Phase 3 — Block A (inbox pipeline) in detail
+
+Gate: Phase 2 **approved by Gianni 2026-11-04** ([floor report](../docs/floor/phase2-report.md)). Phase 3 sliced 2026-11-04.
+Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC §4.10).
+
+- [ ] **P3-1: rules — language** (A2) · Acceptance: de/fr/it/en + score by stop words; mixed or short text → `None` with low score · Verify: table test with the 4 synthetic invoices + edge cases · Size: S
+- [ ] **P3-2: rules — dates and times** (A4) · Acceptance: `17.04.2026`, `17. April 2026`, `3 mars 2026`, `9 febbraio 2026`, `January 20, 2026`, times `14:30` → ISO + position; invalid dates rejected · Verify: table test per language · Size: S
+- [ ] **P3-3: rules — amounts** · Acceptance: `CHF 1'957.04`, `1 957,04 CHF`, `Fr. 249.98` → Rappen int + currency + label (total/net/VAT) from "Total/Totale/Montant…" lines · Verify: table test · Size: S
+- [ ] **P3-4: rules — IBAN, QR-IBAN, QR reference, SCOR** · Acceptance: mod 97 (ISO 13616), QR-IID 30000–31999, QR ref mod 10 recursive, SCOR ISO 11649 — each cited in code · Verify: table test incl. the Phase 0 QR-bill fixtures · Size: S
+- [ ] **P3-5: rules — keywords** (A3 hints, urgent hints) · Acceptance: user-editable lists in config, doc-type + urgent hints with matched word positions · Verify: table test · Size: S
+- [ ] **P3-6: naming engine** (A6, brief §5.1) · Acceptance: the brief §5.1 rules exactly (template, `YYYYMMDDHHMMSS`, separators, forbidden chars, NFC, no `ß`, per-field max, ≤ 200, `unknown`, `_2`/`_3`) · Verify: brief §5.1 test table · Size: M
+- [ ] **P3-7: review store + decisions** · Acceptance: items per field (before/after, confidence, source); accept / edit / reject via CLI; decisions audited · Verify: unit + CLI tests · Size: M
+- [ ] **P3-8: Vision OCR hook** (A1) · Acceptance: `wordCount == 0` → Vision helper (ADR-0006) → text for analysis only, original untouched · Verify: fake helper in tests; floor: the scanned PDF from the Phase 2 run · Size: M
+- [ ] **P3-9: pipeline full A1–A9** — split at start into (a) field merge rule > QR > AI with confidence and thresholds, (b) write verbs `set_name`, `set_comment`, `set_metadata`, `move` with undo, (c) filing allowlist + `_AI-Review`, (d) summary · Size: L (split)
+- [ ] **P3-10: duplicates + case folders** (A10, brief §5.2) · Acceptance: exact + near duplicates → review items only; actions only after the user's choice · Size: M
+- [ ] **P3-11: Phase 3 floor gate** · Acceptance: real inbox sample (test DB) → names, tags, filing, review; Smart Rule "On Import" verified (carried from Phase 2) · Size: S
 
 ## Phase 4 — Block B
 - B-1 vision helper · B-2 QR-bill parser (SIX IG cited) · B-3 UID check digit (official source) · B-4 retention table · B-5 deadlines (reminder path decision) · B-6 urgent letters
