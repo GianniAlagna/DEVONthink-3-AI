@@ -8,7 +8,7 @@ import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
-from dt3agent import __version__, config, pipeline, store
+from dt3agent import __version__, config, pipeline, review, store
 from dt3agent import queue as queuemod
 from dt3agent.adapter import DT3Adapter
 from dt3agent.ai import LlamaClient
@@ -20,7 +20,7 @@ from dt3agent.undo import UndoJournal
 
 STATE_MIGRATIONS = ["CREATE TABLE state (key TEXT PRIMARY KEY, value TEXT NOT NULL)"]
 # Order is part of the schema: append only.
-ENGINE_MIGRATIONS = queuemod.MIGRATIONS + pipeline.MIGRATIONS + STATE_MIGRATIONS
+ENGINE_MIGRATIONS = queuemod.MIGRATIONS + pipeline.MIGRATIONS + STATE_MIGRATIONS + review.MIGRATIONS
 DEFAULT_DATA = Path.home() / "Library/Application Support/DT3 Agent"
 
 
@@ -63,6 +63,7 @@ class Service:
     def handle(self, method: str, params: dict):
         expected = {"status": set(), "process": {"uuid"}, "process_selected": set(), "review": set(),
                     "undo": set(), "pause": set(), "resume": set(), "live": {"on"}}
+        expected["decide"] = {"id", "decision"} | ({"value"} if "value" in params else set())
         if method not in expected:
             raise RPCError("unknown_method")  # there is no delete method
         if set(params) != expected[method]:
@@ -97,6 +98,8 @@ class Service:
             return [{"id": i, "uuid": u, "kind": k, "code": c, "created_at": t,
                      "tags_add": json.loads(p).get("tags_add", []) if k == "planned" else []}
                     for i, u, k, c, p, t in rows]
+        if method == "decide":
+            return self._decide(params)
         if method == "undo":
             try:
                 return self.adapter.undo_last_batch()
@@ -111,6 +114,24 @@ class Service:
         config.save(self.config_path, self.cfg)
         self.pipeline.dry_run = self.cfg["dry_run"]
         return {"dry_run": self.pipeline.dry_run}
+
+    def _decide(self, params: dict) -> dict:
+        if not isinstance(params["id"], int):
+            raise RPCError("bad_params")
+        value = params.get("value")
+        if value is not None and pipeline.clean_tags(value if isinstance(value, list) else [], None) != value:
+            raise RPCError("bad_value")  # same rules as AI tags: no separators, printable, short
+        try:
+            result = review.decide(self.con, params["id"], params["decision"], value)
+        except review.ReviewError as e:
+            raise RPCError(str(e)) from None
+        if result["apply"] is None:
+            return {"applied": False}
+        uuid, add = result["uuid"], [t for t in result["apply"] if isinstance(t, str)]
+        current = list(self.adapter.read(uuid).get("tags") or [])
+        self.adapter.set_tags(uuid, current + [t for t in add if t not in current],
+                              batch_id=f"review-{params['id']}", actor="user")
+        return {"applied": True}
 
     def close(self) -> None:
         for con in (self.con, self.undo_con):
