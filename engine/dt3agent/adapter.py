@@ -1,5 +1,5 @@
 """DT3 adapter: typed actions over the bridge; every write is journaled for undo first (SPEC §4.5)."""
-from dt3agent.audit import AuditLog
+from dt3agent.audit import UUID_RE, AuditLog
 from dt3agent.undo import Entry, UndoJournal
 
 
@@ -21,6 +21,11 @@ class DT3Adapter:
         if not version.startswith("3."):
             raise NotDT3Error(f"DEVONthink {version or 'unknown'} is not supported; DT3 Agent works with DEVONthink 3")
         self._checked = True
+
+    def selected(self) -> list[str]:
+        """UUIDs of the records selected in DT3 (at most 100; anything malformed is dropped)."""
+        uuids = self.bridge.call("selected").get("uuids") or []
+        return [u for u in uuids[:100] if isinstance(u, str) and UUID_RE.fullmatch(u)]
 
     def read(self, uuid: str) -> dict:
         return self.bridge.call("read", uuid=uuid)

@@ -19,3 +19,10 @@ def test_cli_reports_engine_down(monkeypatch, capsys):
     monkeypatch.setattr(cli.rpc, "call", down)
     assert cli.main(["status"]) == 1
     assert "engine_not_running" in capsys.readouterr().err
+
+
+def test_process_without_record_uses_the_dt3_selection(monkeypatch):
+    calls = []
+    monkeypatch.setattr(cli.rpc, "call", lambda path, m, p: calls.append((m, p)) or {})
+    assert cli.main(["process"]) == 0 and cli.main(["review"]) == 0
+    assert calls == [("process_selected", {}), ("review", {})]

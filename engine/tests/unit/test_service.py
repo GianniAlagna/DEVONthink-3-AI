@@ -109,3 +109,29 @@ def test_default_vocabulary_is_sent_as_enum(tmp_path):
     finally:
         svc.close()
         server.close()
+
+
+def test_process_selected_queues_the_records_selected_in_dt3(env):
+    svc, dt3, _ = env
+    dt3.selected = [A]
+    assert svc.handle("process_selected", {}) == {"queued": 1}
+    assert svc.handle("status", {})["queue"] == {"queued": 1}
+
+
+def test_process_selected_with_nothing_selected(env):
+    svc, dt3, _ = env
+    dt3.selected = []
+    from dt3agent.rpc import RPCError
+    with pytest.raises(RPCError) as e:
+        svc.handle("process_selected", {})
+    assert str(e.value) == "nothing_selected"
+
+
+def test_review_lists_codes_never_raw_output(env):
+    svc, dt3, _ = env
+    dt3.records[A]["text"] = " "
+    svc.handle("process", {"uuid": A})
+    svc.tick()
+    items = svc.handle("review", {})
+    assert len(items) == 1 and items[0]["code"] == "no_text" and items[0]["uuid"] == A
+    assert set(items[0]) == {"id", "uuid", "kind", "code", "tags_add", "created_at"}
