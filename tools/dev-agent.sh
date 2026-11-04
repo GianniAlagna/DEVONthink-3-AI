@@ -46,7 +46,8 @@ fetch() {
         [ "$ok" = 1 ] && break
         echo "Downloading $(basename "$2") (attempt $i/8)"
         # -C -: continue where the last attempt stopped · abort a stalled transfer after 60 s below 1 KB/s
-        if curl -fL -C - --connect-timeout 30 --speed-limit 1024 --speed-time 60 --progress-bar -o "$2.part" "$1"; then
+        # caffeinate -i: the Mac must not fall asleep during the download (floor: sleep dropped the connection)
+        if caffeinate -i curl -fL -C - --connect-timeout 30 --speed-limit 1024 --speed-time 60 --progress-bar -o "$2.part" "$1"; then
             ok=1
         else
             echo "Connection dropped - continuing in 10 s"
@@ -81,7 +82,7 @@ llama)
         "$CMAKE" -S "$LLAMA_DIR" -B "$LLAMA_DIR/build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 \
             -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=ON -DGGML_METAL=OFF -DGGML_ACCELERATE=OFF -DGGML_BLAS=OFF \
             -DGGML_OPENMP=OFF -DLLAMA_OPENSSL=OFF -DLLAMA_CURL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF >/dev/null
-        "$CMAKE" --build "$LLAMA_DIR/build" -j "$(sysctl -n hw.physicalcpu)" --target llama-server >/dev/null
+        caffeinate -i "$CMAKE" --build "$LLAMA_DIR/build" -j "$(sysctl -n hw.physicalcpu)" --target llama-server >/dev/null
     fi
     "$LLAMA_SERVER" --version 2>&1 | head -1
     fetch "$MODEL_URL" "$MODEL" "$MODEL_SHA256"
