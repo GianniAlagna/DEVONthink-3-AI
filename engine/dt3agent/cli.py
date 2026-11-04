@@ -20,6 +20,10 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("process", help="queue a record (UUID or item link); without one: the DT3 selection")
     p.add_argument("record", nargs="?")
     sub.add_parser("review", help="open review items (reason codes, planned tags)")
+    p = sub.add_parser("decide", help="decide a review item: accept | reject | edit TAG [TAG …]")
+    p.add_argument("id", type=int)
+    p.add_argument("decision", choices=["accept", "reject", "edit"])
+    p.add_argument("value", nargs="*")
     sub.add_parser("undo", help="undo the last batch of changes")
     sub.add_parser("pause", help="stop processing (queue keeps filling)")
     sub.add_parser("resume", help="continue processing")
@@ -31,6 +35,10 @@ def main(argv: list[str] | None = None) -> int:
         method, params = "process_selected", {}
     elif a.cmd == "process":
         method, params = "process", {"uuid": a.record.removeprefix("x-devonthink-item://").split("?", 1)[0]}
+    elif a.cmd == "decide":
+        method, params = "decide", {"id": a.id, "decision": a.decision}
+        if a.decision == "edit":
+            params["value"] = a.value
     elif a.cmd == "live":
         method, params = "live", {"on": a.state == "on"}
     else:
