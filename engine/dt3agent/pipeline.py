@@ -27,15 +27,25 @@ MIGRATIONS = [
         created_at TEXT NOT NULL,
         decided_at TEXT)""",
 ]
+TAG_TASK = ("Task: choose up to 3 tags that describe what kind of document this is. "
+            "Use only tags from the allowed list; return an empty list if none fits.")
 TAG_SCHEMA = {
     "type": "object",
-    "properties": {"tags": {"type": "array", "items": {"type": "string", "maxLength": 64}, "maxItems": 5}},
+    "properties": {"tags": {"type": "array", "items": {"type": "string", "maxLength": 64}, "maxItems": 3}},
     "required": ["tags"],
     "additionalProperties": False,
 }
 # Bad output of the model: no write, a review item instead. Other AI errors (server down, HTTP) are retried.
 REVIEW_CODES = {"ai_invalid_json", "ai_schema_mismatch", "ai_too_long", "ai_bad_response"}
 QUEUE_STATE = {"planned": "review", "review": "review", "applied": "done", "skipped": "skipped"}
+
+
+def tag_schema(vocabulary) -> dict:
+    """With a vocabulary the schema carries an enum, so llama-server can only produce allowed tags."""
+    if not vocabulary:
+        return TAG_SCHEMA
+    item = {"type": "string", "enum": list(vocabulary)}
+    return {**TAG_SCHEMA, "properties": {"tags": {**TAG_SCHEMA["properties"]["tags"], "items": item}}}
 
 
 @dataclass
@@ -94,7 +104,7 @@ class Pipeline:
             self._review(uuid, "error", code, {}, batch_id, "review")
             return Outcome("review", code=code)
         try:
-            result = self.ai.extract(text, TAG_SCHEMA)
+            result = self.ai.extract(text, tag_schema(self.vocabulary), task=TAG_TASK)
         except AIError as e:
             if e.code not in REVIEW_CODES:
                 raise

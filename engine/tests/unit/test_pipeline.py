@@ -21,8 +21,9 @@ class FakeAI:
     def __init__(self, tags=None, error=None):
         self.tags, self.error, self.calls = tags or [], error, 0
 
-    def extract(self, text, schema, lang_hint=None):
+    def extract(self, text, schema, lang_hint=None, task=None):
         self.calls += 1
+        self.schema, self.task = schema, task
         if self.error:
             raise self.error
         obj = {"tags": self.tags}
@@ -142,3 +143,10 @@ def test_bridge_errors_are_retried_with_a_safe_code(env):
     q.enqueue("727717FF-9696-4520-8BD9-9F413AE2A7FB", "spool")  # unknown record
     assert make(env, FakeAI(["x"]), dry_run=False).run_once(q) == "not_found"
     assert q.counts() == {"failed": 1}
+
+
+def test_vocabulary_becomes_a_schema_enum_and_the_task_asks_for_tags(env):
+    ai = FakeAI(["invoice"])
+    make(env, ai, dry_run=True, vocabulary=["invoice", "contract"]).process(A, batch_id="b1")
+    assert ai.schema["properties"]["tags"]["items"]["enum"] == ["invoice", "contract"]
+    assert "tags" in ai.task and "allowed list" in ai.task

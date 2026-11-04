@@ -1,21 +1,21 @@
 """Engine entry point, started by the Swift engine host (`DT3 Agent Engine.app`).
 
-Phase 2 walking skeleton: proves the host <-> engine <-> DT3 path. The queue/pipeline loop is wired in T8.
-Only field names and counts are logged, never record content (brief §7).
+Without a test flag the engine runs the service: spool → queue → pipeline, and answers the `dt3agent` CLI on its
+private socket. Only codes, field names and counts are logged, never record content (brief §7).
 """
 import argparse
 import sys
 import time
 from pathlib import Path
 
-from dt3agent import __version__, store
+from dt3agent import __version__, rpc, store
 from dt3agent.adapter import DT3Adapter
 from dt3agent.audit import AuditLog
 from dt3agent.bridge import Bridge, BridgeError
+from dt3agent.service import DEFAULT_DATA, Service
 from dt3agent.undo import MIGRATIONS, UndoJournal
 
 TEST_TAG = "DT3Agent-Test"
-DEV_DATA = Path.home() / "Library/Application Support/DT3 Agent/dev"
 
 
 def log(message: str) -> None:
@@ -27,7 +27,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--read", metavar="UUID", help="read one record through the bridge (floor test)")
     ap.add_argument("--tag-undo", metavar="UUID", help="add a test tag, wait, undo it, verify (floor test)")
     ap.add_argument("--hold", type=float, default=20.0, help="seconds the test tag stays visible in DT3")
-    ap.add_argument("--data", type=Path, default=DEV_DATA, help="directory for undo.db and audit logs")
+    ap.add_argument("--data", type=Path, default=DEFAULT_DATA, help="data folder (config, databases, spool, socket)")
     ap.add_argument("--heartbeat", type=float, default=60.0)
     a = ap.parse_args(argv)
 
@@ -41,6 +41,8 @@ def main(argv: list[str] | None = None) -> int:
             log(f"read ok fields={sorted(record)}")
         if a.tag_undo:
             tag_undo(bridge, a.tag_undo, a.data, a.hold)
+        if not (a.read or a.tag_undo):
+            return serve(bridge, a.data)
     except BridgeError as e:
         log(f"bridge error={e}")
         return 1
@@ -50,6 +52,24 @@ def main(argv: list[str] | None = None) -> int:
     while True:  # idle until the host stops us; replaced by the queue loop in T8
         time.sleep(a.heartbeat)
         log("heartbeat")
+
+
+def serve(bridge, data: Path) -> int:
+    """The engine loop. Errors from DT3 or the host end the process; the host restarts it with back-off."""
+    svc = Service(data, bridge)
+    server = rpc.Server(data / "engine.sock")
+    log(f"service ready dry_run={svc.pipeline.dry_run} ai_configured={svc.ai is not None}")
+    try:
+        busy = False
+        while True:
+            server.poll(svc.handle, timeout=0 if busy else 1.0)
+            result = svc.tick()
+            busy = result is not None
+            if result:
+                log(f"job {result}")  # an outcome or a short error code, never content
+    finally:
+        server.close()
+        svc.close()
 
 
 def tag_undo(bridge, uuid: str, data: Path, hold: float) -> None:

@@ -167,8 +167,9 @@ Brief §5.1 exactly: default `{datetime}_{sender}_{receiver}_{subject}`; `YYYYMM
 - Deadline/urgent → review items + notification; never create reminders without confirmation.
 
 ### 4.17 `rpc`
-- Socket `~/Library/Application Support/DT3 Agent/engine.sock` (`0600`, dir `0700`). JSON-RPC 2.0, 64 KB max message, schema per method; unknown → `-32601`, invalid → `-32600`.
-- Methods (phase 2 minimal): `status`, `process(uuids)`, `undo.last`, `pause`, `resume`.
+- Socket `~/Library/Application Support/DT3 Agent/engine.sock` (`0600`, dir `0700`), path ≤ 103 bytes. One JSON line per message, 64 KB max: `{"method", "params"}` → `{"ok": true, "result"}` or `{"ok": false, "error": "<code>"}`. Codes are the same short codes as the queue (`unknown_method`, `bad_params`, `bad_request`, `engine_error`, …); never content. (Changed in T9 from JSON-RPC 2.0: both ends are ours, and string codes match queue and audit.)
+- Methods (phase 2 minimal): `status`, `process(uuid)`, `undo` (last batch), `pause`, `resume`, `live(on)` (switches dry-run, saved to config). There is no delete method.
+- Single-threaded engine loop: rpc requests and pipeline jobs take turns, because the DT3 bridge is one pipe.
 
 ### 4.18 `app`, 4.19 `installer`
 - AppKit `NSStatusItem` + `NSPopover`/windows hosting SwiftUI (macOS 11 API). Menu per brief §6.1, onboarding §6.2, settings §6.3, review §6.4.

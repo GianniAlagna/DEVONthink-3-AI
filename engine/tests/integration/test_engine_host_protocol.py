@@ -86,3 +86,22 @@ def test_tag_undo_floor_check_writes_test_tag_then_restores_exactly(tmp_path):
     assert host.verbs.count("set_tags") == 2
     assert "SECRET-NAME-4711" not in err
     assert (tmp_path / "undo.db").exists()
+
+
+def test_service_mode_answers_the_cli_over_its_socket(tmp_path_factory):
+    from dt3agent import rpc
+    data = tmp_path_factory.mktemp("d")
+    proc = start("--data", str(data))
+    threading.Thread(target=Host(proc, []).serve, daemon=True).start()
+    try:
+        line = ""
+        while "service ready" not in line:
+            line = proc.stderr.readline()
+            assert line, "engine exited"
+        status = rpc.call(data / "engine.sock", "status", {})
+        assert status["dt3_version"] == "3.9.17" and status["dry_run"] is True
+        assert rpc.call(data / "engine.sock", "process", {"uuid": UUID}) == {"queued": True}
+        assert rpc.call(data / "engine.sock", "status", {})["queue"] == {"queued": 1}  # no AI set: waits
+    finally:
+        proc.terminate()
+        proc.wait(timeout=5)
