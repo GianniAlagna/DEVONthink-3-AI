@@ -90,7 +90,7 @@ rpc ── app ── installer
 ### 4.4 `engine-host` (Swift)
 - Is the LaunchAgent `ProgramArguments[0]` (ADR-0005). Starts `python3 -I -m dt3agent.engine`, restarts it on crash (back-off), stops it on `SIGTERM`.
 - Bridge: the engine sends `{"verb": …, "args": {…}}` lines over a private pipe; the host runs **pre-written** DT3 scripts with those arguments passed as Apple-event parameters (OSAKit handler call), never by string building. **Verified (T5, 2026-11-03, floor):** OSAKit handler call with parameters works on macOS 11 (`read` of a real UUID → `read ok`); Automation entry shows "DT3 Agent Engine". OSAKit is the default mode; `/usr/bin/osascript` is a fallback (`info` verified).
-- Allowed verbs: `info`, `read`, `read_text` (plain text, capped at 200 000 characters with the full length reported; `UNVERIFIED` on the floor until the T9 demo), `set_name`, `set_tags`, `set_comment`, `set_metadata`, `move`, `replicate`, `duplicate`, `create_markdown`, `import`, `list_added_since`, `selected`. **No delete verb exists.**
+- Allowed verbs: `info`, `read`, `read_text` (plain text, capped at 200 000 characters with the full length reported; verified on the floor 2026-11-04), `set_name`, `set_tags`, `set_comment`, `set_metadata`, `move`, `replicate`, `duplicate`, `create_markdown`, `import`, `list_added_since`, `selected` (verified on the floor 2026-11-04). **No delete verb exists.**
 
 ### 4.5 `dt3-adapter` (Python)
 - Typed functions mirroring the verbs; every write goes through `undo.record()` first.

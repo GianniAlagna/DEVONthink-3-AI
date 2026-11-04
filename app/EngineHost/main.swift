@@ -30,7 +30,7 @@ struct HostError: Error { let code: String }
 let jxaSource = """
 function dt3() { return Application('\(dt3BundleID)'); }
 function selected() {
-  // UNVERIFIED on the floor: DT3 3.9 application property "selected records"
+  // DT3 3.9 application property "selected records" (verified on the floor, Phase 2 gate)
   return JSON.stringify({ uuids: dt3().selectedRecords().slice(0, 100).map(function (r) { return r.uuid(); }) });
 }
 function rec(uuid) { const r = dt3().getRecordWithUuid(uuid); if (!r) throw new Error('not_found'); return r; }

@@ -1,6 +1,6 @@
 # Todo — Phase 2 (walking skeleton) in detail, later phases as epics
 
-Status: **APPROVED by Gianni 2026-11-03.** Phase 2 in progress. Sizes: XS 1 file · S 1–2 · M 3–5 · L 5–8 (split).
+Status: **APPROVED by Gianni 2026-11-03.** Phase 2 complete on the floor 2026-11-04 — **awaiting gate approval** ([report](../docs/floor/phase2-report.md)). Sizes: XS 1 file · S 1–2 · M 3–5 · L 5–8 (split).
 
 ## Phase 2 — Walking skeleton (CLI only)
 
@@ -20,16 +20,16 @@ Status: **APPROVED by Gianni 2026-11-03.** Phase 2 in progress. Sizes: XS 1 file
 - [x] **T5: engine-host (Swift) + bridge verbs `info`, `read`, `set_tags`** (risks P2, P3) — done 2026-11-03: floor shows "DT3 Agent Engine" in Automation, `read ok` via OSAKit (`set_tags` floor check in T6)
   - Acceptance: launchd starts the host, host starts Python, restarts it on crash · Automation entry shows "DT3 Agent Engine", not python3.12 · arguments reach DT3 without string building
   - Verify: floor run + screenshot of Automation list · Depends on: T2 · Files: `app/EngineHost/*`, `tools/build-swift.sh` · Size: M
-- [x] **T6: dt3-adapter + fake adapter + undo** — merged 2026-11-04 (PR #7); floor tag + undo moves into the T9 gate demo
+- [x] **T6: dt3-adapter + fake adapter + undo** — merged 2026-11-04 (PR #7); floor: write + undo verified in the gate demo
   - Acceptance: `set_tags` journals old tags first · `undo last` restores exactly · refuses when DT3 is not 3.x
   - Verify: unit tests with fake adapter; floor: tag + undo on the Spike DB · Depends on: T4, T5 · Size: M
-- [x] **T7: ai-adapter (llama.cpp) + fake AI server** — done 2026-11-04; floor real call moves into the T9 gate demo
+- [x] **T7: ai-adapter (llama.cpp) + fake AI server** — done 2026-11-04; floor: real call verified in the gate demo
   - Acceptance: schema request in the verified form · invalid JSON → no write, review item · explicit context size
   - Verify: integration test against fake server; floor: one real call · Depends on: T3 · Size: S
-- [x] **T8: pipeline skeleton + dry-run** — done 2026-11-04 (fakes end to end; floor in the T9 demo)
+- [x] **T8: pipeline skeleton + dry-run** — done 2026-11-04; floor: `applied` and `no_text` verified
   - Acceptance: UUID → read → fake AI tag → (dry-run: planned only | live: write with undo) · idempotency by contentHash
   - Verify: integration test end-to-end with fakes · Depends on: T6, T7 · Size: M
-- [ ] **T9: CLI + rpc minimal + LaunchAgent install (Phase 2 gate)** — code done 2026-11-04; floor demo pending (`docs/floor/phase2-gate.md`)
+- [x] **T9: CLI + rpc minimal + LaunchAgent install (Phase 2 gate)** — floor demo passed 2026-11-04 (`docs/floor/phase2-report.md`)
   - Acceptance: `dt3agent status|process|undo|pause|resume` · socket `0600` · install/uninstall commands
   - Verify: floor demo: new document → tag written → undo · Depends on: T8 · Size: M
 
