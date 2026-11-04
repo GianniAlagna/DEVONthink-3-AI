@@ -24,7 +24,9 @@ class FakeDT3:
         if rec is None:
             raise BridgeError("not_found")
         if verb == "read":
-            return {k: v for k, v in rec.items() if k != "text"}
+            return {k: v for k, v in rec.items() if k not in ("text", "path")}
+        if verb == "read_path":
+            return {"uuid": rec["uuid"], "path": rec.get("path", "")}
         if verb == "read_text":  # same shape as the host: text capped at MAX_TEXT, full length reported
             text = rec.get("text", "")
             return {"uuid": rec["uuid"], "text": text[:MAX_TEXT], "length": len(text)}

@@ -132,7 +132,7 @@ install)
     mkdir -p "$(dirname "$LOG")" "$HOME/Library/LaunchAgents"
     : > "$LOG"
     # Service mode needs the AI address; set it once if the config has none (dry-run stays on by default)
-    "$PY" -I - "$REPO/engine" "$DATA" "$AI_URL" <<'PYEOF'
+    "$PY" -I - "$REPO/engine" "$DATA" "$AI_URL" "$APP/Contents/MacOS/dt3agent-vision" <<'PYEOF'
 import sys
 from pathlib import Path
 sys.path.insert(0, sys.argv[1])
@@ -141,7 +141,8 @@ path = Path(sys.argv[2]) / "config.json"
 cfg = config.load(path)
 if not cfg["ai"]["url"]:
     cfg["ai"]["url"] = sys.argv[3]
-    config.save(path, cfg)
+cfg["vision"]["helper"] = sys.argv[4]   # the helper inside this build of the app
+config.save(path, cfg)
 PYEOF
     "$PY" -I - "$PLIST" "$LABEL" "$APP/Contents/MacOS/DT3AgentEngine" "$PY" "$REPO/engine" "$mode" "$LOG" "$uuid" "$check" <<'PYEOF'
 import plistlib, sys

@@ -35,6 +35,10 @@ class DT3Adapter:
         r = self.bridge.call("read_text", uuid=uuid)
         return r["text"], len(r["text"]) >= r["length"]
 
+    def read_path(self, uuid: str) -> str:
+        """File path of the record inside the DT3 database (for OCR; read-only)."""
+        return str(self.bridge.call("read_path", uuid=uuid).get("path") or "")
+
     def set_tags(self, uuid: str, tags: list[str], *, batch_id: str, actor: str) -> None:
         self.check_dt3()
         old = self.read(uuid)["tags"]

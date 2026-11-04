@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 
 from dt3agent.ai import AIError
 from dt3agent.queue import ERROR_RE
+from dt3agent.vision import VisionError
 
 PIPELINE_VERSION = 1
 MIGRATIONS = [
@@ -73,8 +74,8 @@ def clean_tags(candidates, vocabulary) -> list[str]:
 
 
 class Pipeline:
-    def __init__(self, adapter, ai, con: sqlite3.Connection, *, dry_run: bool, vocabulary=None):
-        self.adapter, self.ai, self.con = adapter, ai, con
+    def __init__(self, adapter, ai, con: sqlite3.Connection, *, dry_run: bool, vocabulary=None, vision=None):
+        self.adapter, self.ai, self.con, self.vision = adapter, ai, con, vision
         self.dry_run, self.vocabulary = dry_run, vocabulary
 
     def _now(self) -> str:
@@ -99,8 +100,14 @@ class Pipeline:
                                      batch_id=batch_id, result="skipped")
             return Outcome("skipped")
         text, complete = self.adapter.read_text(uuid)
+        if not text.strip() and self.vision is not None:  # A1: no text layer -> Vision OCR, analysis only
+            try:
+                text, complete = self.vision.ocr(self.adapter.read_path(uuid)), True
+            except VisionError as e:
+                self._review(uuid, "error", e.code, {}, batch_id, "review")
+                return Outcome("review", code=e.code)
         if not text.strip() or not complete:
-            code = "no_text" if not text.strip() else "text_too_long"  # no_text: Vision OCR comes in Phase 3
+            code = "no_text" if not text.strip() else "text_too_long"
             self._review(uuid, "error", code, {}, batch_id, "review")
             return Outcome("review", code=code)
         try:
