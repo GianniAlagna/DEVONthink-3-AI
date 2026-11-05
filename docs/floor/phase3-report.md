@@ -1,6 +1,6 @@
 # Phase 3 floor report (MacBook Pro 2014, macOS 11.7.11, DT3 3.9.17)
 
-Runs on 2026-11-05: run 1 (kit c929fe03), run 2 (kit 75eeb6f5). Test database only. Nothing deleted.
+Runs on 2026-11-05: run 1 (kit c929fe03), run 2 (kit 75eeb6f5), retest 2 (kit f47962e5). Test database only. Nothing deleted.
 
 | Point | Result | Evidence |
 |---|---|---|
@@ -12,8 +12,9 @@ Runs on 2026-11-05: run 1 (kit c929fe03), run 2 (kit 75eeb6f5). Test database on
 | Case match | verified | `case_match` → `/Recht/Fall-Muster/` |
 | Unknown date → low confidence | verified | Veranlagungsverfügung: name with confidence 0.0, review only |
 | Case replicate on accept | **failed** | `decide 9/5 accept` → `group_not_found` |
-| Dry-run | open | run 2 went live at once |
-| Metadata, filing | open | screenshot missing |
+| Dry-run | verified | retest 2: `engine job planned`, 8 planned items, nothing written |
+| Metadata values (A4/A5) | verified | planned: date 2026-04-17, total CHF 1957.04, IBAN, lang de (conf 0.95) |
+| Metadata, filing written | open | screenshot missing |
 | OCR of a scan | open | not run |
 | Smart Rule "On Import" | open | all 4 jobs came from `process` |
 
@@ -25,4 +26,8 @@ Runs on 2026-11-05: run 1 (kit c929fe03), run 2 (kit 75eeb6f5). Test database on
    `getRecordAt` does not accept the trailing `/`. Fix: the host tries the path as given, then without the
    trailing `/`. Retest step C checks both forms on the floor.
 
-Next: `docs/floor/phase3-retest.md` (open points only).
+3. Retest 2: `getRecordAt` returned nothing for both path forms (`null`, `null`). Either the group does not
+   exist, or `getRecordAt` does not work like this in JXA (**UNVERIFIED**). Fix: if `getRecordAt` finds nothing,
+   the host walks the path name by name from the database root (read-only). Retest 3 step B lists the groups.
+
+Next: `docs/floor/phase3-retest.md` (retest 3, open points only).

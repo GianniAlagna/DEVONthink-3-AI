@@ -64,16 +64,37 @@ function move(uuid, location) {
   dt3().move({ record: r, to: group(location, r) });
   return JSON.stringify({ uuid: uuid, location: r.location() });
 }
+function isGroup(g) {
+  // UNVERIFIED: the floor showed type() returning display text ("PDF document"), so accept any "group" spelling.
+  return !!g && String(g.type()).toLowerCase().indexOf('group') >= 0;
+}
+function walk(db, location) {
+  // Fallback without getRecordAt: follow the path name by name from the database root. Read-only.
+  let g = db.root();
+  const parts = location.split('/').filter(function (p) { return p.length > 0; });
+  for (let i = 0; i < parts.length; i++) {
+    const kids = g.children();
+    let next = null;
+    for (let k = 0; k < kids.length; k++) {
+      if (kids[k].name() === parts[i] && isGroup(kids[k])) { next = kids[k]; break; }
+    }
+    if (!next) return null;
+    g = next;
+  }
+  return g;
+}
 function group(location, r) {
-  // UNVERIFIED on the floor: whether getRecordAt accepts the trailing "/" that record.location() has.
-  // Try the path as given, then without the trailing "/". Floor 2026-11-05: "/Recht/Fall-Muster/" not found.
-  const opts = r ? { in: r.database() } : {};
+  // Floor 2026-11-05: getRecordAt returned nothing for "/Recht/Fall-Muster/" and "/Recht/Fall-Muster".
+  // Try getRecordAt with and without the trailing "/", then walk the path from the database root.
+  const db = r ? r.database() : null;
   const paths = [location];
   if (location.length > 1 && location.endsWith('/')) paths.push(location.replace(/\\/+$/, ''));
   for (let i = 0; i < paths.length; i++) {
-    const g = dt3().getRecordAt(paths[i], opts);
-    if (g && g.type() === 'group') return g;
+    const g = dt3().getRecordAt(paths[i], db ? { in: db } : {});
+    if (isGroup(g)) return g;
   }
+  const w = db ? walk(db, location) : null;
+  if (isGroup(w)) return w;
   throw new Error('group_not_found');
 }
 function duplicatesOf(uuid) {
