@@ -27,12 +27,20 @@ class Name:
 def clean(text: str) -> str:
     text = unicodedata.normalize("NFC", str(text)).replace("ß", "ss")
     text = FORBIDDEN.sub("", text)
-    text = re.sub(r"[\s_]+", "-", text)
+    text = re.sub(r"[\s_\u2010-\u2015\u2212]+", "-", text)  # spaces and dashes (– — ‐ −) become one "-"
     return re.sub(r"-{2,}", "-", text).strip("-")
 
 
 def _cut(value: str, limit: int) -> str:
-    return value[:limit].rstrip("-") if len(value) > limit else value
+    """Shorten to `limit`, between words where that keeps at least half (floor 2026-11-05: cut inside a word)."""
+    if len(value) <= limit:
+        return value
+    cut = value[:limit]
+    if value[limit] != "-":
+        i = cut.rfind("-")
+        if i >= limit // 2:
+            cut = cut[:i]
+    return cut.rstrip("-")
 
 
 def build_name(template: str, fields: dict, *, created: datetime, unknown: str = "unknown",
