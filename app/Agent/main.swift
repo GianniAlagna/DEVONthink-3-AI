@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var polling = false
     var timer: Timer?
     let setup = SetupWindow()
+    let settings = SettingsWindow()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         menu.delegate = self
@@ -62,7 +63,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(item(t[.undo], #selector(undoLastBatch), enabled: online))
         menu.addItem(.separator())
         menu.addItem(item(t[.setupMenu], #selector(openSetup), enabled: true))
-        menu.addItem(item(t[.settings], nil, enabled: false))  // U-3
+        menu.addItem(item(t[.settings], #selector(openSettings), enabled: true, key: ","))
         menu.addItem(item(t[.help], #selector(openHelp), enabled: true))
         menu.addItem(item(t[.quit], #selector(NSApplication.terminate(_:)), enabled: true, key: "q"))
     }
@@ -111,6 +112,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc func openSetup() {
         setup.show(t: t, work: work) { [weak self] in self?.refresh() }
+    }
+
+    @objc func openSettings() {
+        settings.show(t: t, work: work)
     }
 
     @objc func openHelp() {
