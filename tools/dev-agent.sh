@@ -2,7 +2,7 @@
 # Floor tests for Phase 2: run the engine host (and llama-server) as LaunchAgents.
 # Developer tool, not the installer (that is Phase 5).
 # Usage: tools/dev-agent.sh python | llama | smartrule | install [osakit|osascript] [record-UUID] [read|tag]
-#                           | bundle | status | uninstall
+#                           | embed | bundle | status | uninstall
 #   install without a record ID runs the engine service; control it with tools/dt3agent.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -31,10 +31,19 @@ MODEL_URL="https://huggingface.co/ggml-org/Qwen3-1.7B-GGUF/resolve/daeb8e2d528a7
 MODEL_SHA256="d2387ca2dbfee2ffabce7120d3770dadca0b293052bc2f0e138fdc940d9bc7b5"
 MODEL="$DEV/models/Qwen3-1.7B-Q4_K_M.gguf"
 AI_URL="http://127.0.0.1:8080"
+# ADR-0011: Qwen3-Embedding-0.6B Q8_0 (Apache-2.0) for the knowledge index, second llama-server on 8081
+EMBED_URL_MODEL="https://huggingface.co/Qwen/Qwen3-Embedding-0.6B-GGUF/resolve/370f27d7550e0def9b39c1f16d3fbaa13aa67728/Qwen3-Embedding-0.6B-Q8_0.gguf"
+EMBED_SHA256="06507c7b42688469c4e7298b0a1e16deff06caf291cf0a5b278c308249c3e439"
+EMBED_MODEL="$DEV/models/Qwen3-Embedding-0.6B-Q8_0.gguf"
+EMBED_URL="http://127.0.0.1:8081"
+EMBED_LABEL="codes.modular.dt3agent.embed.dev"
+EMBED_PLIST="$HOME/Library/LaunchAgents/$EMBED_LABEL.plist"
+EMBED_LOG="$HOME/Library/Logs/DT3 Agent/embed-dev.log"
 DOMAIN="gui/$(id -u)"
 
 stop() { launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true; rm -f "$PLIST"; }
 stop_llama() { launchctl bootout "$DOMAIN/$LLAMA_LABEL" 2>/dev/null || true; rm -f "$LLAMA_PLIST"; }
+stop_embed() { launchctl bootout "$DOMAIN/$EMBED_LABEL" 2>/dev/null || true; rm -f "$EMBED_PLIST"; }
 sha_ok() { [ -f "$1" ] && [ "$(shasum -a 256 "$1" | awk '{print $1}')" = "$2" ]; }
 # fetch URL FILE SHA256: download once, resume after a dropped connection, keep only if the checksum matches
 fetch() {
@@ -197,6 +206,55 @@ PYEOF
     echo "Started ($mode, $what). If macOS asks to allow \"DT3 Agent Engine\" to control DEVONthink 3: click OK."
     echo "Then: tools/dev-agent.sh status   and take a screenshot of System Preferences > Security & Privacy > Privacy > Automation"
     ;;
+embed)
+    # K-1 (ADR-0011): embedding model (639 MB, Apache-2.0) + second llama-server on 8081, then a probe:
+    # two sentences with the same meaning (de/fr) must be closer than an unrelated one.
+    [ -x "$LLAMA_SERVER" ] || { echo "llama-server not built - run: tools/dev-agent.sh llama"; exit 1; }
+    [ -x "$PY" ] || { echo "Python not found at $PY - run: tools/dev-agent.sh python"; exit 1; }
+    fetch "$EMBED_URL_MODEL" "$EMBED_MODEL" "$EMBED_SHA256"
+    echo "Model ready: $(basename "$EMBED_MODEL") (Apache-2.0)"
+    stop_embed
+    mkdir -p "$(dirname "$EMBED_LOG")" "$HOME/Library/LaunchAgents"
+    : > "$EMBED_LOG"
+    "$PY" -I - "$EMBED_PLIST" "$EMBED_LABEL" "$LLAMA_SERVER" "$EMBED_MODEL" "$(sysctl -n hw.physicalcpu)" "$EMBED_LOG" <<'PYEOF'
+import plistlib, sys
+plist, label, server, model, threads, log = sys.argv[1:7]
+# model card: --embedding --pooling last; -ub = -b so a whole chunk fits one batch; localhost only
+args = [server, "-m", model, "--embedding", "--pooling", "last", "-c", "8192", "-b", "8192", "-ub", "8192",
+        "-t", threads, "-np", "1", "--host", "127.0.0.1", "--port", "8081", "--no-webui"]
+with open(plist, "wb") as f:
+    plistlib.dump({"Label": label, "ProgramArguments": args, "RunAtLoad": True, "KeepAlive": True,
+                   "StandardOutPath": log, "StandardErrorPath": log}, f)
+PYEOF
+    launchctl bootstrap "$DOMAIN" "$EMBED_PLIST"
+    for _ in $(seq 1 90); do curl -fs "$EMBED_URL/health" >/dev/null 2>&1 && break; sleep 1; done
+    curl -fs "$EMBED_URL/health" >/dev/null 2>&1 || { echo "Embedding server did not start - see $EMBED_LOG"; tail -5 "$EMBED_LOG"; exit 1; }
+    echo "Embedding server running on $EMBED_URL"
+    "$PY" -I - "$REPO/engine" "$EMBED_URL" "$DATA" <<'PYEOF'
+import sys, time
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+from dt3agent import config
+from dt3agent.embed import EmbedClient, EmbedError
+c = EmbedClient(sys.argv[2])
+texts = ["Die Rechnung ist innert 30 Tagen zu bezahlen.", "La facture est payable dans les 30 jours.",
+         "Der Hund schläft im Garten."]
+t0 = time.monotonic()
+try:
+    a, b, other = c.embed(texts)
+except EmbedError as e:
+    sys.exit(f"Probe failed: {e.code}")
+dt = time.monotonic() - t0
+same, diff = sum(x * y for x, y in zip(a, b)), sum(x * y for x, y in zip(a, other))
+print(f"Probe: {len(a)} dimensions, 3 sentences in {dt:.1f} s")
+print(f"  same meaning (de/fr): {same:.2f}   unrelated: {diff:.2f}   -> {'OK' if same > diff + 0.1 else 'CHECK'}")
+path = Path(sys.argv[3]) / "config.json"
+cfg = config.load(path)
+cfg["ai"]["embed_url"] = sys.argv[2]
+config.save(path, cfg)
+print("Saved ai.embed_url in config.json")
+PYEOF
+    ;;
 bundle)
     # Phase 5: the menu-bar app with Python and llama-server inside (as a release will have them), copied to
     # ~/Applications. The app's installer then sets up the real LaunchAgents. Stops the dev agents first.
@@ -226,15 +284,17 @@ app)
 status)
     launchctl print "$DOMAIN/$LABEL" 2>/dev/null | grep -E '^[[:space:]]*(state|pid|runs|last exit code) =' || echo "not loaded"
     launchctl print "$DOMAIN/$LLAMA_LABEL" >/dev/null 2>&1 && echo "llama-server: $(curl -fs "$AI_URL/health" || echo 'not answering')"
+    launchctl print "$DOMAIN/$EMBED_LABEL" >/dev/null 2>&1 && echo "embedding server: $(curl -fs "$EMBED_URL/health" || echo 'not answering')"
     tail -20 "$LOG" 2>/dev/null || true
     ;;
 uninstall)
     stop
     stop_llama
+    stop_embed
     echo "LaunchAgents removed. Logs kept in: $(dirname "$LOG"). Data kept in: $DATA"
     ;;
 *)
-    echo "usage: tools/dev-agent.sh python | llama | smartrule | testconfig NAME | install [osakit|osascript] [record-UUID] [read|tag] | bundle | app | status | uninstall"
+    echo "usage: tools/dev-agent.sh python | llama | smartrule | testconfig NAME | install [osakit|osascript] [record-UUID] [read|tag] | embed | bundle | app | status | uninstall"
     exit 2
     ;;
 esac
