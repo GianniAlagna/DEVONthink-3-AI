@@ -197,6 +197,12 @@ PYEOF
     echo "Started ($mode, $what). If macOS asks to allow \"DT3 Agent Engine\" to control DEVONthink 3: click OK."
     echo "Then: tools/dev-agent.sh status   and take a screenshot of System Preferences > Security & Privacy > Privacy > Automation"
     ;;
+app)
+    # U-1: the menu-bar app; built by install (tools/build-swift.sh). Quit it from its own menu.
+    [ -d "$REPO/build/DT3 Agent.app" ] || { echo "Run tools/dev-agent.sh install first"; exit 1; }
+    open "$REPO/build/DT3 Agent.app"
+    echo "DT3 Agent is in the menu bar (top right)."
+    ;;
 status)
     launchctl print "$DOMAIN/$LABEL" 2>/dev/null | grep -E '^[[:space:]]*(state|pid|runs|last exit code) =' || echo "not loaded"
     launchctl print "$DOMAIN/$LLAMA_LABEL" >/dev/null 2>&1 && echo "llama-server: $(curl -fs "$AI_URL/health" || echo 'not answering')"
@@ -208,7 +214,7 @@ uninstall)
     echo "LaunchAgents removed. Logs kept in: $(dirname "$LOG"). Data kept in: $DATA"
     ;;
 *)
-    echo "usage: tools/dev-agent.sh python | llama | smartrule | testconfig NAME | install [osakit|osascript] [record-UUID] [read|tag] | status | uninstall"
+    echo "usage: tools/dev-agent.sh python | llama | smartrule | testconfig NAME | install [osakit|osascript] [record-UUID] [read|tag] | app | status | uninstall"
     exit 2
     ;;
 esac
