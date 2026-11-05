@@ -64,7 +64,7 @@ launchctl list | grep dt3agent; ls ~/Library/Application\ Scripts/com.devon-tech
 ## D. Smart Rule in DT3 (optional, 2 minutes)
 
 9. In DT3: Tools → New Smart Rule. Event menu → **screenshot** of the event list (I need the exact German name
-   of “On Import”). Action menu → “Execute Script” → the list must show **DT3 Agent Enqueue** → **screenshot**.
+   of “On Import”). Action menu → “Apply Script” → “External” → the list must show **DT3 Agent Enqueue** → **screenshot**.
    Cancel; do not save the rule.
 
 ## E. Menu and Review Queue (U-1, U-4)
