@@ -43,7 +43,27 @@ for lang in L10n.table.keys {
 }
 check(!L10n.table["de"]!.values.contains { $0.contains("ß") }, "de-CH texts contain no ß")
 check(L10n(preferred: ["de-CH", "en"]).language == "de", "de-CH picks German")
-check(L10n(preferred: ["fr-CH", "de-CH"]).language == "de", "first language with texts wins")
+check(L10n(preferred: ["ja", "de-CH"]).language == "de", "first language with texts wins")
+check(L10n(preferred: ["fr-CH", "de-CH"]).language == "fr", "fr-CH picks French")
+check(L10n(preferred: ["it-CH"]).language == "it", "it-CH picks Italian")
+check(Set(L10n.table.keys) == ["de", "en", "fr", "it"], "four languages")
+func specs(_ s: String) -> [String] {
+    var out: [String] = []
+    var i = s.startIndex
+    while let r = s.range(of: "%", range: i..<s.endIndex) {
+        let n = s.index(after: r.lowerBound)
+        guard n < s.endIndex else { break }
+        if "d@%".contains(s[n]) { out.append(String(s[r.lowerBound...n])) }
+        i = s.index(after: n)
+    }
+    return out
+}
+for lang in L10n.table.keys {
+    for key in L10n.Key.allCases {
+        check(specs(L10n.table[lang]?[key] ?? "") == specs(L10n.table["en"]![key]!),
+              "\(lang) \(key.rawValue) has the same format fields as en")
+    }
+}
 check(L10n(preferred: ["ja"]).language == "en", "unknown language falls back to English")
 check(L10n(preferred: ["de"]).format(.undoDone, 3, 1) == "3 wiederhergestellt, 1 Konflikte", "format with numbers")
 let en = L10n(preferred: ["en"])
