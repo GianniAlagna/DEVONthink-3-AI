@@ -76,5 +76,40 @@ check(!SystemFacts(macOS: (12, 0), ramGB: 4, appleSilicon: true).ramEnough, "4 G
 check(cleanName("  Erika Beispiel ") == "Erika Beispiel" && cleanName("") == "", "names are trimmed")
 check(cleanName("a\u{0007}b") == nil && cleanName(String(repeating: "x", count: 201)) == nil, "bad names refused")
 
+// settings
+check(lines(" a \n\n b\n") == ["a", "b"], "lines drops blanks and spaces")
+check(parseMap("invoice = /Finanzen/Rechnungen/\n receipt=/Belege/ ") == ["invoice": "/Finanzen/Rechnungen/", "receipt": "/Belege/"],
+      "map lines")
+check(parseMap("no equals sign") == nil && parseMap("x = ") == nil, "bad map lines refused")
+check(parseMap("") == [:], "empty map is fine")
+check(formatMap(["b": "/B/", "a": "/A/"]) == "a = /A/\nb = /B/", "map is written sorted")
+let cases = parseCases("Fall Muster | /Recht/Fall-Muster/ | Muster Treuhand AG, Az 123")
+check(cases == [CaseFolder(name: "Fall Muster", group: "/Recht/Fall-Muster/", words: ["Muster Treuhand AG", "Az 123"])],
+      "case line")
+check(parseCases("only | two") == nil && parseCases("x | /G/ | ") == nil, "bad case lines refused")
+check(formatCases(cases ?? []) == "Fall Muster | /Recht/Fall-Muster/ | Muster Treuhand AG, Az 123", "case round trip")
+let cfg: [String: Any] = ["dry_run": false, "identity": ["name": "Erika Beispiel"],
+                          "ai": ["url": "http://127.0.0.1:8080", "context": 8192],
+                          "tags": ["vocabulary": ["Rechnung", "Steuern"]],
+                          "filing": ["enabled": true, "groups": ["invoice": "/R/"], "review_group": "/_AI-Review/"],
+                          "duplicates": ["near_threshold": 0.8, "group": "/_Duplicates/"],
+                          "thresholds": ["apply": 0.85], "vision": ["helper": "/x"]]
+var sv = SettingsValues(config: cfg)
+check(!sv.dryRun && sv.name == "Erika Beispiel" && sv.vocabulary == "Rechnung\nSteuern" && sv.filingGroups == "invoice = /R/",
+      "settings read from config")
+check(sv.problems.isEmpty, "valid settings have no problems")
+let ch = sv.changes
+check(ch["vision"] == nil && ch["schema_version"] == nil, "locked settings are never sent")
+check((ch["tags"] as? [String: Any])?["vocabulary"] as? [String] == ["Rechnung", "Steuern"], "vocabulary sent as a list")
+check((ch["identity"] as? [String: Any])?["name"] as? String == "Erika Beispiel", "name sent")
+sv.name = ""
+check((sv.changes["identity"] as? [String: Any])?["name"] is NSNull, "empty name is sent as null")
+sv.filingGroups = "broken"
+sv.applyThreshold = 0.2
+check(sv.problems.contains(.setFilingGroups) && sv.problems.contains(.setThresholds), "problems are named")
+check(importChanges(["vision": ["helper": "/evil"], "dry_run": true]).map { $0["vision"] == nil } == true,
+      "import drops locked keys")
+check(importChanges(["vision": [:]]) == nil && importChanges("x") == nil, "nothing to import")
+
 if failures > 0 { print("\(failures) failed"); exit(1) }
 print("app tests ok")

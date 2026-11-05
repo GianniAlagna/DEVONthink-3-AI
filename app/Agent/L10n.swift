@@ -21,6 +21,13 @@ struct L10n {
         case ruleTitle, ruleText, ruleDatabases
         case finishTitle, finishText, keepTestMode
         case saveFailed
+        // settings (U-3)
+        case setTitle, tabGeneral, tabAI, tabNaming, tabTags, tabFiling, tabSwiss, tabDuplicates, tabPrivacy, tabAdvanced
+        case setTestMode, setExport, setImport, setImported
+        case setVocabulary, setFilingEnabled, setFilingGroups, setReviewGroup, setGroupNote
+        case setUrgentWords, setUrgentGroup, setRetention, setDuplicatesGroup, setNear, setCases
+        case setLogContent, setLogWarning, setApply, setApplyNote, setThresholds
+        case save, revert, saved, setFix
     }
 
     static let table: [String: [Key: String]] = [
@@ -97,6 +104,40 @@ struct L10n {
             .finishText: "Im Testmodus schreibt DT3 Agent nichts in DT3. Alle Vorschläge erscheinen in der Prüfliste. Den Testmodus kannst du jederzeit in den Einstellungen ausschalten.",
             .keepTestMode: "Testmodus beibehalten (empfohlen)",
             .saveFailed: "Speichern fehlgeschlagen",
+            .setTitle: "DT3 Agent – Einstellungen",
+            .tabGeneral: "Allgemein",
+            .tabAI: "KI",
+            .tabNaming: "Namen",
+            .tabTags: "Tags",
+            .tabFiling: "Ablage",
+            .tabSwiss: "Schweiz",
+            .tabDuplicates: "Duplikate & Fälle",
+            .tabPrivacy: "Datenschutz",
+            .tabAdvanced: "Erweitert",
+            .setTestMode: "Testmodus: nur Vorschläge, nichts in DT3 schreiben",
+            .setExport: "Einstellungen exportieren …",
+            .setImport: "Einstellungen importieren …",
+            .setImported: "Einstellungen importiert.",
+            .setVocabulary: "Tags, die die KI vergeben darf (einer pro Zeile)",
+            .setFilingEnabled: "Dokumente automatisch ablegen",
+            .setFilingGroups: "Ablage je Dokumenttyp (Typ = /Gruppe/, eine pro Zeile). Typen: invoice, reminder, contract, offer, receipt, statement, official",
+            .setReviewGroup: "Gruppe für unsichere Fälle",
+            .setGroupNote: "Gruppen legst du in DT3 an. DT3 Agent erstellt nie Gruppen und löscht nie etwas.",
+            .setUrgentWords: "Wörter für dringende Briefe (eines pro Zeile)",
+            .setUrgentGroup: "Gruppe für dringende Briefe",
+            .setRetention: "Aufbewahrungsfrist vorschlagen (Hinweis, keine Rechtsberatung)",
+            .setDuplicatesGroup: "Gruppe für markierte Duplikate",
+            .setNear: "Ähnlichkeit für Beinahe-Duplikate: %d %%",
+            .setCases: "Fallordner (Name | /Gruppe/ | Wörter mit Komma getrennt, einer pro Zeile)",
+            .setLogContent: "Dokumentinhalt in Protokolle schreiben (nur zur Fehlersuche)",
+            .setLogWarning: "Aus lassen, ausser du suchst einen Fehler: sonst enthalten die Protokolle Texte deiner Dokumente.",
+            .setApply: "Automatisch anwenden ab Sicherheit: %d %%",
+            .setApplyNote: "Vorschläge mit weniger Sicherheit kommen in die Prüfliste.",
+            .setThresholds: "Werte zwischen 50 und 100 %",
+            .save: "Sichern",
+            .revert: "Verwerfen",
+            .saved: "Gesichert.",
+            .setFix: "Bitte prüfen: %@",
         ],
         "en": [
             .appName: "DT3 Agent",
@@ -171,6 +212,40 @@ struct L10n {
             .finishText: "In test mode DT3 Agent writes nothing to DT3. All proposals appear in the Review Queue. You can switch test mode off at any time in Settings.",
             .keepTestMode: "Keep test mode (recommended)",
             .saveFailed: "Saving failed",
+            .setTitle: "DT3 Agent – Settings",
+            .tabGeneral: "General",
+            .tabAI: "AI",
+            .tabNaming: "Names",
+            .tabTags: "Tags",
+            .tabFiling: "Filing",
+            .tabSwiss: "Swiss",
+            .tabDuplicates: "Duplicates & cases",
+            .tabPrivacy: "Privacy",
+            .tabAdvanced: "Advanced",
+            .setTestMode: "Test mode: proposals only, write nothing to DT3",
+            .setExport: "Export settings …",
+            .setImport: "Import settings …",
+            .setImported: "Settings imported.",
+            .setVocabulary: "Tags the AI may assign (one per line)",
+            .setFilingEnabled: "File documents automatically",
+            .setFilingGroups: "Filing by document type (type = /Group/, one per line). Types: invoice, reminder, contract, offer, receipt, statement, official",
+            .setReviewGroup: "Group for uncertain cases",
+            .setGroupNote: "You create groups in DT3. DT3 Agent never creates groups and never deletes anything.",
+            .setUrgentWords: "Words for urgent letters (one per line)",
+            .setUrgentGroup: "Group for urgent letters",
+            .setRetention: "Suggest a retention period (a hint, not legal advice)",
+            .setDuplicatesGroup: "Group for marked duplicates",
+            .setNear: "Similarity for near duplicates: %d %%",
+            .setCases: "Case folders (Name | /Group/ | words separated by commas, one per line)",
+            .setLogContent: "Write document content to logs (for troubleshooting only)",
+            .setLogWarning: "Leave this off unless you are troubleshooting: otherwise the logs contain text from your documents.",
+            .setApply: "Apply automatically from confidence: %d %%",
+            .setApplyNote: "Proposals with less confidence go to the Review Queue.",
+            .setThresholds: "Values between 50 and 100 %",
+            .save: "Save",
+            .revert: "Revert",
+            .saved: "Saved.",
+            .setFix: "Please check: %@",
         ],
     ]
 
