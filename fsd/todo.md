@@ -52,7 +52,8 @@ Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC
 
 ## Phase 4 — Block B
 - [x] B-0 (from Phase 3 floor) — done 2026-11-05, floor check open: review items whose DT3 record no longer exists → mark `record_missing`, do not offer accept; guide hint "select a document first" for osascript checks
-- B-1 vision helper · B-2 QR-bill parser (SIX IG cited) · B-3 UID check digit (official source) · B-4 retention table · B-5 deadlines (reminder path decision) · B-6 urgent letters
+- [x] B-1 vision helper (engine QR client; Swift `qr` mode from Phase 0) — done 2026-11-05
+- B-2 QR-bill parser (SIX IG cited) · B-3 UID check digit (official source) · B-4 retention table · B-5 deadlines (reminder path decision) · B-6 urgent letters
 
 ## Phase 5 — App
 - U-1 menu bar + status · U-2 onboarding · U-3 settings · U-4 review window · U-5 installer · U-6 de-CH/fr-CH/it-CH/en + accessibility pass
