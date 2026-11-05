@@ -150,3 +150,13 @@ def test_vocabulary_becomes_a_schema_enum_and_the_task_asks_for_tags(env):
     make(env, ai, dry_run=True, vocabulary=["invoice", "contract"]).process(A, batch_id="b1")
     assert ai.schema["properties"]["tags"]["items"]["enum"] == ["invoice", "contract"]
     assert "tags" in ai.task and "allowed list" in ai.task
+
+
+def test_records_done_by_an_older_pipeline_are_checked_again(env):
+    from dt3agent.pipeline import PIPELINE_VERSION
+    _, con, _, _ = env
+    with con:
+        con.execute("INSERT INTO processed (uuid, content_hash, pipeline_version, done_at) VALUES (?, 'h1', ?, 't')",
+                    (A, PIPELINE_VERSION - 1))
+    ai = FakeAI(["invoice"])
+    assert make(env, ai, dry_run=True).process(A, batch_id="b1").status == "planned" and ai.calls == 1

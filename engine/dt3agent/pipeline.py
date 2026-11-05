@@ -16,7 +16,7 @@ from dt3agent.queue import ERROR_RE
 from dt3agent.rules import keywords
 from dt3agent.vision import VisionError
 
-PIPELINE_VERSION = 1
+PIPELINE_VERSION = 2  # 2: full Block A (P3-9); bumping re-checks records done by an older pipeline
 MIGRATIONS = [
     """CREATE TABLE processed (
         uuid TEXT PRIMARY KEY,
