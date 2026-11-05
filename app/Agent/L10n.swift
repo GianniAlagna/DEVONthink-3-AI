@@ -42,6 +42,9 @@ struct L10n {
         case instDownloading, instChecksum, instModel, instRemoved, instUninstalled
         // accessibility (U-6): spoken state of a check row
         case a11yOK, a11yWarning
+        // knowledge window (K-7)
+        case askMenu, askTitle, askQuestion, askButton, askWorking, askSources, askNotFound
+        case summaryTitle, summaryLanguage, summaryButton, summaryPartial, errIndex, errQuestion, errEmbed
     }
 
     static let table: [String: [Key: String]] = [
@@ -209,6 +212,20 @@ struct L10n {
             .instUninstalled: "DT3 Agent ist entfernt. Die App selbst kannst du in den Papierkorb ziehen.",
             .a11yOK: "In Ordnung",
             .a11yWarning: "Achtung",
+            .askMenu: "Fragen …",
+            .askTitle: "Fragen an deine Dokumente",
+            .askQuestion: "Frage",
+            .askButton: "Fragen",
+            .askWorking: "Die KI sucht eine Antwort …",
+            .askSources: "Quellen",
+            .askNotFound: "Dazu wurde in deinen Dokumenten nichts gefunden.",
+            .summaryTitle: "Zusammenfassung des ausgewählten Dokuments",
+            .summaryLanguage: "Sprache",
+            .summaryButton: "Zusammenfassen",
+            .summaryPartial: "Langes Dokument: nur der Anfang wurde gelesen.",
+            .errIndex: "Der Index ist nicht eingerichtet: Der KI-Index-Server fehlt.",
+            .errQuestion: "Bitte eine Frage mit 1 bis 1000 Zeichen eingeben.",
+            .errEmbed: "Der KI-Index-Server antwortet nicht.",
         ],
         "en": [
             .appName: "DT3 Agent",
@@ -374,6 +391,20 @@ struct L10n {
             .instUninstalled: "DT3 Agent is removed. You can drag the app itself to the Trash.",
             .a11yOK: "OK",
             .a11yWarning: "Warning",
+            .askMenu: "Ask …",
+            .askTitle: "Ask your documents",
+            .askQuestion: "Question",
+            .askButton: "Ask",
+            .askWorking: "The AI is looking for an answer …",
+            .askSources: "Sources",
+            .askNotFound: "Nothing about this was found in your documents.",
+            .summaryTitle: "Summary of the selected document",
+            .summaryLanguage: "Language",
+            .summaryButton: "Summarise",
+            .summaryPartial: "Long document: only the beginning was read.",
+            .errIndex: "The index is not set up: the AI index server is missing.",
+            .errQuestion: "Please enter a question of 1 to 1000 characters.",
+            .errEmbed: "The AI index server does not answer.",
         ],
         "fr": [
             .appName: "DT3 Agent",
@@ -539,6 +570,20 @@ struct L10n {
             .instUninstalled: "DT3 Agent est supprimé. Vous pouvez glisser l’app elle-même dans la corbeille.",
             .a11yOK: "OK",
             .a11yWarning: "Attention",
+            .askMenu: "Demander …",
+            .askTitle: "Interroger vos documents",
+            .askQuestion: "Question",
+            .askButton: "Demander",
+            .askWorking: "L’IA cherche une réponse …",
+            .askSources: "Sources",
+            .askNotFound: "Rien n’a été trouvé à ce sujet dans vos documents.",
+            .summaryTitle: "Résumé du document sélectionné",
+            .summaryLanguage: "Langue",
+            .summaryButton: "Résumer",
+            .summaryPartial: "Document long : seul le début a été lu.",
+            .errIndex: "L’index n’est pas configuré : le serveur d’index IA manque.",
+            .errQuestion: "Saisissez une question de 1 à 1000 caractères.",
+            .errEmbed: "Le serveur d’index IA ne répond pas.",
         ],
         "it": [
             .appName: "DT3 Agent",
@@ -704,6 +749,20 @@ struct L10n {
             .instUninstalled: "DT3 Agent è stato rimosso. Può trascinare l’app stessa nel Cestino.",
             .a11yOK: "OK",
             .a11yWarning: "Attenzione",
+            .askMenu: "Chiedi …",
+            .askTitle: "Chieda ai Suoi documenti",
+            .askQuestion: "Domanda",
+            .askButton: "Chiedi",
+            .askWorking: "L’IA cerca una risposta …",
+            .askSources: "Fonti",
+            .askNotFound: "Nei Suoi documenti non è stato trovato nulla al riguardo.",
+            .summaryTitle: "Riassunto del documento selezionato",
+            .summaryLanguage: "Lingua",
+            .summaryButton: "Riassumi",
+            .summaryPartial: "Documento lungo: è stato letto solo l’inizio.",
+            .errIndex: "L’indice non è configurato: manca il server indice IA.",
+            .errQuestion: "Inserisca una domanda da 1 a 1000 caratteri.",
+            .errEmbed: "Il server indice IA non risponde.",
         ],
     ]
 

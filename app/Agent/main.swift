@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     let setup = SetupWindow()
     let settings = SettingsWindow()
     let reviewWindow = ReviewWindow()
+    let knowledgeWindow = KnowledgeWindow()
     let installer = InstallerWindow()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -64,6 +65,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(item(t[.processSelected], #selector(processSelected), enabled: online))
         menu.addItem(info(t.format(.queue, status?.pending ?? 0)))
         menu.addItem(item(t.format(.review, status?.reviewItems ?? 0), #selector(openReview), enabled: online))
+        menu.addItem(item(t[.askMenu], #selector(openKnowledge), enabled: online))
         if let urgent = status?.urgentOpen, urgent > 0 {
             menu.addItem(item(t.format(.urgent, urgent), #selector(openReview), enabled: online))
         }
@@ -127,6 +129,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc func openInstaller() {
         installer.show(t: t) { [weak self] in self?.refresh() }
+    }
+
+    @objc func openKnowledge() {
+        knowledgeWindow.show(t: t, work: work)
     }
 
     @objc func openReview() {

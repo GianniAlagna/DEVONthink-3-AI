@@ -198,5 +198,23 @@ check(DefaultModel.sha256.count == 64 && DefaultModel.url.scheme == "https", "mo
 let items = installItems(ip) { $0.hasSuffix(".plist") }
 check(items.count == 5 && items.filter { $0.present }.count == 2, "items with what is there")
 
+// knowledge window (K-7)
+let good = "AB4B045D-7D33-44B0-B97F-991CCD829D09"
+let ans = AskAnswer(json: ["answer": "CHF 1957.04", "sources": [
+    ["uuid": good, "name": "Rechnung", "link": "x-devonthink-item://EVIL"],
+    ["uuid": "not-a-uuid", "name": "x"], ["uuid": good.lowercased(), "name": "y"]]])!
+check(ans.text == "CHF 1957.04" && ans.sources.map(\.id) == [good], "only real record UUIDs become sources")
+check(ans.sources[0].link?.absoluteString == "x-devonthink-item://" + good, "link built from the UUID, never from the reply")
+check(AskAnswer(json: ["answer": "", "sources": []])!.notFound, "empty answer means not found")
+check(AskAnswer(json: ["sources": []]) == nil, "an answer needs text")
+check(AskAnswer(json: ["answer": "x", "sources": [["uuid": good, "name": ""]]])!.sources[0].name == good,
+      "a source without a name shows its UUID")
+check(SummaryResult(json: ["summary": "Kurz", "partial": true]) == SummaryResult(json: ["summary": "Kurz", "partial": true])
+      && SummaryResult(json: ["summary": "Kurz", "partial": true])!.partial, "summary with partial flag")
+check(cleanQuestion("  Wie   hoch\nist die Rechnung? ") == "Wie hoch ist die Rechnung?", "question spaces collapsed")
+check(cleanQuestion("   ") == nil && cleanQuestion(String(repeating: "x", count: 1001)) == nil, "bad questions refused")
+check(summaryLanguages == ["de", "fr", "it", "en"], "four summary languages")
+check(errorText("index_unavailable", de) == de[.errIndex], "index error text")
+
 if failures > 0 { print("\(failures) failed"); exit(1) }
 print("app tests ok")

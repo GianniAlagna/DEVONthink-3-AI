@@ -86,6 +86,9 @@ func errorText(_ code: String, _ t: L10n) -> String {
     case "reminder_exists": return t[.errReminderExists]
     case "record_missing", "not_found": return t[.errRecordMissing]
     case "bad_value": return t[.errBadValue]
+    case "index_unavailable": return t[.errIndex]
+    case "question_invalid": return t[.errQuestion]
+    case "embed_unreachable": return t[.errEmbed]
     default: return t[.errOther] + " (" + code + ")"
     }
 }
