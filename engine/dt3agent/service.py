@@ -251,7 +251,11 @@ class Service:
         try:
             self.adapter.add_event(uuid, name, ics, when, batch_id=f"review-{item_id}")
         except Exception as e:
-            code = str(e) if str(e) in ("reminder_exists", "group_not_found", "not_dt3") else "apply_failed"
+            code = str(e)
+            if code not in ("reminder_exists", "group_not_found", "not_dt3"):
+                # host codes are short machine codes (e.g. compile_failed, dt3_error_1728): pass them on for the
+                # floor diagnosis; anything else (a sentence) stays generic
+                code = f"apply_failed_{code}" if re.fullmatch(r"[a-z][a-z0-9_]{0,39}", code) else "apply_failed"
             raise RPCError(code) from e
         return {"applied": True}
 
