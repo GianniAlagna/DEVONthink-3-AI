@@ -52,6 +52,7 @@ def test_config_set_reloads_a_file_changed_outside(env):  # noqa: F811
     {"scopes": [{"database": ""}]},
     {"ai": {"url": "file:///etc/passwd"}},
     {"ai": {"url": "ftp://x"}},
+    {"ai": {"embed_url": "file:///etc/passwd"}},
     {"identity": {"name": 5}},
     {"naming": {"template": ""}},
 ])
