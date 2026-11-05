@@ -29,7 +29,8 @@ DEFAULTS = {
         },
         "urgent": ["Zahlungsbefehl", "Betreibung", "Betreibungsamt", "Betreibungsamtes", "Pfändung", "Konkurs",
                    "Vorladung", "Gericht", "commandement de payer", "poursuite", "office des poursuites",
-                   "tribunal", "precetto esecutivo", "esecuzione", "tribunale"],
+                   "tribunal", "precetto esecutivo", "esecuzione", "tribunale",
+                   "Steueramt", "Steuerverwaltung", "administration fiscale", "amministrazione fiscale"],
     },
     # Vision OCR helper (ADR-0006); helper path is set by the installer
     "vision": {"helper": None, "languages": ["de-DE", "fr-FR", "it-IT", "en-US"], "max_pages": 5},
@@ -46,6 +47,11 @@ DEFAULTS = {
     "retention": {"enabled": True, "classes": {"invoice": {"years": 10, "basis": "OR Art. 958f"},
                                                "receipt": {"years": 10, "basis": "OR Art. 958f"},
                                                "statement": {"years": 10, "basis": "OR Art. 958f"}}},
+    # brief B6: accepted urgent letters move to this group (the user creates it; the engine never does).
+    # Hints name a known legal deadline only as a hint to verify; no deadline is ever computed (brief B6).
+    "urgent": {"group": "/_Urgent/", "hints": [
+        {"words": ["Zahlungsbefehl", "commandement de payer", "precetto esecutivo"],
+         "text": "Rechtsvorschlag: innert 10 Tagen nach Zustellung (SchKG Art. 74 Abs. 1) – bitte prüfen"}]},
     "update_check": False,
     "logs": {"content": False},
 }
@@ -55,7 +61,7 @@ TYPES = {
     "schema_version": int, "dry_run": bool, "scopes": list, "ai": dict, "naming": dict,
     "thresholds": dict, "update_check": bool, "logs": dict, "tags": dict, "keywords": dict, "vision": dict,
     "identity": dict, "summary": dict, "filing": dict, "duplicates": dict, "cases": list,
-    "retention": dict,
+    "retention": dict, "urgent": dict,
 }
 
 
@@ -107,6 +113,11 @@ def validate(cfg: dict) -> dict:
             and isinstance(c["years"], int) and not isinstance(c["years"], bool) and 0 <= c["years"] <= 100
             and isinstance(c["basis"], str) and 0 < len(c["basis"]) <= 120 for t, c in classes.items())):
         raise ConfigError("retention: enabled is true/false; classes map doc types to {years 0-100, basis}")
+    urgent = cfg.get("urgent", {})
+    if not ((urgent.get("group") is None or good_loc(urgent.get("group"))) and isinstance(urgent.get("hints", []), list)
+            and all(isinstance(h, dict) and set(h) == {"words", "text"} and words_ok(h["words"]) and h["words"]
+                    and isinstance(h["text"], str) and 0 < len(h["text"]) <= 200 for h in urgent.get("hints", []))):
+        raise ConfigError("urgent: group is an absolute path; hints are {words, text}")
     for scope in cfg.get("scopes", []):
         if not (isinstance(scope, dict) and set(scope) == {"database", "group"}
                 and all(isinstance(v, str) and v for v in scope.values())):

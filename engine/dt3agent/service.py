@@ -93,7 +93,9 @@ class Service:
                     "dry_run": self.pipeline.dry_run, "ai_configured": self.ai is not None,
                     "ai_ok": self.ai.health() if self.ai else False, "queue": self.queue.counts(),
                     "review_items": self.con.execute("SELECT COUNT(*) FROM review_items "
-                                                     "WHERE decided_at IS NULL").fetchone()[0]}
+                                                     "WHERE decided_at IS NULL").fetchone()[0],
+                    "urgent_open": self.con.execute("SELECT COUNT(*) FROM review_items WHERE kind = 'urgent' "
+                                                    "AND decided_at IS NULL").fetchone()[0]}
         if method == "process":
             uuid = params["uuid"]
             if not (isinstance(uuid, str) and UUID_RE.fullmatch(uuid)):
@@ -116,7 +118,11 @@ class Service:
                 missing = self._record_missing(u, bool(missing))
                 review.set_missing(self.con, i, missing)
                 row = self._review_row(i, u, k, c, json.loads(p), t)
-                row.update(record_missing=missing, actions=["reject"] if missing else ["accept", "edit", "reject"])
+                if k == "urgent":
+                    row["group"] = self.cfg["urgent"]["group"]
+                actions = (["reject"] if missing else ["accept", "reject"] if k == "urgent"
+                           else ["accept", "edit", "reject"])
+                row.update(record_missing=missing, actions=actions)
                 out.append(row)
             return out
         if method == "decide":
@@ -149,7 +155,7 @@ class Service:
         elif k == "case":
             row.update(case=p.get("case"), group=p.get("group"))
         elif k == "urgent":
-            row.update(words=p.get("after"))
+            row.update(words=p.get("after"), hints=p.get("hints", []))
         return row
 
     def _decide(self, params: dict) -> dict:
@@ -164,6 +170,8 @@ class Service:
             value = " ".join(value)  # the CLI sends words; a field value is one text
         if kind and kind[0] == "field" and value is not None and not (isinstance(value, str) and value.strip()):
             raise RPCError("bad_value")
+        if kind and kind[0] == "urgent" and value is not None:
+            raise RPCError("bad_value")  # accept (move to the urgent group) or reject
         if kind and kind[0] in ("duplicate", "case") and value is not None:
             value = " ".join(value) if isinstance(value, list) else value
             if not (isinstance(value, str) and re.fullmatch(r"(replicate|copy|link) /\S.*", value)):
@@ -192,6 +200,8 @@ class Service:
     def _apply(self, result: dict, params: dict) -> dict:
         if result["kind"] in ("duplicate", "case"):
             return self._a10(result, params["id"])
+        if result["kind"] == "urgent":
+            return self._urgent(result, params["id"])
         if result["apply"] is None:
             return {"applied": False}
         if result["kind"] == "field":  # name, comment, metadata, location: through the adapter with undo
@@ -206,6 +216,17 @@ class Service:
         current = list(self.adapter.read(uuid).get("tags") or [])
         self.adapter.set_tags(uuid, current + [t for t in add if t not in current],
                               batch_id=f"review-{params['id']}", actor="user")
+        return {"applied": True}
+
+    def _urgent(self, result: dict, item_id: int) -> dict:
+        """B6: accept moves the letter to the urgent group; the group must exist (never created here)."""
+        group = self.cfg["urgent"]["group"]
+        if result["decision"] == "reject" or not group:
+            return {"applied": False}
+        try:
+            self.adapter.set_field(result["uuid"], "location", group, batch_id=f"review-{item_id}", actor="user")
+        except Exception as e:
+            raise RPCError(str(e) if str(e) in ("group_not_found", "not_dt3") else "apply_failed") from e
         return {"applied": True}
 
     def _a10(self, result: dict, item_id: int) -> dict:

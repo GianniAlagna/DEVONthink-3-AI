@@ -199,7 +199,7 @@ class Pipeline:
             payload = {"field": p.field, "key": p.key, "after": p.value, "confidence": p.confidence,
                        "source": p.source}
             if p.field == "urgent":
-                self._review(uuid, "urgent", "urgent_letter", payload, batch_id, "review")
+                self._review(uuid, "urgent", "urgent_letter", {**payload, "hints": list(p.hints)}, batch_id, "review")
             elif self.dry_run:
                 self._review(uuid, "field", None, {**payload, "planned": True}, batch_id, "dry_run")
                 self._planned = True

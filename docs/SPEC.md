@@ -167,6 +167,7 @@ Brief §5.1 exactly: default `{datetime}_{sender}_{receiver}_{subject}`; `YYYYMM
 - Retention table (editable; default example accounting records 10 years, OR Art. 958f; UI says "Not legal advice").
   Done in `engine/dt3agent/retention.py`: keep until 31.12. of (document year + years), business year = calendar year assumed; metadata `dt3agentretention` (ISO date) + `dt3agentretentionbasis` ("OR Art. 958f · Hinweis, Keine Rechtsberatung"). Never deletes or expires anything.
 - Deadline/urgent → review items + notification; never create reminders without confirmation.
+  Urgent done (B-6): review item with `hints` (config `urgent.hints`, default SchKG Art. 74 Abs. 1 "Rechtsvorschlag innert 10 Tagen nach Zustellung – bitte prüfen"; never computed); accept moves to `urgent.group` (must exist), edit refused, reject does nothing; `status.urgent_open` drives the app notification (Phase 5). Before B-6, accept added the trigger words as tags: fixed.
 
 ### 4.17 `rpc`
 - Socket `~/Library/Application Support/DT3 Agent/engine.sock` (`0600`, dir `0700`), path ≤ 103 bytes. One JSON line per message, 64 KB max: `{"method", "params"}` → `{"ok": true, "result"}` or `{"ok": false, "error": "<code>"}`. Codes are the same short codes as the queue (`unknown_method`, `bad_params`, `bad_request`, `engine_error`, …); never content. (Changed in T9 from JSON-RPC 2.0: both ends are ours, and string codes match queue and audit.)
