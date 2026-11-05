@@ -53,11 +53,12 @@ def test_reject_applies_nothing(svc):
 
 @pytest.mark.parametrize("params, code", [
     ({"id": 999, "decision": "accept"}, "no_open_item"),
-    ({"id": 1, "decision": "maybe"}, "bad_decision"),
-    ({"id": 1, "decision": "edit"}, "edit_needs_value"),
-    ({"id": 1, "decision": "edit", "value": ["a,b"]}, "bad_value"),
+    ({"decision": "maybe"}, "bad_decision"),
+    ({"decision": "edit"}, "edit_needs_value"),
+    ({"decision": "edit", "value": ["a,b"]}, "bad_value"),
 ])
 def test_bad_decisions_are_refused(svc, params, code):
+    params = {"id": item_id(svc), **params}   # the planned tags item unless the case sets an id
     with pytest.raises(RPCError) as e:
         svc.handle("decide", params)
     assert str(e.value) == code
