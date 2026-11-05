@@ -145,7 +145,8 @@ def test_review_lists_codes_never_raw_output(env):
     items = svc.handle("review", {})
     assert len(items) == 1 and items[0]["code"] == "no_text" and items[0]["uuid"] == A
     assert set(items[0]) == {"id", "uuid", "kind", "code", "tags_add", "created_at", "record_missing",
-                             "actions"}   # error item: no raw
+                             "actions", "record_name", "before"}   # error item: no raw model output
+    assert items[0]["before"] is None and items[0]["record_name"] == "x"  # from DT3, not from the model
 
 
 def test_restart_frees_a_job_cut_off_by_a_stop(env):
@@ -158,3 +159,29 @@ def test_restart_frees_a_job_cut_off_by_a_stop(env):
         assert again.handle("status", {})["queue"] == {"partial": 1}
     finally:
         again.close()
+
+
+def test_review_shows_the_record_name_and_the_value_before(env):
+    """U-4 review window: before/after per proposal; the current value comes from DT3, never from the model."""
+    svc, dt3, _ = env
+    dt3.records[A]["comment"] = "alt"
+    svc.handle("process", {"uuid": A})
+    svc.tick()
+    items = svc.handle("review", {})
+    assert items and all(i["record_name"] == "x" for i in items)
+    by_field = {i.get("field"): i for i in items if i["kind"] == "field"}
+    if "name" in by_field:
+        assert by_field["name"]["before"] == "x"
+    if "comment" in by_field:
+        assert by_field["comment"]["before"] == "alt"
+    planned = [i for i in items if i["kind"] == "planned"]
+    assert planned and planned[0]["before"] == []
+
+
+def test_review_of_a_missing_record_has_no_name(env):
+    svc, dt3, _ = env
+    svc.handle("process", {"uuid": A})
+    svc.tick()
+    del dt3.records[A]
+    items = svc.handle("review", {})
+    assert items and all(i["record_missing"] and i["record_name"] is None and i["before"] is None for i in items)
