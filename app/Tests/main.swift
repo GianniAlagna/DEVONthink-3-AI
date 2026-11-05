@@ -196,7 +196,13 @@ check((kept["ai"] as? [String: Any])?["url"] as? String == "http://192.168.1.5:1
 check(hex([0, 15, 255]) == "000fff", "hex")
 check(DefaultModel.sha256.count == 64 && DefaultModel.url.scheme == "https", "model pinned by https and SHA-256")
 let items = installItems(ip) { $0.hasSuffix(".plist") }
-check(items.count == 5 && items.filter { $0.present }.count == 2, "items with what is there")
+check(items.count == 7 && items.filter { $0.present }.count == 3, "items with what is there")
+let embArgs = ip.embedPlistContent(threads: 4)["ProgramArguments"] as? [String] ?? []
+check(embArgs.contains("--embedding") && embArgs.contains("last") && embArgs.contains("8081") && embArgs.contains("127.0.0.1")
+      && embArgs.contains(ip.embedModel.path) && !embArgs.contains("0.0.0.0"), "index server: embeddings, this Mac only, 8081")
+check(EmbedModel.sha256.count == 64 && EmbedModel.url.scheme == "https", "index model pinned by https and SHA-256")
+let withEmbed = patchConfig(["ai": ["url": NSNull()]], visionHelper: "/v", aiURL: nil, embedURL: "http://127.0.0.1:8081")
+check((withEmbed["ai"] as? [String: Any])?["embed_url"] as? String == "http://127.0.0.1:8081", "index address set when empty")
 
 // knowledge window (K-7)
 let good = "AB4B045D-7D33-44B0-B97F-991CCD829D09"
