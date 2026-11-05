@@ -51,4 +51,4 @@ Runs on 2026-11-05: run 1 (kit c929fe03), run 2 (kit 75eeb6f5), retest 2 (kit f4
    over 60 s on the floor machine). A script change (PR #30) was closed unmerged: the verified script works.
 
 Result: all Phase 3 points verified on the floor; "On Import" alone is likely but not isolated.
-Awaiting Gianni's "Phase 3 approved".
+Phase 3 approved by Gianni on 2026-11-05.
