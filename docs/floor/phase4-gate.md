@@ -23,12 +23,12 @@ In DT3 create the group **`_Urgent`** in the test database (top level), if it is
 tools/dt3agent process
 ```
 
-2. Wait 90 seconds. Info pane (Cmd+Shift+I) → **screenshot**.
+2. Wait until `tools/dt3agent status` shows no `"queued"` (each document takes 1–2 minutes). Info pane (Cmd+Shift+I) → **screenshot**.
    Expected: `dt3agenttotal CHF 1957.04`, `dt3agentiban CH4431999123000889012`,
    `dt3agentreference 210000000003139471430009017`.
 
 ```bash
-tools/dt3agent review
+tools/dt3agent review field
 ```
 
    Expected: items `dt3agentretention` (`2036-12-31`) and `dt3agentretentionbasis`; maybe `dt3agentuid`.
@@ -42,10 +42,10 @@ tools/dt3agent review
 tools/dt3agent process
 ```
 
-4. Wait 60 seconds, then:
+4. Wait until the queue is empty: repeat `tools/dt3agent status` every 2–3 minutes until no `"queued"` is shown. Then:
 
 ```bash
-tools/dt3agent review
+tools/dt3agent review deadline
 ```
 
    Expected: an item `"kind": "deadline"` with `"date": "2026-12-17"`. Type its number in place of 7:
@@ -60,8 +60,13 @@ tools/dt3agent decide 7 accept
 
 ## D. Urgent letter (B-6)
 
-5. In the list from step 4 (run `tools/dt3agent review` again if needed) find `"kind": "urgent"` from the
-   Zahlungsbefehl sample of Phase 3. Expected: `"hints"` with "SchKG Art. 74 … bitte prüfen".
+5. List the urgent letters:
+
+```bash
+tools/dt3agent review urgent
+```
+
+   Pick one from the Zahlungsbefehl sample. Expected: `"hints"` with "SchKG Art. 74 … bitte prüfen".
    Type its number in place of 8:
 
 ```bash

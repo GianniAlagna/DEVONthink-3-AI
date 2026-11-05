@@ -50,6 +50,7 @@ class Service:
         self.con = store.open_db(self.data / "engine.db", ENGINE_MIGRATIONS)
         self.undo_con = store.open_db(self.data / "undo.db", UNDO_MIGRATIONS)
         self.queue = queuemod.Queue(self.con, lambda: datetime.now(UTC))
+        self.queue.recover_interrupted()  # one engine per data dir: anything 'running' now was cut off
         self.adapter = DT3Adapter(bridge, UndoJournal(self.undo_con), AuditLog(self.data / "audit"))
         ai_cfg = self.cfg["ai"]
         self.ai = LlamaClient(ai_cfg["url"], context=ai_cfg["context"]) if ai_cfg.get("url") else None
@@ -78,7 +79,8 @@ class Service:
 
     # rpc -----------------------------------------------------------------
     def handle(self, method: str, params: dict):
-        expected = {"status": set(), "process": {"uuid"}, "process_selected": set(), "review": set(),
+        expected = {"status": set(), "process": {"uuid"}, "process_selected": set(),
+                    "review": {"kind"} if "kind" in params else set(),
                     "undo": set(), "pause": set(), "resume": set(), "live": {"on"}}
         expected["decide"] = {"id", "decision"} | ({"value"} if "value" in params else set())
         if method not in expected:
@@ -112,8 +114,12 @@ class Service:
             return {"queued": len(uuids)}
         if method == "review":
             # codes and planned tags only: raw model output may echo document text and stays in the database
+            kind = params.get("kind")
+            if kind is not None and kind not in review.KINDS:
+                raise RPCError("bad_params")
             rows = self.con.execute("SELECT id, uuid, kind, code, payload_json, created_at, record_missing "
-                                    "FROM review_items WHERE decided_at IS NULL ORDER BY id DESC LIMIT 20").fetchall()
+                                    "FROM review_items WHERE decided_at IS NULL AND (? IS NULL OR kind = ?) "
+                                    "ORDER BY id DESC LIMIT 20", (kind, kind)).fetchall()
             out = []
             for i, u, k, c, p, t, missing in rows:
                 missing = self._record_missing(u, bool(missing))

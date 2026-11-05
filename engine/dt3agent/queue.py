@@ -76,6 +76,14 @@ class Queue:
             self.con.execute("UPDATE jobs SET state = 'running', updated_at = ? WHERE id = ?", (now, row[0]))
         return Job(*row)
 
+    def recover_interrupted(self) -> int:
+        """At engine start: a job still 'running' was cut off by a stop or crash. It counts as a failed attempt
+        (retried with back-off, dead after MAX_ATTEMPTS), so it can never block the queue (floor 2026-11-05)."""
+        ids = [r[0] for r in self.con.execute("SELECT id FROM jobs WHERE state = 'running'").fetchall()]
+        for job_id in ids:
+            self.fail(job_id, "interrupted", partial=True)
+        return len(ids)
+
     def finish(self, job_id: int, state: str) -> None:
         if state not in FINAL:
             raise ValueError(f"finish state must be one of {sorted(FINAL)}")

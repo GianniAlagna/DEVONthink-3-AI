@@ -175,6 +175,13 @@ with open(plist, "wb") as f:
 PYEOF
     launchctl bootstrap "$DOMAIN" "$PLIST"
     what="service"; [ -n "$uuid" ] && what="$check test"
+    if [ -z "$uuid" ]; then  # floor 2026-11-05: 'install && live on' raced the engine start; wait until it answers
+        for _ in $(seq 1 60); do
+            "$REPO/tools/dt3agent" status >/dev/null 2>&1 && break
+            sleep 1
+        done
+        "$REPO/tools/dt3agent" status >/dev/null 2>&1 || echo "Engine not answering yet - run: tools/dev-agent.sh status"
+    fi
     echo "Started ($mode, $what). If macOS asks to allow \"DT3 Agent Engine\" to control DEVONthink 3: click OK."
     echo "Then: tools/dev-agent.sh status   and take a screenshot of System Preferences > Security & Privacy > Privacy > Automation"
     ;;
