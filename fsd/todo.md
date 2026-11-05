@@ -59,7 +59,7 @@ Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC
 - [x] B-5 deadlines — done 2026-11-05: Gianni chose DT3 reminder + calendar event as .ics in DT3; stated dates only; floor check open (AppleScript `import`/`make new reminder` UNVERIFIED)
 - [x] B-6 urgent letters (accept → `_Urgent`, SchKG Art. 74 hint "bitte prüfen", `urgent_open` in status for the app notification, tax office words) — done 2026-11-05
 
-- [ ] **P4-G: Phase 4 floor gate** — B-0 record_missing, QR-bill PDF (synthetic), UID, retention, urgent → `_Urgent`, deadline → .ics + DT3 reminder
+- [x] **P4-G: Phase 4 floor gate** (report: docs/floor/phase4-report.md) — B-0 record_missing, QR-bill PDF (synthetic), UID, retention, urgent → `_Urgent`, deadline → .ics + DT3 reminder
 
 ## Phase 5 — App
 - U-1 menu bar + status · U-2 onboarding · U-3 settings · U-4 review window · U-5 installer · U-6 de-CH/fr-CH/it-CH/en + accessibility pass
