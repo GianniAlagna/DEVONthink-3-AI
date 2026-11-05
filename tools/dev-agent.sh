@@ -2,7 +2,7 @@
 # Floor tests for Phase 2: run the engine host (and llama-server) as LaunchAgents.
 # Developer tool, not the installer (that is Phase 5).
 # Usage: tools/dev-agent.sh python | llama | smartrule | install [osakit|osascript] [record-UUID] [read|tag]
-#                           | status | uninstall
+#                           | bundle | status | uninstall
 #   install without a record ID runs the engine service; control it with tools/dt3agent.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -197,6 +197,24 @@ PYEOF
     echo "Started ($mode, $what). If macOS asks to allow \"DT3 Agent Engine\" to control DEVONthink 3: click OK."
     echo "Then: tools/dev-agent.sh status   and take a screenshot of System Preferences > Security & Privacy > Privacy > Automation"
     ;;
+bundle)
+    # Phase 5: the menu-bar app with Python and llama-server inside (as a release will have them), copied to
+    # ~/Applications. The app's installer then sets up the real LaunchAgents. Stops the dev agents first.
+    PYDIR=$(dirname "$(dirname "$PY")")
+    [ -x "$PY" ] || { echo "Python not found at $PY - run: tools/dev-agent.sh python"; exit 1; }
+    [ -x "$LLAMA_SERVER" ] || { echo "llama-server not built - run: tools/dev-agent.sh llama"; exit 1; }
+    stop
+    stop_llama
+    for label in codes.modular.dt3agent.engine codes.modular.dt3agent.llama; do   # an older installed build
+        launchctl bootout "$DOMAIN/$label" 2>/dev/null || true
+    done
+    DT3A_BUNDLE_PYTHON="$PYDIR" DT3A_BUNDLE_LLAMA="$LLAMA_SERVER" tools/build-swift.sh build
+    [ -f "build/DT3 Agent.app/Contents/Resources/DT3 Agent Enqueue.scpt" ] || echo "Warning: Smart Rule script missing (is DT3 in /Applications?)"
+    mkdir -p "$HOME/Applications"
+    rm -rf "$HOME/Applications/DT3 Agent.app"
+    ditto "build/DT3 Agent.app" "$HOME/Applications/DT3 Agent.app"
+    echo "Built: ~/Applications/DT3 Agent.app ($(du -sh "$HOME/Applications/DT3 Agent.app" | cut -f1))"
+    ;;
 app)
     # U-1: the menu-bar app; built by install (tools/build-swift.sh). Quit it from its own menu.
     [ -d "$REPO/build/DT3 Agent.app" ] || { echo "Run tools/dev-agent.sh install first"; exit 1; }
@@ -214,7 +232,7 @@ uninstall)
     echo "LaunchAgents removed. Logs kept in: $(dirname "$LOG"). Data kept in: $DATA"
     ;;
 *)
-    echo "usage: tools/dev-agent.sh python | llama | smartrule | testconfig NAME | install [osakit|osascript] [record-UUID] [read|tag] | app | status | uninstall"
+    echo "usage: tools/dev-agent.sh python | llama | smartrule | testconfig NAME | install [osakit|osascript] [record-UUID] [read|tag] | bundle | app | status | uninstall"
     exit 2
     ;;
 esac
