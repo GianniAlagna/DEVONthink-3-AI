@@ -145,5 +145,38 @@ check(gone.missing && gone.recordName == nil && gone.before == "" && gone.action
 check(ReviewItem(json: ["kind": "field"]) == nil, "item without id is skipped")
 check(errorText("reminder_exists", en) == "The document already has a reminder. Nothing was changed.", "decide errors")
 
+// installer
+let ip = InstallPaths(home: URL(fileURLWithPath: "/Users/erika"), bundle: URL(fileURLWithPath: "/Applications/DT3 Agent.app"))
+check(ip.enginePlist.path == "/Users/erika/Library/LaunchAgents/codes.modular.dt3agent.engine.plist", "engine plist path")
+check(ip.script.path == "/Users/erika/Library/Application Scripts/com.devon-technologies.think3/Smart Rules/DT3 Agent Enqueue.scpt",
+      "smart rule script path")
+check(ip.model.path == "/Users/erika/Library/Application Support/DT3 Agent/models/Qwen3-1.7B-Q4_K_M.gguf", "model path")
+let ep = ip.enginePlistContent()
+check(ep["Label"] as? String == "codes.modular.dt3agent.engine" && ep["KeepAlive"] as? Bool == true, "engine plist")
+check((ep["ProgramArguments"] as? [String])?.first ==
+      "/Applications/DT3 Agent.app/Contents/Helpers/DT3 Agent Engine.app/Contents/MacOS/DT3AgentEngine",
+      "the signed host is the program (ADR-0005)")
+check((ep["ProgramArguments"] as? [String])?.contains("/Applications/DT3 Agent.app/Contents/Resources/engine") == true,
+      "engine dir inside the app")
+let lp = ip.llamaPlistContent(threads: 4)
+let largs = lp["ProgramArguments"] as? [String] ?? []
+check(largs.contains("127.0.0.1") && largs.contains("--no-webui") && largs.contains("8192") && !largs.contains("0.0.0.0"),
+      "llama-server: this Mac only, no web UI, 8192 context")
+let zeroArgs = ip.llamaPlistContent(threads: 0)["ProgramArguments"] as? [String] ?? []
+if let ti = zeroArgs.firstIndex(of: "-t") { check(zeroArgs[ti + 1] == "1", "at least one thread") } else {
+    check(false, "threads argument")
+}
+let patched = patchConfig(["ai": ["url": NSNull(), "context": 8192], "identity": ["name": "Erika"]],
+                          visionHelper: "/x/dt3agent-vision", aiURL: "http://127.0.0.1:8080")
+check((patched["vision"] as? [String: Any])?["helper"] as? String == "/x/dt3agent-vision", "vision helper set")
+check((patched["ai"] as? [String: Any])?["url"] as? String == "http://127.0.0.1:8080", "AI address set when empty")
+check((patched["identity"] as? [String: Any])?["name"] as? String == "Erika", "other settings stay")
+let kept = patchConfig(["ai": ["url": "http://192.168.1.5:11434"]], visionHelper: "/v", aiURL: "http://127.0.0.1:8080")
+check((kept["ai"] as? [String: Any])?["url"] as? String == "http://192.168.1.5:11434", "a set AI address is kept")
+check(hex([0, 15, 255]) == "000fff", "hex")
+check(DefaultModel.sha256.count == 64 && DefaultModel.url.scheme == "https", "model pinned by https and SHA-256")
+let items = installItems(ip) { $0.hasSuffix(".plist") }
+check(items.count == 5 && items.filter { $0.present }.count == 2, "items with what is there")
+
 if failures > 0 { print("\(failures) failed"); exit(1) }
 print("app tests ok")

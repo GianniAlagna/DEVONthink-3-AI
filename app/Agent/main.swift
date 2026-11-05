@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     let setup = SetupWindow()
     let settings = SettingsWindow()
     let reviewWindow = ReviewWindow()
+    let installer = InstallerWindow()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         menu.delegate = self
@@ -20,7 +21,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         render()
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in self?.refresh() }
-        if !UserDefaults.standard.bool(forKey: "setupDone") { openSetup() }  // first start (brief §6.2)
+        // first start: install first (nothing set up yet, also no developer agent), then the setup wizard
+        let p = InstallPaths(home: FileManager.default.homeDirectoryForCurrentUser, bundle: Bundle.main.bundleURL)
+        let dev = p.launchAgents.appendingPathComponent(InstallPaths.engineLabel + ".dev.plist")
+        if !FileManager.default.fileExists(atPath: p.enginePlist.path) && !FileManager.default.fileExists(atPath: dev.path) {
+            openInstaller()
+        } else if !UserDefaults.standard.bool(forKey: "setupDone") {
+            openSetup()  // brief §6.2
+        }
     }
 
     // Refresh when the user opens the menu, so the numbers are current.
@@ -64,6 +72,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(item(paused ? t[.resume] : t[.pause], #selector(togglePause), enabled: online))
         menu.addItem(item(t[.undo], #selector(undoLastBatch), enabled: online))
         menu.addItem(.separator())
+        menu.addItem(item(t[.instMenu], #selector(openInstaller), enabled: true))
         menu.addItem(item(t[.setupMenu], #selector(openSetup), enabled: true))
         menu.addItem(item(t[.settings], #selector(openSettings), enabled: true, key: ","))
         menu.addItem(item(t[.help], #selector(openHelp), enabled: true))
@@ -114,6 +123,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc func openSetup() {
         setup.show(t: t, work: work) { [weak self] in self?.refresh() }
+    }
+
+    @objc func openInstaller() {
+        installer.show(t: t) { [weak self] in self?.refresh() }
     }
 
     @objc func openReview() {
