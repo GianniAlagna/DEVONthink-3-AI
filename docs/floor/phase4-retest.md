@@ -1,11 +1,8 @@
-# Phase 4 retest — two open points (MacBook Pro 2014, macOS 11.7, DT3 3.9.17)
+# Phase 4 retest — tax office letter (MacBook Pro 2014, macOS 11.7, DT3 3.9.17)
 
-Parts C (deadline) and D (urgent) passed on 2026-11-05. Two points are still open:
-
-| Point | Why open |
-|---|---|
-| B-2 QR-bill | The QR values were applied directly (confidence 0.95), so they never showed in `review` |
-| B-6 tax office | `ocr-de.pdf` (Steueramt) was not flagged: the saved test config still held the urgent words from Phase 3. `testconfig` now refreshes them |
+Passed on 2026-11-05: C (deadline), D (urgent), B-2 (QR values read back: IBAN, total, reference).
+Still open: **B-6 tax office**. Cause found: the running engine kept its old settings in memory, and
+`live on` wrote them back over the new ones from `testconfig`. `testconfig` now restarts the engine.
 
 Copy **one grey box at a time** into Terminal.
 
@@ -19,20 +16,15 @@ cd ~/dt3agent-dev-kit && bash tools/dev-agent.sh llama && bash tools/dev-agent.s
 bash tools/dev-agent.sh testconfig "Erika Beispiel" && tools/dt3agent live on
 ```
 
-## B. QR-bill values (B-2) — read only, changes nothing
+Check (read only): expected a number of 1 or more.
 
 ```bash
-osascript -l JavaScript -e 'const r=Application("DEVONthink 3").getRecordWithUuid("2BA1C95E-05D6-4FBC-9900-9B87CAF6712B"); JSON.stringify(r ? r.customMetaData() : null)'
+grep -c Steueramt ~/Library/Application\ Support/DT3\ Agent/config.json
 ```
 
-Expected: `dt3agentiban` `CH4431999123000889012`, `dt3agenttotal` `CHF 1957.04`,
-`dt3agentreference` `210000000003139471430009017`. If it prints `null`: drag `samples/qrbill-qrr.pdf` into the
-test database again, click it, run `tools/dt3agent process`, wait 2 minutes, then use the new document's ID
-(Edit > Copy Item Link) in place of `2BA1C95E-…`.
+## B. Tax office letter (B-6)
 
-## C. Tax office letter (B-6)
-
-1. Drag `~/dt3agent-dev-kit/samples/ocr-de.pdf` into the test database. Click it. Then:
+1. In DT3 click the `ocr-de` document (Steueramt, already in the test database). Then:
 
 ```bash
 tools/dt3agent process
@@ -44,7 +36,7 @@ tools/dt3agent process
 tools/dt3agent review urgent
 ```
 
-   Expected: a new item with `"words": ["Steueramt"]` and `"hints": []` (no deadline is ever computed).
+   Expected: an item with `"words": ["Steueramt"]` and `"hints": []` (no deadline is ever computed).
    Type its `"id"` in place of 8:
 
 ```bash
@@ -53,12 +45,7 @@ tools/dt3agent decide 8 accept
 
    Expected: `{"applied": true}`, the letter is in `_Urgent`.
 
-## D. Calendar (optional) — screenshot
-
-Open the group of a `Frist-Muster` copy: the `.ics` record lies next to it and the document shows the bell
-(17.12.2026, 09:00). Double-click the `.ics` → macOS Calendar → **screenshot**.
-
-## E. End
+## C. End
 
 ```bash
 tools/dt3agent live off && bash tools/dev-agent.sh uninstall

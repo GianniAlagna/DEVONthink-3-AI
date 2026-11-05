@@ -134,6 +134,16 @@ config.save(path, cfg)
 print("Test settings saved. In the TEST database create these groups (a / means: one group inside the other,")
 print("never a / in a group name): Finanzen > Rechnungen,  Recht > Fall-Muster,  _AI-Review,  _Duplicates,  _Urgent")
 PYEOF
+    # floor 2026-11-05: a running engine keeps its old settings in memory and 'live on' wrote them back.
+    # Restart it so it reads the new file.
+    if launchctl print "$DOMAIN/$LABEL" >/dev/null 2>&1; then
+        launchctl kickstart -k "$DOMAIN/$LABEL"
+        for _ in $(seq 1 60); do
+            "$REPO/tools/dt3agent" status >/dev/null 2>&1 && break
+            sleep 1
+        done
+        echo "Engine restarted with the new settings."
+    fi
     ;;
 install)
     mode=${2:-osakit}
