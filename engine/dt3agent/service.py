@@ -142,11 +142,15 @@ class Service:
             rows = self.con.execute("SELECT id, uuid, kind, code, payload_json, created_at, record_missing "
                                     "FROM review_items WHERE decided_at IS NULL AND (? IS NULL OR kind = ?) "
                                     "ORDER BY id DESC LIMIT 20", (kind, kind)).fetchall()
-            out = []
+            out, records = [], {}
             for i, u, k, c, p, t, missing in rows:
-                missing = self._record_missing(u, bool(missing))
+                if u not in records:
+                    records[u] = self._record_state(u, bool(missing))
+                missing, rec = records[u]
                 review.set_missing(self.con, i, missing)
-                row = self._review_row(i, u, k, c, json.loads(p), t)
+                payload = json.loads(p)
+                row = self._review_row(i, u, k, c, payload, t)
+                row.update(record_name=rec.get("name") if rec else None, before=self._before(k, payload, rec))
                 if k == "urgent":
                     row["group"] = self.cfg["urgent"]["group"]
                 actions = (["reject"] if missing else ["accept", "reject"] if k == "urgent"
@@ -255,12 +259,30 @@ class Service:
             raise
 
     def _record_missing(self, uuid: str, known: bool) -> bool:
-        """Does DT3 still have this record? Any other failure (DT3 closed, host gone) keeps what we knew."""
+        return self._record_state(uuid, known)[0]
+
+    def _record_state(self, uuid: str, known: bool) -> tuple[bool, dict | None]:
+        """(missing, record) — does DT3 still have it? Any other failure (DT3 closed, host gone) keeps what we knew."""
         try:
-            self.adapter.read(uuid)
-            return False
+            return False, self.adapter.read(uuid)
         except BridgeError as e:
-            return True if str(e) == "not_found" else known
+            return (True if str(e) == "not_found" else known), None
+
+    @staticmethod
+    def _before(kind: str, payload: dict, rec: dict | None):
+        """The current value in DT3 that a proposal would replace (review window: before/after)."""
+        if rec is None:
+            return None
+        if kind == "planned":
+            return list(rec.get("tags") or [])
+        if kind != "field":
+            return None
+        field = payload.get("field")
+        if field == "metadata":
+            meta = rec.get("metadata") or {}
+            key = payload.get("key") or ""
+            return meta.get("md" + key, meta.get(key))
+        return rec.get({"name": "name", "comment": "comment", "location": "location"}.get(field, ""))
 
     def _apply(self, result: dict, params: dict) -> dict:
         if result["kind"] in ("duplicate", "case"):
