@@ -59,17 +59,22 @@ function setMetadata(uuid, key, value) {
 }
 function move(uuid, location) {
   // Only into an existing group of the same database; the host never creates groups.
-  // UNVERIFIED on the floor: getRecordAt (move itself verified in Phase 0, S4).
+  // move itself verified in Phase 0 (S4).
   const r = rec(uuid);
-  const g = dt3().getRecordAt(location, { in: r.database() });
-  if (!g || g.type() !== 'group') throw new Error('group_not_found');
-  dt3().move({ record: r, to: g });
+  dt3().move({ record: r, to: group(location, r) });
   return JSON.stringify({ uuid: uuid, location: r.location() });
 }
 function group(location, r) {
-  const g = dt3().getRecordAt(location, r ? { in: r.database() } : {});
-  if (!g || g.type() !== 'group') throw new Error('group_not_found');
-  return g;
+  // UNVERIFIED on the floor: whether getRecordAt accepts the trailing "/" that record.location() has.
+  // Try the path as given, then without the trailing "/". Floor 2026-11-05: "/Recht/Fall-Muster/" not found.
+  const opts = r ? { in: r.database() } : {};
+  const paths = [location];
+  if (location.length > 1 && location.endsWith('/')) paths.push(location.replace(/\\/+$/, ''));
+  for (let i = 0; i < paths.length; i++) {
+    const g = dt3().getRecordAt(paths[i], opts);
+    if (g && g.type() === 'group') return g;
+  }
+  throw new Error('group_not_found');
 }
 function duplicatesOf(uuid) {
   return JSON.stringify({ uuids: (rec(uuid).duplicates() || []).slice(0, 20).map(function (d) { return d.uuid(); }) });

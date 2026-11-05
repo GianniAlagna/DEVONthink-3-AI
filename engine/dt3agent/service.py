@@ -155,6 +155,13 @@ class Service:
             result = review.decide(self.con, params["id"], params["decision"], value)
         except review.ReviewError as e:
             raise RPCError(str(e)) from None
+        try:
+            return self._apply(result, params)
+        except Exception:
+            review.reopen(self.con, params["id"])  # a failed write must not lose the item
+            raise
+
+    def _apply(self, result: dict, params: dict) -> dict:
         if result["kind"] in ("duplicate", "case"):
             return self._a10(result, params["id"])
         if result["apply"] is None:

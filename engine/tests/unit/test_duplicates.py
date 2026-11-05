@@ -104,3 +104,11 @@ def test_missing_group_is_reported(svc):
     with pytest.raises(RPCError) as e:
         svc.handle("decide", {"id": case["id"], "decision": "edit", "value": ["replicate", "/Nope/"]})
     assert str(e.value) == "group_not_found"
+
+
+def test_failed_decision_keeps_the_item_open(svc):
+    # Floor 2026-11-05: decide on a case with a missing group said group_not_found, but the item vanished.
+    case = next(c for c in items(svc, "case") if c["uuid"] == A)
+    with pytest.raises(RPCError):
+        svc.handle("decide", {"id": case["id"], "decision": "edit", "value": ["replicate", "/Nope/"]})
+    assert case["id"] in [c["id"] for c in items(svc, "case")]

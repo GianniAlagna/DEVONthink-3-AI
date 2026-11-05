@@ -50,3 +50,10 @@ def decide(con: sqlite3.Connection, item_id: int, decision: str, value=None) -> 
         con.execute("UPDATE review_items SET decided_at = ?, decision = ?, value_json = ? WHERE id = ?",
                     (datetime.now(UTC).isoformat(), decision, json.dumps(apply), item_id))
     return {"uuid": uuid, "kind": kind, "payload": payload, "apply": apply, "decision": decision}
+
+
+def reopen(con: sqlite3.Connection, item_id: int) -> None:
+    """Undo a recorded decision whose write failed, so the item stays in the review list."""
+    with con:
+        con.execute("UPDATE review_items SET decided_at = NULL, decision = NULL, value_json = NULL WHERE id = ?",
+                    (item_id,))
