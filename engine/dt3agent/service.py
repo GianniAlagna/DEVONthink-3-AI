@@ -13,11 +13,14 @@ from pathlib import Path
 from dt3agent import __version__, config, duplicates, naming, pipeline, review, store
 from dt3agent import queue as queuemod
 from dt3agent.adapter import DT3Adapter
-from dt3agent.ai import LlamaClient
+from dt3agent.ai import AIError, LlamaClient
 from dt3agent.audit import UUID_RE, AuditLog
 from dt3agent.bridge import BridgeError
+from dt3agent.embed import EmbedClient, EmbedError
 from dt3agent.ics import build_event
+from dt3agent.index import Index
 from dt3agent.intake import ingest_spool
+from dt3agent.knowledge import AskError, ask
 from dt3agent.rpc import RPCError
 from dt3agent.undo import MIGRATIONS as UNDO_MIGRATIONS
 from dt3agent.undo import UndoJournal
@@ -30,6 +33,7 @@ ENGINE_MIGRATIONS = (queuemod.MIGRATIONS + pipeline.MIGRATIONS + STATE_MIGRATION
 # Settings the app may not change over rpc: the vision helper is a program the engine runs (set by the installer).
 RPC_LOCKED = {"schema_version", "vision"}
 DEFAULT_DATA = Path.home() / "Library/Application Support/DT3 Agent"
+EMBED_MODEL = "Qwen3-Embedding-0.6B-Q8_0"  # ADR-0011; a different name clears index.db
 
 
 def _not_found(e: BaseException | None) -> bool:
@@ -55,6 +59,7 @@ class Service:
         self.queue = queuemod.Queue(self.con, lambda: datetime.now(UTC))
         self.queue.recover_interrupted()  # one engine per data dir: anything 'running' now was cut off
         self.adapter = DT3Adapter(bridge, UndoJournal(self.undo_con), AuditLog(self.data / "audit"))
+        self.index = None
         self._use_config(self.cfg)
 
     def _use_config(self, cfg: dict) -> None:
@@ -64,9 +69,17 @@ class Service:
         self.ai = LlamaClient(ai_cfg["url"], context=ai_cfg["context"]) if ai_cfg.get("url") else None
         v = cfg["vision"]
         self.vision = VisionClient(v["helper"], v["languages"], v["max_pages"]) if v.get("helper") else None
+        if ai_cfg.get("embed_url"):  # K-2: the index exists once an embedding server is set (ADR-0011)
+            embedder = EmbedClient(ai_cfg["embed_url"])
+            if self.index is None:
+                self.index = Index(self.data / "index.db", embedder, model=EMBED_MODEL)
+            self.index.embedder = embedder
+        elif self.index is not None:
+            self.index.con.close()
+            self.index = None
         self.pipeline = pipeline.Pipeline(self.adapter, self.ai, self.con, dry_run=cfg["dry_run"],
                                           vocabulary=cfg["tags"]["vocabulary"], vision=self.vision,
-                                          settings=cfg)
+                                          settings=cfg, index=self.index)
 
     def _change_config(self, changes: dict) -> dict:
         """Starts from the file, never from a copy in memory (floor 2026-11-05: a stale copy was written back)."""
@@ -103,7 +116,7 @@ class Service:
                     "review": {"kind"} if "kind" in params else set(),
                     "undo": set(), "pause": set(), "resume": set(), "live": {"on"},
                     "config_get": set(), "config_set": {"changes"}, "naming_preview": {"template"},
-                    "dt3_info": set()}
+                    "dt3_info": set(), "ask": {"question"}}
         expected["decide"] = {"id", "decision"} | ({"value"} if "value" in params else set())
         if method not in expected:
             raise RPCError("unknown_method")  # there is no delete method
@@ -120,7 +133,8 @@ class Service:
                     "review_items": self.con.execute("SELECT COUNT(*) FROM review_items "
                                                      "WHERE decided_at IS NULL").fetchone()[0],
                     "urgent_open": self.con.execute("SELECT COUNT(*) FROM review_items WHERE kind = 'urgent' "
-                                                    "AND decided_at IS NULL").fetchone()[0]}
+                                                    "AND decided_at IS NULL").fetchone()[0],
+                    "index_docs": self.index.count() if self.index else None}
         if method == "process":
             uuid = params["uuid"]
             if not (isinstance(uuid, str) and UUID_RE.fullmatch(uuid)):
@@ -160,6 +174,8 @@ class Service:
             return out
         if method == "decide":
             return self._decide(params)
+        if method == "ask":
+            return self._ask(params["question"])
         if method == "undo":
             try:
                 return self.adapter.undo_last_batch()
@@ -185,6 +201,28 @@ class Service:
         if not isinstance(params["on"], bool):
             raise RPCError("bad_params")
         return {"dry_run": self._change_config({"dry_run": not params["on"]})["dry_run"]}
+
+    def _ask(self, question) -> dict:
+        """K-3: answer from the index with sources. Read-only: no write path exists from here."""
+        if not isinstance(question, str):
+            raise RPCError("bad_params")
+        if self.index is None:
+            raise RPCError("index_unavailable")
+        if self.ai is None:
+            raise RPCError("ai_unavailable")
+        try:
+            answer = ask(question, self.index, self.ai)
+        except (AskError, AIError, EmbedError) as e:
+            raise RPCError(e.code) from e
+        sources = []
+        for uuid in answer.sources:
+            try:
+                name = self.adapter.read(uuid).get("name")
+            except Exception:  # deleted in DT3 since it was indexed: drop it from the index and the answer
+                self.index.remove(uuid)
+                continue
+            sources.append({"uuid": uuid, "name": name, "link": "x-devonthink-item://" + uuid})
+        return {"answer": answer.text, "sources": sources}
 
     @staticmethod
     def _naming_preview(template) -> str:
@@ -373,6 +411,8 @@ class Service:
         return {"applied": True}
 
     def close(self) -> None:
+        if self.index is not None:
+            self.index.con.close()
         for con in (self.con, self.undo_con):
             try:
                 con.close()
