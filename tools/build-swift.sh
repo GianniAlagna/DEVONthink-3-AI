@@ -24,3 +24,21 @@ plutil -lint "$APP/Contents/Info.plist"
 codesign --force --sign "$IDENTITY" --timestamp=none "$APP"
 lipo -info "$APP/Contents/MacOS/DT3AgentEngine"
 codesign -d -r- "$APP" 2>&1 | tail -1
+
+# Menu-bar app "DT3 Agent.app" (U-1): app logic tests first (host architecture), then the universal app
+CORE="app/Agent/Core.swift app/Agent/L10n.swift app/Agent/RPC.swift"
+# shellcheck disable=SC2086
+xcrun swiftc -O -target "$(uname -m)-apple-macos11.0" $CORE app/Tests/main.swift -o "$OUT/dt3agent-app-tests"
+"$OUT/dt3agent-app-tests"
+UI="$OUT/DT3 Agent.app"
+rm -rf "$UI"
+mkdir -p "$UI/Contents/MacOS"
+for arch in x86_64 arm64; do
+    # shellcheck disable=SC2086
+    xcrun swiftc -O -target "$arch-apple-macos11.0" $CORE app/Agent/main.swift -o "$OUT/DT3Agent-$arch"
+done
+lipo -create "$OUT/DT3Agent-x86_64" "$OUT/DT3Agent-arm64" -output "$UI/Contents/MacOS/DT3Agent"
+cp app/Agent/Info.plist "$UI/Contents/Info.plist"
+plutil -lint "$UI/Contents/Info.plist"
+codesign --force --sign "$IDENTITY" --timestamp=none "$UI"
+lipo -info "$UI/Contents/MacOS/DT3Agent"

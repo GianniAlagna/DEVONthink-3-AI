@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key><string>codes.modular.dt3agent.app</string>
+	<key>CFBundleName</key><string>DT3 Agent</string>
+	<key>CFBundleDisplayName</key><string>DT3 Agent</string>
+	<key>CFBundleExecutable</key><string>DT3Agent</string>
+	<key>CFBundlePackageType</key><string>APPL</string>
+	<key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+	<key>CFBundleShortVersionString</key><string>0.0.1</string>
+	<key>CFBundleVersion</key><string>1</string>
+	<key>CFBundleDevelopmentRegion</key><string>en</string>
+	<key>CFBundleLocalizations</key><array><string>de</string><string>en</string></array>
+	<key>LSMinimumSystemVersion</key><string>11.0</string>
+	<key>LSUIElement</key><true/>
+	<key>NSHumanReadableCopyright</key><string>DT3 Agent is not affiliated with DEVONtechnologies.</string>
+</dict>
+</plist>

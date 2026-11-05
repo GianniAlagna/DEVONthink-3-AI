@@ -33,3 +33,4 @@ Runs on 2026-11-05 with kits 2353e4c9, 68be46e7, b5bd86d2 and f4bc787d. Test dat
 - Calendar screenshot (.ics opened in macOS Calendar) not taken; the import itself is verified.
 
 Result: all Phase 4 points verified on the floor except B-3 (unit tests only, no floor sample).
+Phase 4 approved by Gianni on 2026-11-05.
