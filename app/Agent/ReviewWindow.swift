@@ -94,19 +94,28 @@ struct ReviewRow: View {
             }
             ForEach(item.hints, id: \.self) { hint in CheckRow(ok: false, text: hint) }
             if m.editing == item.id {
-                TextField(t[.edit], text: $m.editText).accessibilityLabel(t[.edit])
+                TextField(t[.edit], text: $m.editText, onCommit: { m.decide(item, "edit") })  // Return saves
+                    .accessibilityLabel(item.title(t) + ", " + t[.edit])
                 if !item.editHint(t).isEmpty {
                     Text(item.editHint(t)).font(.caption).foregroundColor(.secondary)
                 }
                 HStack {
-                    Button(t[.cancel]) { m.editing = nil }
+                    Button(t[.cancel]) { m.editing = nil }.keyboardShortcut(.cancelAction)
                     Button(t[.save]) { m.decide(item, "edit") }.disabled(m.busy)
                 }
             } else {
                 HStack {
-                    if item.actions.contains("accept") { Button(t[.accept]) { m.decide(item, "accept") } }
-                    if item.canEdit { Button(t[.edit]) { m.startEdit(item) } }
-                    if item.actions.contains("reject") { Button(t[.reject]) { m.decide(item, "reject") } }
+                    if item.actions.contains("accept") {
+                        Button(t[.accept]) { m.decide(item, "accept") }
+                            .accessibilityLabel(t[.accept] + ": " + item.title(t))
+                    }
+                    if item.canEdit {
+                        Button(t[.edit]) { m.startEdit(item) }.accessibilityLabel(t[.edit] + ": " + item.title(t))
+                    }
+                    if item.actions.contains("reject") {
+                        Button(t[.reject]) { m.decide(item, "reject") }
+                            .accessibilityLabel(t[.reject] + ": " + item.title(t))
+                    }
                 }.disabled(m.busy)
             }
         }
@@ -126,7 +135,7 @@ struct ReviewView: View {
                 Button(t[.refresh]) { m.load() }.keyboardShortcut("r", modifiers: .command)
             }
             if let msg = m.message {
-                Text(msg).foregroundColor(.red).fixedSize(horizontal: false, vertical: true)
+                ErrorLine(text: msg).id(msg)
             }
             if m.items.isEmpty {
                 Spacer()

@@ -130,14 +130,17 @@ final class SetupModel: ObservableObject {
     }
 }
 
+/// A line with a state symbol. VoiceOver reads the state ("Warning") before the text, so the state is never
+/// carried by colour alone; the symbol shape differs too (checkmark vs. triangle).
 struct CheckRow: View {
+    static let t = L10n()
     let ok: Bool
     let text: String
     var body: some View {
         HStack(alignment: .top) {
             Image(systemName: ok ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                 .foregroundColor(ok ? .green : .orange)
-                .accessibilityHidden(true)
+                .accessibilityLabel(ok ? CheckRow.t[.a11yOK] : CheckRow.t[.a11yWarning])
             Text(text).fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityElement(children: .combine)
@@ -154,7 +157,7 @@ struct SetupView: View {
                 .font(.caption).foregroundColor(.secondary)
             content
             Spacer(minLength: 0)
-            if let e = m.error { Text(e).foregroundColor(.red).fixedSize(horizontal: false, vertical: true) }
+            if let e = m.error { ErrorLine(text: e).id(e) }
             HStack {
                 if m.step.previous != nil { Button(t[.back]) { m.back() } }
                 Spacer()
@@ -255,5 +258,19 @@ final class SetupWindow {
         w.center()
         w.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+}
+
+/// Reads a status line aloud with VoiceOver (macOS 11+), e.g. installer progress or an error after a button.
+func announce(_ text: String) {
+    NSAccessibility.post(element: NSApp as Any, notification: .announcementRequested,
+                         userInfo: [.announcement: text, .priority: NSAccessibilityPriorityLevel.high.rawValue])
+}
+
+/// An error line: symbol plus text (not red text alone), announced to VoiceOver when it appears.
+struct ErrorLine: View {
+    let text: String
+    var body: some View {
+        CheckRow(ok: false, text: text).onAppear { announce(text) }
     }
 }
