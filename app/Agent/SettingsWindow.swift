@@ -159,8 +159,12 @@ struct SettingsView: View {
             }
             HStack {
                 if let msg = m.message {
-                    Text(msg).foregroundColor(m.messageIsError ? .red : .secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    if m.messageIsError {
+                        ErrorLine(text: msg).id(msg)
+                    } else {
+                        Text(msg).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+                            .onAppear { announce(msg) }.id(msg)
+                    }
                 }
                 Spacer()
                 Button(t[.revert]) { m.revert() }.disabled(!m.dirty)

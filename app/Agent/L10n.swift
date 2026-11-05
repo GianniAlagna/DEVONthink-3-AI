@@ -39,6 +39,8 @@ struct L10n {
         case instItemEngine, instItemLlama, instItemScript, instItemModel, instItemData
         case instNoPython, instNoLlama, instLlamaStarted, instDone, instFailed, instQuitDT3, instScript
         case instDownloading, instChecksum, instModel, instRemoved, instUninstalled
+        // accessibility (U-6): spoken state of a check row
+        case a11yOK, a11yWarning
     }
 
     static let table: [String: [Key: String]] = [
@@ -203,6 +205,8 @@ struct L10n {
             .instModel: "KI-Modell geladen und geprüft.",
             .instRemoved: "Entfernt:",
             .instUninstalled: "DT3 Agent ist entfernt. Die App selbst kannst du in den Papierkorb ziehen.",
+            .a11yOK: "In Ordnung",
+            .a11yWarning: "Achtung",
         ],
         "en": [
             .appName: "DT3 Agent",
@@ -365,6 +369,8 @@ struct L10n {
             .instModel: "AI model downloaded and checked.",
             .instRemoved: "Removed:",
             .instUninstalled: "DT3 Agent is removed. You can drag the app itself to the Trash.",
+            .a11yOK: "OK",
+            .a11yWarning: "Warning",
         ],
         "fr": [
             .appName: "DT3 Agent",
@@ -527,6 +533,8 @@ struct L10n {
             .instModel: "Modèle d’IA téléchargé et vérifié.",
             .instRemoved: "Supprimé :",
             .instUninstalled: "DT3 Agent est supprimé. Vous pouvez glisser l’app elle-même dans la corbeille.",
+            .a11yOK: "OK",
+            .a11yWarning: "Attention",
         ],
         "it": [
             .appName: "DT3 Agent",
@@ -689,6 +697,8 @@ struct L10n {
             .instModel: "Modello IA scaricato e verificato.",
             .instRemoved: "Rimosso:",
             .instUninstalled: "DT3 Agent è stato rimosso. Può trascinare l’app stessa nel Cestino.",
+            .a11yOK: "OK",
+            .a11yWarning: "Attenzione",
         ],
     ]
 

@@ -34,7 +34,7 @@ final class InstallerModel: ObservableObject {
         items = installItems(paths) { fm.fileExists(atPath: $0) }
     }
 
-    func say(_ line: String) { DispatchQueue.main.async { self.log.append(line) } }
+    func say(_ line: String) { DispatchQueue.main.async { self.log.append(line); announce(line) } }
 
     // MARK: install
 
