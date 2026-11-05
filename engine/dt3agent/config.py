@@ -4,6 +4,8 @@ import json
 import os
 from pathlib import Path
 
+from dt3agent.naming import TOKEN, TOKENS
+
 SCHEMA_VERSION = 1
 
 DEFAULTS = {
@@ -125,6 +127,9 @@ def validate(cfg: dict) -> dict:
     if not all(isinstance(naming.get(k, "x"), str) and 0 < len(naming.get(k, "x")) <= 200
                for k in ("template", "unknown")):
         raise ConfigError("naming: template and unknown are non-empty text")
+    tokens = TOKEN.findall(naming.get("template", "{date}"))
+    if not tokens or set(tokens) - TOKENS:
+        raise ConfigError("naming.template: use only known {tokens}")
     ai = cfg.get("ai", {})
     url = ai.get("url")
     if not (url is None or (isinstance(url, str) and len(url) <= 300 and url.split("://")[0] in ("http", "https")

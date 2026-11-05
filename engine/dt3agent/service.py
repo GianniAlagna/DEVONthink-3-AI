@@ -10,7 +10,7 @@ import sqlite3
 from datetime import UTC, date, datetime
 from pathlib import Path
 
-from dt3agent import __version__, config, duplicates, pipeline, review, store
+from dt3agent import __version__, config, duplicates, naming, pipeline, review, store
 from dt3agent import queue as queuemod
 from dt3agent.adapter import DT3Adapter
 from dt3agent.ai import LlamaClient
@@ -102,7 +102,8 @@ class Service:
         expected = {"status": set(), "process": {"uuid"}, "process_selected": set(),
                     "review": {"kind"} if "kind" in params else set(),
                     "undo": set(), "pause": set(), "resume": set(), "live": {"on"},
-                    "config_get": set(), "config_set": {"changes"}}
+                    "config_get": set(), "config_set": {"changes"}, "naming_preview": {"template"},
+                    "dt3_info": set()}
         expected["decide"] = {"id", "decision"} | ({"value"} if "value" in params else set())
         if method not in expected:
             raise RPCError("unknown_method")  # there is no delete method
@@ -160,6 +161,14 @@ class Service:
                 return self.adapter.undo_last_batch()
             except Exception as e:
                 raise RPCError("undo_failed") from e
+        if method == "naming_preview":
+            return {"name": self._naming_preview(params["template"])}
+        if method == "dt3_info":
+            try:
+                info = self.adapter.bridge.call("info")
+            except Exception as e:
+                raise RPCError("dt3_unreachable") from e
+            return {"version": info.get("version"), "databases": list(info.get("databases", []))}
         if method == "config_get":
             return copy.deepcopy(self.cfg)
         if method == "config_set":
@@ -172,6 +181,20 @@ class Service:
         if not isinstance(params["on"], bool):
             raise RPCError("bad_params")
         return {"dry_run": self._change_config({"dry_run": not params["on"]})["dry_run"]}
+
+    @staticmethod
+    def _naming_preview(template) -> str:
+        """The template applied to a fixed synthetic sample, for the live preview in onboarding and settings."""
+        if not (isinstance(template, str) and 0 < len(template) <= 200):
+            raise RPCError("naming_invalid")
+        sample = {"document_date": date(2026, 12, 17), "sender": "Muster Treuhand AG", "receiver": "Erika Beispiel",
+                  "subject": "Rechnung 2026-0417", "type": "invoice", "lang": "de", "amount_cents": 195704,
+                  "currency": "CHF", "reference": "21 00000 00003 13947 14300 09017"}
+        try:
+            return naming.build_name(template, sample, created=datetime(2026, 12, 17, tzinfo=UTC),
+                                     unknown=config.DEFAULTS["naming"]["unknown"]).value
+        except naming.NamingError as e:
+            raise RPCError("naming_invalid") from e
 
     @staticmethod
     def _review_row(i, u, k, c, p, t) -> dict:
