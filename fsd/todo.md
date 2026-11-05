@@ -48,7 +48,7 @@ Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC
 - [x] **P3-8: Vision OCR hook** — done 2026-11-05 (floor check in P3-11) (A1) · Acceptance: `wordCount == 0` → Vision helper (ADR-0006) → text for analysis only, original untouched · Verify: fake helper in tests; floor: the scanned PDF from the Phase 2 run · Size: M
 - [x] **P3-9: pipeline full A1–A9** — done 2026-11-05 (a-d; floor in P3-11) — split at start into (a) field merge rule > QR > AI with confidence and thresholds, (b) write verbs `set_name`, `set_comment`, `set_metadata`, `move` with undo, (c) filing allowlist + `_AI-Review`, (d) summary · Size: L (split)
 - [x] **P3-10: duplicates + case folders** — done 2026-11-05 (floor in P3-11) (A10, brief §5.2) · Acceptance: exact + near duplicates → review items only; actions only after the user's choice · Size: M
-- [ ] **P3-11: Phase 3 floor gate** · Acceptance: real inbox sample (test DB) → names, tags, filing, review; Smart Rule "On Import" verified (carried from Phase 2) · Size: S
+- [ ] **P3-11: Phase 3 floor gate** — guide ready 2026-11-05 (`docs/floor/phase3-gate.md`), floor run pending · Acceptance: real inbox sample (test DB) → names, tags, filing, review; Smart Rule "On Import" verified (carried from Phase 2) · Size: S
 
 ## Phase 4 — Block B
 - B-1 vision helper · B-2 QR-bill parser (SIX IG cited) · B-3 UID check digit (official source) · B-4 retention table · B-5 deadlines (reminder path decision) · B-6 urgent letters

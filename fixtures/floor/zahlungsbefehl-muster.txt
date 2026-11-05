@@ -1,0 +1,13 @@
+Betreibungsamt Muster
+Musterplatz 1, 3000 Bern
+
+Bern, 3. März 2026
+
+Zahlungsbefehl Nr. 2026-1234
+
+Gläubiger: Muster Treuhand AG, Musterstrasse 1, 8000 Zürich
+Schuldnerin: Erika Beispiel, Beispielweg 7, 3000 Bern
+
+Forderung CHF 540.–
+
+Synthetisches Testdokument für DT3 Agent. Keine echte Betreibung.

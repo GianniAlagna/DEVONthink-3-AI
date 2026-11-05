@@ -129,6 +129,14 @@ def test_process_selected_with_nothing_selected(env):
     assert str(e.value) == "nothing_selected"
 
 
+def test_review_shows_field_proposals(env):
+    svc, _, _ = env
+    svc.handle("process", {"uuid": A})
+    svc.tick()
+    fields = [i for i in svc.handle("review", {}) if i["kind"] == "field"]
+    assert fields and all({"field", "after", "confidence", "planned"} <= set(i) for i in fields)
+
+
 def test_review_lists_codes_never_raw_output(env):
     svc, dt3, _ = env
     dt3.records[A]["text"] = " "
@@ -136,4 +144,4 @@ def test_review_lists_codes_never_raw_output(env):
     svc.tick()
     items = svc.handle("review", {})
     assert len(items) == 1 and items[0]["code"] == "no_text" and items[0]["uuid"] == A
-    assert set(items[0]) == {"id", "uuid", "kind", "code", "tags_add", "created_at"}
+    assert set(items[0]) == {"id", "uuid", "kind", "code", "tags_add", "created_at"}   # error item: no raw
