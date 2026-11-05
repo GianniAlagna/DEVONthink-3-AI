@@ -234,13 +234,16 @@ struct InstallerView: View {
                 Text(line).font(.callout).fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
-            Divider()
-            Toggle(t[.instRemoveModel], isOn: $m.removeModel)
-            Toggle(t[.instRemoveData], isOn: $m.removeData)
-            HStack {
-                Button(t[.instUninstall]) { m.uninstall() }.disabled(m.busy)
-                Spacer()
-                Button(t[.instInstall]) { m.install() }.keyboardShortcut(.defaultAction).disabled(m.busy)
+            // Grouped: before Swift 5.9 (the floor Mac's toolchain) a view builder takes at most 10 children.
+            VStack(alignment: .leading, spacing: 10) {
+                Divider()
+                Toggle(t[.instRemoveModel], isOn: $m.removeModel)
+                Toggle(t[.instRemoveData], isOn: $m.removeData)
+                HStack {
+                    Button(t[.instUninstall]) { m.uninstall() }.disabled(m.busy)
+                    Spacer()
+                    Button(t[.instInstall]) { m.install() }.keyboardShortcut(.defaultAction).disabled(m.busy)
+                }
             }
         }
         .padding(20)
