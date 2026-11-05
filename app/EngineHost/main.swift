@@ -66,6 +66,21 @@ function move(uuid, location) {
   dt3().move({ record: r, to: g });
   return JSON.stringify({ uuid: uuid, location: r.location() });
 }
+function group(location, r) {
+  const g = dt3().getRecordAt(location, r ? { in: r.database() } : {});
+  if (!g || g.type() !== 'group') throw new Error('group_not_found');
+  return g;
+}
+function duplicatesOf(uuid) {
+  return JSON.stringify({ uuids: (rec(uuid).duplicates() || []).slice(0, 20).map(function (d) { return d.uuid(); }) });
+}
+function replicateTo(uuid, location) { const r = rec(uuid); dt3().replicate({ record: r, to: group(location, r) }); return JSON.stringify({ uuid: uuid }); }
+function duplicateTo(uuid, location) { const r = rec(uuid); const d = dt3().duplicate({ record: r, to: group(location, r) }); return JSON.stringify({ uuid: d.uuid() }); }
+function createMarkdown(location, name, text) {
+  // content, not plainText (ADR-0004, F7)
+  const n = dt3().createRecordWith({ name: name, type: 'markdown', content: text }, { in: group(location, null) });
+  return JSON.stringify({ uuid: n.uuid() });
+}
 function setTags(uuid, tagsJson) {
   const r = rec(uuid);
   r.tags = JSON.parse(tagsJson);
@@ -73,7 +88,8 @@ function setTags(uuid, tagsJson) {
 }
 function run(argv) {
   const verbs = { info: info, selected: selected, read: read, readText: readText, readPath: readPath, setTags: setTags,
-    setName: setName, setComment: setComment, setMetadata: setMetadata, move: move };
+    setName: setName, setComment: setComment, setMetadata: setMetadata, move: move,
+    duplicatesOf: duplicatesOf, replicateTo: replicateTo, duplicateTo: duplicateTo, createMarkdown: createMarkdown };
   const f = verbs[argv[0]];
   if (!f) throw new Error('unknown_verb');
   return f.apply(null, argv.slice(1));
@@ -199,6 +215,20 @@ func handle(_ request: [String: Any], bridge: DT3Bridge) throws -> Any {
               k.range(of: "^[a-z][a-z0-9]{0,39}$", options: .regularExpression) != nil else { throw HostError(code: "bad_args") }
         try bridge.requireDT3()
         text = try bridge.call("setMetadata", [try uuid(), k, v])
+    case "duplicates":
+        guard args.count == 1 else { throw HostError(code: "bad_args") }
+        text = try bridge.call("duplicatesOf", [try uuid()])
+    case "replicate", "duplicate":
+        guard args.count == 2, let l = args["location"] as? String, l.hasPrefix("/"), l.count <= 500,
+              !l.split(separator: "/").contains("..") else { throw HostError(code: "bad_args") }
+        try bridge.requireDT3()
+        text = try bridge.call(verb == "replicate" ? "replicateTo" : "duplicateTo", [try uuid(), l])
+    case "create_markdown":
+        guard args.count == 3, let l = args["location"] as? String, l.hasPrefix("/"), l.count <= 500,
+              !l.split(separator: "/").contains(".."), let n = args["name"] as? String, !n.isEmpty, n.count <= 255,
+              let t = args["text"] as? String, t.count <= 2000 else { throw HostError(code: "bad_args") }
+        try bridge.requireDT3()
+        text = try bridge.call("createMarkdown", [l, n, t])
     case "move":
         guard args.count == 2, let l = args["location"] as? String, l.hasPrefix("/"), l.count <= 500,
               !l.split(separator: "/").contains("..") else { throw HostError(code: "bad_args") }

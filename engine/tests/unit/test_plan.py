@@ -7,6 +7,7 @@ import pytest
 from dt3agent import config, store
 from dt3agent.adapter import DT3Adapter
 from dt3agent.audit import AuditLog
+from dt3agent.duplicates import MIGRATIONS as DUP
 from dt3agent.pipeline import MIGRATIONS, Pipeline
 from dt3agent.plan import plan
 from dt3agent.review import MIGRATIONS as REVIEW
@@ -61,7 +62,7 @@ def test_urgent_letter_proposal():
 def run(tmp_path):
     dt3 = FakeDT3({A: {"name": "scan.txt", "tags": [], "comment": "", "location": "/Inbox/", "metadata": {},
                        "contentHash": "h", "text": TEXT, "created": "2026-11-04T09:00:00Z"}})
-    con = store.open_db(tmp_path / "e.db", MIGRATIONS + REVIEW)
+    con = store.open_db(tmp_path / "e.db", MIGRATIONS + REVIEW + DUP)
     ad = DT3Adapter(dt3, UndoJournal(store.open_db(tmp_path / "u.db", UNDO)), AuditLog(tmp_path / "a"))
     return dt3, con, ad
 
@@ -86,7 +87,7 @@ def test_dry_run_writes_nothing_and_plans_everything(run):
     ai = FakeAI(["Rechnung"])
     ai.extra = AI
     assert Pipeline(ad, ai, con, dry_run=True, settings=cfg()).process(A, batch_id="b1").status == "planned"
-    assert not [c for c in dt3.calls if c[0] != "info" and not c[0].startswith("read")]
+    assert not [c for c in dt3.calls if c[0] not in ("info", "duplicates") and not c[0].startswith("read")]
     assert con.execute("SELECT COUNT(*) FROM review_items WHERE kind = 'field'").fetchone()[0] >= 5
 
 

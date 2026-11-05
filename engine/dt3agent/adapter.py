@@ -81,6 +81,36 @@ class DT3Adapter:
                          batch_id=batch_id, result="ok")
         return True
 
+    # A10 actions (brief §5.2). They create replicants, copies or notes; the engine has no delete verb, so
+    # these are not undone by the engine — they run only after the user's explicit choice in the review queue.
+    def duplicates(self, uuid: str) -> list[str]:
+        return [u for u in (self.bridge.call("duplicates", uuid=uuid).get("uuids") or [])[:20]
+                if isinstance(u, str) and UUID_RE.fullmatch(u)]
+
+    def replicate(self, uuid: str, location: str, *, batch_id: str) -> None:
+        self.check_dt3()
+        self.bridge.call("replicate", uuid=uuid, location=location)
+        self.audit.write(actor="user", action="replicate", uuid=uuid, fields_changed=["replicants"],
+                         batch_id=batch_id, result="ok")
+
+    def duplicate_copy(self, uuid: str, location: str, *, batch_id: str) -> str:
+        self.check_dt3()
+        new = self.bridge.call("duplicate", uuid=uuid, location=location)["uuid"]
+        self.audit.write(actor="user", action="duplicate", uuid=uuid, fields_changed=[], batch_id=batch_id,
+                         result="ok")
+        self.set_field(new, "metadata", f"x-devonthink-item://{uuid}", key="dt3agentoriginal",
+                       batch_id=batch_id, actor="user")  # backlink to the original
+        return new
+
+    def link_note(self, uuid: str, location: str, title: str, *, batch_id: str) -> str:
+        self.check_dt3()
+        title = (title or "Link")[:200]
+        new = self.bridge.call("create_markdown", location=location, name=f"Link – {title}",
+                               text=f"[{title}](x-devonthink-item://{uuid})\n")["uuid"]
+        self.audit.write(actor="user", action="create_markdown", uuid=uuid, fields_changed=["note"],
+                         batch_id=batch_id, result="ok")
+        return new
+
     def undo_last_batch(self) -> dict:
         batch = self.journal.last_batch()
         return self._undo(self.journal.entries(batch)) if batch else {"restored": 0, "conflicts": []}

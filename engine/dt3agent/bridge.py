@@ -14,7 +14,10 @@ MAX_TAG_LEN = 255
 # verb -> required argument names. There is no delete verb (brief §2.7).
 VERBS = {"info": set(), "selected": set(), "read": {"uuid"}, "read_text": {"uuid"}, "read_path": {"uuid"},
          "set_tags": {"uuid", "tags"}, "set_name": {"uuid", "name"}, "set_comment": {"uuid", "comment"},
-         "set_metadata": {"uuid", "key", "value"}, "move": {"uuid", "location"}}
+         "set_metadata": {"uuid", "key", "value"}, "move": {"uuid", "location"},
+         "duplicates": {"uuid"}, "replicate": {"uuid", "location"}, "duplicate": {"uuid", "location"},
+         "create_markdown": {"location", "name", "text"}}
+MAX_NOTE = 2000
 MAX_NAME = 255
 MAX_COMMENT = 4000
 MAX_META = 1000
@@ -46,6 +49,8 @@ def validate(verb: str, args: dict) -> None:
         raise BridgeError("bad metadata key")
     if "value" in args and not (isinstance(args["value"], str) and len(args["value"]) <= MAX_META):
         raise BridgeError("bad metadata value")
+    if "text" in args and not (isinstance(args["text"], str) and len(args["text"]) <= MAX_NOTE):
+        raise BridgeError("bad note text")
     if "location" in args:
         loc = args["location"]
         if not (isinstance(loc, str) and loc.startswith("/") and len(loc) <= 500 and ".." not in loc.split("/")):

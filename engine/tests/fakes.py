@@ -21,6 +21,13 @@ class FakeDT3:
             return {"version": self.version, "databases": ["DT3Agent-Test"]}
         if verb == "selected":
             return {"uuids": list(self.selected)}
+        if verb == "create_markdown":
+            if args["location"] not in self.groups:
+                raise BridgeError("group_not_found")
+            new = f"00000000-0000-4000-8000-{len(self.records):012d}"
+            self.records[new] = {"uuid": new, "name": args["name"], "text": args["text"], "tags": [],
+                                 "location": args["location"], "metadata": {}}
+            return {"uuid": new}
         rec = self.records.get(args["uuid"])
         if rec is None:
             raise BridgeError("not_found")
@@ -31,6 +38,17 @@ class FakeDT3:
         if verb == "read_text":  # same shape as the host: text capped at MAX_TEXT, full length reported
             text = rec.get("text", "")
             return {"uuid": rec["uuid"], "text": text[:MAX_TEXT], "length": len(text)}
+        if verb == "duplicates":
+            return {"uuids": list(rec.get("duplicates", []))}
+        if verb in ("replicate", "duplicate"):
+            if args["location"] not in self.groups:
+                raise BridgeError("group_not_found")
+            if verb == "replicate":
+                rec.setdefault("replicants", []).append(args["location"])
+                return {"uuid": rec["uuid"]}
+            new = f"00000000-0000-4000-9000-{len(self.records):012d}"
+            self.records[new] = {**rec, "uuid": new, "location": args["location"], "metadata": {}}
+            return {"uuid": new}
         if verb in ("set_name", "set_comment", "set_metadata", "move") and not self.version.startswith("3."):
             raise BridgeError("not_dt3")
         if verb == "set_name":
