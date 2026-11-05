@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from dt3agent import fields as fieldsmod
 from dt3agent.naming import build_name
 from dt3agent.retention import NOTE, keep_until
+from dt3agent.rules import keywords
 
 
 @dataclass(frozen=True)
@@ -19,6 +20,7 @@ class Proposal:
     confidence: float
     source: str
     key: str | None = None   # metadata key
+    hints: tuple = ()        # urgent: known legal deadlines as "verify" hints (brief B6), never computed
 
 
 def _created(record: dict) -> datetime:
@@ -78,5 +80,6 @@ def plan(record: dict, text: str, ai: dict, cfg: dict, bill: dict | None = None)
             out.append(Proposal("location", filing["review_group"], 1.0, "rule"))
 
     if "urgent" in merged:
-        out.append(Proposal("urgent", merged["urgent"].value, 1.0, "rule"))
+        hints = tuple(h["text"] for h in cfg["urgent"]["hints"] if keywords.scan(text, {"urgent": h["words"]}).urgent)
+        out.append(Proposal("urgent", merged["urgent"].value, 1.0, "rule", hints=hints))
     return out
