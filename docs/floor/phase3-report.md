@@ -18,7 +18,9 @@ Runs on 2026-11-05: run 1 (kit c929fe03), run 2 (kit 75eeb6f5), retest 2 (kit f4
 | Metadata values (A4/A5) | verified | planned: date 2026-04-17, total CHF 1957.04, IBAN, lang de (conf 0.95) |
 | Metadata, filing written | verified | retest 4: `decide 30` (dt3agentdate) and `decide 34` (move to `/_AI-Review/`) → `applied: true` |
 | OCR of a scan | verified | `ocr-de.pdf` (image only): name and comment built from the recognised text (Steueramt, Veranlagungsverfügung, 30 Tage) |
-| Smart Rule "On Import" | open | all 4 jobs came from `process` |
+| Smart Rule → spool → engine | verified | 2026-11-05 08:49–08:52Z: 4 jobs with no `process` call (rule "DT3 Agent" created by hand; import and "Apply Rule" both used) |
+| Smart Rule "On Import" alone | likely | not isolated from the manual "Apply Rule" in the same run |
+| Retry after AI outage | verified | `ai_unreachable` ×4 with growing back-off, then `planned` at 08:57:38Z after llama-server restart |
 
 ## Bugs found and fixed
 
@@ -45,4 +47,8 @@ Runs on 2026-11-05: run 1 (kit c929fe03), run 2 (kit 75eeb6f5), retest 2 (kit f4
    with and without `in:`); removed outside the engine (the engine has no delete verb). Follow-up P4: review items
    whose record is gone must be marked, not offered for decision.
 
-Open: Smart Rule "On Import" only.
+7. Smart Rule (2026-11-05): first counts showed 0 because they were read before the job finished (a job takes
+   over 60 s on the floor machine). A script change (PR #30) was closed unmerged: the verified script works.
+
+Result: all Phase 3 points verified on the floor; "On Import" alone is likely but not isolated.
+Phase 3 approved by Gianni on 2026-11-05.
