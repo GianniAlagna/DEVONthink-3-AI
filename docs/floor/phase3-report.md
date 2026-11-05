@@ -12,7 +12,8 @@ Runs on 2026-11-05: run 1 (kit c929fe03), run 2 (kit 75eeb6f5), retest 2 (kit f4
 | Case match | verified | `case_match` → `/Recht/Fall-Muster/` |
 | Unknown date → low confidence | verified | Veranlagungsverfügung: name with confidence 0.0, review only |
 | Duplicate accept (A10) | verified | retest 3: `decide 25 accept` → `applied: true` |
-| Case replicate on accept | open | `group_not_found`: group was named `Recht/Fall-Muster` (see 4.) |
+| Case replicate on accept | verified | diagnose kit 0b9895a8: `decide 51 accept` → `applied: true` (group named `Recht/Fall-Muster`) |
+| Near duplicate (A10) | verified | `duplicate_near` item for the Zahlungsbefehl copy |
 | Dry-run | verified | retest 2: `engine job planned`, 8 planned items, nothing written |
 | Metadata values (A4/A5) | verified | planned: date 2026-04-17, total CHF 1957.04, IBAN, lang de (conf 0.95) |
 | Metadata, filing written | verified | retest 4: `decide 30` (dt3agentdate) and `decide 34` (move to `/_AI-Review/`) → `applied: true` |
@@ -40,4 +41,8 @@ Runs on 2026-11-05: run 1 (kit c929fe03), run 2 (kit 75eeb6f5), retest 2 (kit f4
    `Recht/Fall-Muster` and `Finanzen/Rechnungen`. Fix: the host's read-only path walk also accepts a group whose
    own name holds the rest of the path. Checked with a node test of the host walk function.
 
-Next: `docs/floor/group-not-found-diagnose.md` (step-by-step isolation of `group_not_found`).
+6. Diagnosis (2026-11-05): records of earlier review items no longer exist in DT3 (`getRecordWithUuid` → null,
+   with and without `in:`); removed outside the engine (the engine has no delete verb). Follow-up P4: review items
+   whose record is gone must be marked, not offered for decision.
+
+Open: Smart Rule "On Import" only.
