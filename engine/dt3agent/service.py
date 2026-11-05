@@ -2,6 +2,7 @@
 
 Single-threaded on purpose: the DT3 bridge is one pipe, so rpc requests and pipeline work take turns.
 """
+import copy
 import json
 import os
 import re
@@ -26,6 +27,8 @@ STATE_MIGRATIONS = ["CREATE TABLE state (key TEXT PRIMARY KEY, value TEXT NOT NU
 # Order is part of the schema: append only.
 ENGINE_MIGRATIONS = (queuemod.MIGRATIONS + pipeline.MIGRATIONS + STATE_MIGRATIONS + review.MIGRATIONS
                      + duplicates.MIGRATIONS + review.MIGRATIONS_2)
+# Settings the app may not change over rpc: the vision helper is a program the engine runs (set by the installer).
+RPC_LOCKED = {"schema_version", "vision"}
 DEFAULT_DATA = Path.home() / "Library/Application Support/DT3 Agent"
 
 
@@ -52,13 +55,30 @@ class Service:
         self.queue = queuemod.Queue(self.con, lambda: datetime.now(UTC))
         self.queue.recover_interrupted()  # one engine per data dir: anything 'running' now was cut off
         self.adapter = DT3Adapter(bridge, UndoJournal(self.undo_con), AuditLog(self.data / "audit"))
-        ai_cfg = self.cfg["ai"]
+        self._use_config(self.cfg)
+
+    def _use_config(self, cfg: dict) -> None:
+        """Puts settings into effect at once: AI client, vision helper and pipeline are rebuilt from them."""
+        self.cfg = cfg
+        ai_cfg = cfg["ai"]
         self.ai = LlamaClient(ai_cfg["url"], context=ai_cfg["context"]) if ai_cfg.get("url") else None
-        v = self.cfg["vision"]
+        v = cfg["vision"]
         self.vision = VisionClient(v["helper"], v["languages"], v["max_pages"]) if v.get("helper") else None
-        self.pipeline = pipeline.Pipeline(self.adapter, self.ai, self.con, dry_run=self.cfg["dry_run"],
-                                          vocabulary=self.cfg["tags"]["vocabulary"], vision=self.vision,
-                                          settings=self.cfg)
+        self.pipeline = pipeline.Pipeline(self.adapter, self.ai, self.con, dry_run=cfg["dry_run"],
+                                          vocabulary=cfg["tags"]["vocabulary"], vision=self.vision,
+                                          settings=cfg)
+
+    def _change_config(self, changes: dict) -> dict:
+        """Starts from the file, never from a copy in memory (floor 2026-11-05: a stale copy was written back)."""
+        if set(changes) & RPC_LOCKED:
+            raise RPCError("config_forbidden")
+        try:
+            new = config.merge(config.load(self.config_path), changes)
+            config.save(self.config_path, new)
+        except config.ConfigError as e:
+            raise RPCError("config_invalid") from e
+        self._use_config(config.load(self.config_path))
+        return self.cfg
 
     # state ---------------------------------------------------------------
     def _paused(self) -> bool:
@@ -81,7 +101,8 @@ class Service:
     def handle(self, method: str, params: dict):
         expected = {"status": set(), "process": {"uuid"}, "process_selected": set(),
                     "review": {"kind"} if "kind" in params else set(),
-                    "undo": set(), "pause": set(), "resume": set(), "live": {"on"}}
+                    "undo": set(), "pause": set(), "resume": set(), "live": {"on"},
+                    "config_get": set(), "config_set": {"changes"}}
         expected["decide"] = {"id", "decision"} | ({"value"} if "value" in params else set())
         if method not in expected:
             raise RPCError("unknown_method")  # there is no delete method
@@ -139,15 +160,18 @@ class Service:
                 return self.adapter.undo_last_batch()
             except Exception as e:
                 raise RPCError("undo_failed") from e
+        if method == "config_get":
+            return copy.deepcopy(self.cfg)
+        if method == "config_set":
+            if not isinstance(params["changes"], dict) or not params["changes"]:
+                raise RPCError("bad_params")
+            return copy.deepcopy(self._change_config(params["changes"]))
         if method in ("pause", "resume"):
             self._set_paused(method == "pause")
             return {"paused": method == "pause"}
         if not isinstance(params["on"], bool):
             raise RPCError("bad_params")
-        self.cfg["dry_run"] = not params["on"]
-        config.save(self.config_path, self.cfg)
-        self.pipeline.dry_run = self.cfg["dry_run"]
-        return {"dry_run": self.pipeline.dry_run}
+        return {"dry_run": self._change_config({"dry_run": not params["on"]})["dry_run"]}
 
     @staticmethod
     def _review_row(i, u, k, c, p, t) -> dict:

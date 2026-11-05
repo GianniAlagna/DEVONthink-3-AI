@@ -118,6 +118,21 @@ def validate(cfg: dict) -> dict:
             and all(isinstance(h, dict) and set(h) == {"words", "text"} and words_ok(h["words"]) and h["words"]
                     and isinstance(h["text"], str) and 0 < len(h["text"]) <= 200 for h in urgent.get("hints", []))):
         raise ConfigError("urgent: group is an absolute path; hints are {words, text}")
+    ident = cfg.get("identity", {}).get("name")
+    if not (ident is None or (isinstance(ident, str) and len(ident) <= 200 and ident.isprintable())):
+        raise ConfigError("identity.name: text up to 200 characters")
+    naming = cfg.get("naming", {})
+    if not all(isinstance(naming.get(k, "x"), str) and 0 < len(naming.get(k, "x")) <= 200
+               for k in ("template", "unknown")):
+        raise ConfigError("naming: template and unknown are non-empty text")
+    ai = cfg.get("ai", {})
+    url = ai.get("url")
+    if not (url is None or (isinstance(url, str) and len(url) <= 300 and url.split("://")[0] in ("http", "https")
+                            and "://" in url)):
+        raise ConfigError("ai.url: an http:// or https:// address")
+    if not (ai.get("model") is None or isinstance(ai.get("model"), str)) or not (
+            isinstance(ai.get("context", 8192), int) and 512 <= ai.get("context", 8192) <= 262144):
+        raise ConfigError("ai: model is text, context 512-262144")
     for scope in cfg.get("scopes", []):
         if not (isinstance(scope, dict) and set(scope) == {"database", "group"}
                 and all(isinstance(v, str) and v for v in scope.values())):
@@ -156,6 +171,18 @@ def save(path: Path, cfg: dict) -> None:
     if path.exists():
         os.replace(path, path.with_name(path.name + ".bak"))
     os.replace(tmp, path)
+
+
+def merge(cfg: dict, changes: dict) -> dict:
+    """New settings: top-level values replaced, dict sections updated one level deep (like loading a file)."""
+    if not isinstance(changes, dict):
+        raise ConfigError("changes must be an object")
+    out = copy.deepcopy(cfg)
+    for key, value in changes.items():
+        if key not in DEFAULTS:
+            raise ConfigError(f"unknown key: {key}")
+        out[key] = {**out[key], **value} if isinstance(DEFAULTS[key], dict) and isinstance(value, dict) else value
+    return validate(out)
 
 
 def import_config(path: Path, new: dict, confirm_shrink: bool = False) -> None:
