@@ -35,7 +35,7 @@ final class SetupModel: ObservableObject {
 
     /// Current settings from the engine, so a second run of the wizard starts from what is saved.
     func load() {
-        rpc("config_get") { result in
+        rpc("config_get", quiet: true) { result in  // reading is not saving: no "saving failed" here
             guard let cfg = result as? [String: Any] else { return }
             if let url = (cfg["ai"] as? [String: Any])?["url"] as? String { self.aiURL = url }
             if let n = (cfg["identity"] as? [String: Any])?["name"] as? String { self.name = n }
@@ -53,6 +53,7 @@ final class SetupModel: ObservableObject {
             DispatchQueue.main.async {
                 self.checking = false
                 self.engineOK = status != nil
+                if status != nil { self.error = nil }  // an error from before the engine ran is stale
                 self.dt3Version = info?["version"] as? String
                 self.databases = info?["databases"] as? [String] ?? []
             }
@@ -89,7 +90,9 @@ final class SetupModel: ObservableObject {
 
     /// Saves what this step changed, then moves on.
     func forward() {
-        let go = { if let n = self.step.next { self.step = n } else { self.finish() } }
+        let go = {
+            if let n = self.step.next { self.step = n; self.entered() } else { self.finish() }
+        }
         switch step {
         case .ai: save(["ai": ["url": aiURL.trimmingCharacters(in: .whitespaces)]], then: go)
         case .identity:
@@ -102,7 +105,14 @@ final class SetupModel: ObservableObject {
         }
     }
 
-    func back() { if let p = step.previous { step = p } }
+    func back() {
+        if let p = step.previous { step = p; entered() }
+    }
+
+    /// The example name needs the engine; ask again if the first try came before it ran (floor 2026-11-05).
+    private func entered() {
+        if step == .naming && preview == nil { updatePreview() }
+    }
 
     func finish() {
         UserDefaults.standard.set(true, forKey: "setupDone")
@@ -240,10 +250,17 @@ struct SetupView: View {
 /// The wizard window. Closing it is fine: it opens again at the next start until "Done".
 final class SetupWindow {
     private var window: NSWindow?
+    private var model: SetupModel?
 
     func show(t: L10n, work: DispatchQueue, onFinish: @escaping () -> Void) {
-        if let w = window { w.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); return }
+        if let w = window {
+            model?.start()  // the window may have opened before the engine was installed: read and check again
+            w.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
         let model = SetupModel(t: t, work: work)
+        self.model = model
         let w = NSWindow(contentViewController: NSHostingController(rootView: SetupView(m: model)))
         w.title = t[.setupTitle]
         w.styleMask = [.titled, .closable]
@@ -251,6 +268,7 @@ final class SetupWindow {
         model.onFinish = { [weak self] in
             self?.window?.close()
             self?.window = nil
+            self?.model = nil
             onFinish()
         }
         window = w
