@@ -1,6 +1,6 @@
 # Phase 3 floor report (MacBook Pro 2014, macOS 11.7.11, DT3 3.9.17)
 
-Runs on 2026-11-05: run 1 (kit c929fe03), run 2 (kit 75eeb6f5), retest 2 (kit f47962e5). Test database only. Nothing deleted.
+Runs on 2026-11-05: run 1 (kit c929fe03), run 2 (kit 75eeb6f5), retest 2 (kit f47962e5), retest 3 (kit 727d0fb4). Test database only. Nothing deleted.
 
 | Point | Result | Evidence |
 |---|---|---|
@@ -11,7 +11,8 @@ Runs on 2026-11-05: run 1 (kit c929fe03), run 2 (kit 75eeb6f5), retest 2 (kit f4
 | Urgent letter | verified | `urgent_letter`: Betreibungsamt, Zahlungsbefehl, Betreibung |
 | Case match | verified | `case_match` → `/Recht/Fall-Muster/` |
 | Unknown date → low confidence | verified | Veranlagungsverfügung: name with confidence 0.0, review only |
-| Case replicate on accept | **failed** | `decide 9/5 accept` → `group_not_found` |
+| Duplicate accept (A10) | verified | retest 3: `decide 25 accept` → `applied: true` |
+| Case replicate on accept | open | `group_not_found`: group was named `Recht/Fall-Muster` (see 4.) |
 | Dry-run | verified | retest 2: `engine job planned`, 8 planned items, nothing written |
 | Metadata values (A4/A5) | verified | planned: date 2026-04-17, total CHF 1957.04, IBAN, lang de (conf 0.95) |
 | Metadata, filing written | open | screenshot missing |
@@ -30,4 +31,9 @@ Runs on 2026-11-05: run 1 (kit c929fe03), run 2 (kit 75eeb6f5), retest 2 (kit f4
    exist, or `getRecordAt` does not work like this in JXA (**UNVERIFIED**). Fix: if `getRecordAt` finds nothing,
    the host walks the path name by name from the database root (read-only). Retest 3 step B lists the groups.
 
-Next: `docs/floor/phase3-retest.md` (retest 3, open points only).
+4. Retest 3, verified cause: the test database had **one** top-level group named `Recht/Fall-Muster`
+   (a slash in the name), not `Fall-Muster` inside `Recht`. Same for `Finanzen/Rechnungen`. The setup
+   message ("Create these groups: /Recht/Fall-Muster") was ambiguous. Fix: the message now says
+   "Recht > Fall-Muster" and "never a / in a group name". Not a code bug.
+
+Next: `docs/floor/phase3-retest.md` (retest 4).

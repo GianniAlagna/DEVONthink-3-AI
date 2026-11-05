@@ -1,9 +1,19 @@
-# Phase 3 retest 3 — only the open points (about 15 minutes)
+# Phase 3 retest 4 — fix two groups, then the last open points (about 15 minutes)
 
-Already verified: name, comment, duplicate found, urgent letter, case match, re-check, dry-run, metadata values.
+Retest 3 found the cause of `group_not_found`: the test database has **one** group named `Recht/Fall-Muster`
+(with a slash in the name). DT3 Agent needs a group `Fall-Muster` **inside** a group `Recht`.
+The same applies to `Finanzen/Rechnungen`. Nothing is deleted: you only rename and move groups.
+
 Copy **one grey box at a time** into Terminal. Never copy text outside the boxes.
 
-## A. Start
+## A. Fix the two groups in DT3 (by hand, test database `DT3Agent-T1`)
+
+1. Rename group `Recht/Fall-Muster` to `Fall-Muster`.
+2. Create a new group `Recht` at the top level. Drag `Fall-Muster` into `Recht`.
+3. Rename group `Finanzen/Rechnungen` to `Rechnungen`.
+4. Create a new group `Finanzen` at the top level. Drag `Rechnungen` into `Finanzen`.
+
+## B. Start
 
 ```bash
 cd ~/dt3agent-dev-kit && bash tools/dev-agent.sh llama && bash tools/dev-agent.sh install osakit
@@ -13,43 +23,23 @@ cd ~/dt3agent-dev-kit && bash tools/dev-agent.sh llama && bash tools/dev-agent.s
 tools/dt3agent live on
 ```
 
-## B. Groups check
-
-1. In DT3 click any document of the **test database**. Then:
+5. In DT3 click any document of the test database. Then:
 
 ```bash
-osascript -l JavaScript -e 'const a=Application("DEVONthink 3"); const d=a.selectedRecords()[0].database(); JSON.stringify({db:d.name(), top:d.root().children().map(c => [c.name(), c.type()])})'
+osascript -l JavaScript -e 'const a=Application("DEVONthink 3"); const d=a.selectedRecords()[0].database(); JSON.stringify(["/Recht/Fall-Muster","/Finanzen/Rechnungen"].map(p => { const g=a.getRecordAt(p,{in:d}); return [p, g ? g.type() : null]; }))'
 ```
 
-   Send me the output. It shows only database and group names, no content.
-2. If `Recht`, `_Duplicates` or `_AI-Review` is missing in that list: create it in the test database
-   (and `Fall-Muster` inside `Recht`).
+   Expected: `group` twice (not `null`).
 
-## C. Case folder and duplicate
-
-```bash
-tools/dt3agent review
-```
-
-3. Find an item with `"kind": "case"`. Type its number in place of 27:
+## C. Case folder
 
 ```bash
 tools/dt3agent decide 27 accept
 ```
 
-   Expected: `"applied": true`. The document also appears in `Recht/Fall-Muster` → **screenshot**.
-4. Find an item with `"kind": "duplicate"`. Type its number in place of 26:
-
-```bash
-tools/dt3agent decide 26 accept
-```
-
-   Expected: tag `duplicate`, document in `_Duplicates`.
+   Expected: `"applied": true`. The invoice also appears in `Recht > Fall-Muster` → **screenshot**.
 
 ## D. Metadata and filing
-
-5. In the review list find the items with `"key": "dt3agentdate"` and `"field": "location"` (from the dry-run).
-   Type their numbers in place of 30 and 34:
 
 ```bash
 tools/dt3agent decide 30 accept
@@ -59,11 +49,11 @@ tools/dt3agent decide 30 accept
 tools/dt3agent decide 34 accept
 ```
 
-6. In DT3 open the Info pane (Cmd+Shift+I) of that document → **screenshot** of the custom metadata and the location.
+6. In DT3 open the Info pane (Cmd+Shift+I) of that invoice → **screenshot** of the custom metadata and the location.
 
 ## E. Scan (OCR)
 
-7. Drag `~/dt3agent-dev-kit/samples/ocr-de.pdf` into the test database and click it. Then:
+7. In DT3 click **ocr-de** (the PDF in the test database). Then:
 
 ```bash
 tools/dt3agent process
@@ -72,25 +62,25 @@ tools/dt3agent process
 8. Wait 90 seconds. Then:
 
 ```bash
-bash tools/dev-agent.sh status
+tools/dt3agent review
 ```
 
-   Expected: last line `engine job applied` or `engine job review`. If macOS asks for access: **OK**.
+   Expected: new items for the scan (name or comment), **no** `no_text` for it.
 
 ## F. Smart Rule on import
 
-9. Drag `~/dt3agent-dev-kit/samples/Zahlungsbefehl-Muster.txt` in **once more**. Do **not** click it, do **not** run process.
-   Wait 60 seconds. Then:
+9. Drag `~/dt3agent-dev-kit/samples/Zahlungsbefehl-Muster.txt` into the test database **once more**.
+   Do **not** click it, do **not** run process. Wait 60 seconds. Then:
 
 ```bash
 bash tools/dev-agent.sh status
 ```
 
-   Expected: one more `engine job …` line than in step 8.
+   Expected: one more `engine job …` line than before.
 
 ## G. Send and clean up
 
-10. Send the whole Terminal output and the screenshots from steps 3 and 6. Then:
+10. Send the whole Terminal output and the screenshots from C and step 6. Then:
 
 ```bash
 tools/dt3agent live off
