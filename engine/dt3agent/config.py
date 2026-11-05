@@ -42,6 +42,8 @@ DEFAULTS = {
     "filing": {"enabled": False, "groups": {}, "review_group": "/_AI-Review/"},
     # A10 (brief §5.2): near-duplicate threshold and the group for marked duplicates (user deletes manually)
     "duplicates": {"near_threshold": 0.8, "group": "/_Duplicates/"},
+    # Phase 6 (SPEC §4.20): related records are proposed when their similarity reaches related_min (UNVERIFIED)
+    "knowledge": {"related": True, "related_min": 0.75},
     # Case folders: [{"name": str, "group": "/Path/", "words": [str, ...]}] -> matches become review items
     "cases": [],
     # brief B4: user-editable retention table; a hint in metadata only, never deletes (UI: not legal advice).
@@ -63,7 +65,7 @@ TYPES = {
     "schema_version": int, "dry_run": bool, "scopes": list, "ai": dict, "naming": dict,
     "thresholds": dict, "update_check": bool, "logs": dict, "tags": dict, "keywords": dict, "vision": dict,
     "identity": dict, "summary": dict, "filing": dict, "duplicates": dict, "cases": list,
-    "retention": dict, "urgent": dict,
+    "retention": dict, "urgent": dict, "knowledge": dict,
 }
 
 
@@ -120,6 +122,11 @@ def validate(cfg: dict) -> dict:
             and all(isinstance(h, dict) and set(h) == {"words", "text"} and words_ok(h["words"]) and h["words"]
                     and isinstance(h["text"], str) and 0 < len(h["text"]) <= 200 for h in urgent.get("hints", []))):
         raise ConfigError("urgent: group is an absolute path; hints are {words, text}")
+    know = cfg.get("knowledge", {})
+    rmin = know.get("related_min", 0.75)
+    if not (isinstance(know.get("related", True), bool) and isinstance(rmin, (int, float))
+            and not isinstance(rmin, bool) and 0.5 <= rmin <= 0.99):
+        raise ConfigError("knowledge: related is true/false, related_min 0.5-0.99")
     ident = cfg.get("identity", {}).get("name")
     if not (ident is None or (isinstance(ident, str) and len(ident) <= 200 and ident.isprintable())):
         raise ConfigError("identity.name: text up to 200 characters")

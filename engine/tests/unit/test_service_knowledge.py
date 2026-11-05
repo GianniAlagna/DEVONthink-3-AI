@@ -95,3 +95,56 @@ def test_bad_ask_params(tmp_path, servers, params):
     servers.append(make(tmp_path, ai_reply([])))
     with pytest.raises(Exception, match="bad_params"):
         servers[0][0].handle("ask", params)
+
+
+def related_env(tmp_path, servers, **knowledge):
+    chat, emb = FakeLlamaServer(reply=ai_reply(["Rechnung"])), FakeLlamaServer()
+    text = "Mängelrüge Getriebedefekt Ford Puma Garantie Werkstatt Rechnung"
+    dt3 = FakeDT3({A: {"name": "Rüge", "tags": [], "contentHash": "h1", "database": "DB", "text": text,
+                       "metadata": {}},
+                   B: {"name": "Antwort", "tags": [], "contentHash": "h2", "database": "DB",
+                       "text": "AW " + text, "metadata": {}}})
+    cfg = config.load(tmp_path / "config.json")
+    cfg["ai"].update(url=chat.url, embed_url=emb.url)
+    cfg["knowledge"].update(knowledge)
+    config.save(tmp_path / "config.json", cfg)
+    svc = Service(tmp_path, dt3)
+    servers.append((svc, dt3, chat, emb))
+    for u in (A, B):
+        svc.handle("process", {"uuid": u})
+        svc.tick()
+    return svc, dt3
+
+
+def related_items(svc):
+    return [i for i in svc.handle("review", {}) if i.get("key") == "dt3agentrelated"]
+
+
+def test_related_record_is_proposed_never_written_alone(tmp_path, servers):
+    svc, dt3 = related_env(tmp_path, servers)
+    items = related_items(svc)
+    assert [(i["uuid"], i["after"]) for i in items] == [(B, "x-devonthink-item://" + A)]
+    assert not [c for c in dt3.calls if c[0] == "set_metadata"]
+
+
+def test_accepting_writes_the_links_and_undo_restores(tmp_path, servers):
+    svc, dt3 = related_env(tmp_path, servers)
+    svc.handle("live", {"on": True})
+    item = related_items(svc)[0]
+    assert svc.handle("decide", {"id": item["id"], "decision": "accept"})["applied"] is True
+    md = dt3.records[B]["metadata"]  # DT3 stores custom keys with an "md" prefix (floor 2026-11-05)
+    assert md["mddt3agentrelated"] == "x-devonthink-item://" + A
+    assert svc.handle("undo", {})["restored"] == 1
+    assert not md.get("mddt3agentrelated")
+
+
+def test_related_can_be_switched_off(tmp_path, servers):
+    svc, _ = related_env(tmp_path, servers, related=False)
+    assert related_items(svc) == []
+
+
+@pytest.mark.parametrize("bad", [{"related_min": 0.2}, {"related_min": True}, {"related": "yes"}, {"x": 1}])
+def test_knowledge_settings_are_checked(tmp_path, servers, bad):
+    servers.append(make(tmp_path, ai_reply([])))
+    with pytest.raises(Exception, match="config_invalid"):
+        servers[0][0].handle("config_set", {"changes": {"knowledge": bad}})

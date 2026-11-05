@@ -206,9 +206,10 @@ Specified 2026-11-05 at the start of Phase 6. Embedding model: ADR-0011 (Gianni 
   `sources: [{uuid, name, link: x-devonthink-item://…}]` for the cited ones only. No write path exists from
   `ask`; a wish to change something ("tag these") is answered as text, never executed.
 - **Related documents (K-4):** record vector = mean of its chunk vectors; top 5 other records with cosine
-  ≥ `knowledge.related_min` (default 0.75, UNVERIFIED until floor test) → review item `related` (others' names
-  + links). Accept writes the links into custom metadata `related` (`x-devonthink-item://…` separated by
-  spaces, ≤ 1000 characters); undo restores it. Reject does nothing.
+  ≥ `knowledge.related_min` (default 0.75, UNVERIFIED until floor test; `knowledge.related` switches it off) →
+  a `field` review item for custom metadata `dt3agentrelated` (`x-devonthink-item://…` links, space-separated).
+  Never applied on its own, also not in live mode; accept writes it through the adapter (undo journal), edit and
+  reject as for any field.
 - **Entities (K-5, opt-in, `knowledge.entities` default off):** sender/receiver from the pipeline plus people and
   companies the model lists → proposals to create one Markdown note per entity in `knowledge.entity_group`
   (must exist; the engine never creates groups) with links to the records. Accept → `create_markdown`.

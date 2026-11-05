@@ -54,6 +54,9 @@ def tag_schema(vocabulary) -> dict:
     return {**TAG_SCHEMA, "properties": {"tags": {**TAG_SCHEMA["properties"]["tags"], "items": item}}}
 
 
+RELATED_KEY = "dt3agentrelated"  # K-4: links to similar records (custom metadata, undoable)
+
+
 @dataclass
 class Outcome:
     status: str  # planned | applied | skipped | review
@@ -136,6 +139,7 @@ class Pipeline:
         self._add_to_index(uuid, record, text)
         if self.settings is not None:
             self._duplicates_and_cases(uuid, text, batch_id)
+            self._related(uuid, batch_id)
         schema, task = tag_schema(self.vocabulary), TAG_TASK
         if self.settings is not None:  # one AI call for tags and the fields rules cannot know
             schema = {**schema, "properties": {**fieldsmod.AI_SCHEMA["properties"], **schema["properties"]},
@@ -204,6 +208,17 @@ class Pipeline:
             if hits:
                 self._review(uuid, "case", "case_match", {"case": case["name"], "group": case["group"],
                                                           "words": sorted({h.word for h in hits})}, batch_id, "review")
+
+    def _related(self, uuid: str, batch_id: str) -> None:
+        """K-4: similar records as a metadata proposal (links). Always the user's call, never applied alone."""
+        know = self.settings.get("knowledge", {})
+        if self.index is None or not know.get("related", True) or not self.index.has(uuid):
+            return
+        found = self.index.related(uuid, k=5, min_score=know.get("related_min", 0.75))
+        if found:
+            links = " ".join("x-devonthink-item://" + other for other, _ in found)
+            self._review(uuid, "field", None, {"field": "metadata", "key": RELATED_KEY, "after": links,
+                                               "confidence": found[0][1], "source": "index"}, batch_id, "review")
 
     def _handle_fields(self, uuid: str, proposals: list, batch_id: str) -> bool:
         """Dry-run: every proposal becomes a planned review item. Live: apply what reaches the threshold,
