@@ -37,7 +37,7 @@ struct L10n {
         // installer (U-5)
         case instMenu, instTitle, instText, instInstall, instUninstall, instDownloadModel, instRemoveModel, instRemoveData
         case instItemEngine, instItemLlama, instItemScript, instItemModel, instItemData
-        case instNoPython, instNoLlama, instLlamaStarted, instDone, instFailed, instQuitDT3, instScript
+        case instNoPython, instNoLlama, instLlamaStarted, instLlamaSilent, instDone, instFailed, instQuitDT3, instScript
         case instDownloading, instChecksum, instModel, instRemoved, instUninstalled
         // accessibility (U-6): spoken state of a check row
         case a11yOK, a11yWarning
@@ -196,6 +196,7 @@ struct L10n {
             .instNoPython: "Diesem Paket fehlt die Python-Laufzeit. Bitte das vollständige Paket verwenden.",
             .instNoLlama: "Kein KI-Server in diesem Paket: Trage in der Einrichtung die Adresse deines KI-Servers ein (z. B. Ollama).",
             .instLlamaStarted: "KI-Server gestartet.",
+            .instLlamaSilent: "Der KI-Server antwortet noch nicht. Protokoll: ~/Library/Logs/DT3 Agent/llama.log",
             .instDone: "Fertig. Die Engine läuft. Bei der ersten Aktion fragt macOS, ob «DT3 Agent Engine» DEVONthink 3 steuern darf: «OK».",
             .instFailed: "Fehler",
             .instQuitDT3: "DT3 ist geöffnet: Das Smart-Rule-Skript wurde nicht kopiert. DT3 beenden und nochmals «Installieren».",
@@ -360,6 +361,7 @@ struct L10n {
             .instNoPython: "This package has no Python runtime. Please use the complete package.",
             .instNoLlama: "No AI server in this package: enter the address of your AI server in Setup (e.g. Ollama).",
             .instLlamaStarted: "AI server started.",
+            .instLlamaSilent: "The AI server does not answer yet. Log: ~/Library/Logs/DT3 Agent/llama.log",
             .instDone: "Done. The engine is running. At the first action macOS asks whether “DT3 Agent Engine” may control DEVONthink 3: “OK”.",
             .instFailed: "Error",
             .instQuitDT3: "DT3 is open: the Smart Rule script was not copied. Quit DT3 and click “Install” again.",
@@ -524,6 +526,7 @@ struct L10n {
             .instNoPython: "Ce paquet ne contient pas de Python. Utilisez le paquet complet.",
             .instNoLlama: "Pas de serveur d’IA dans ce paquet : saisissez l’adresse de votre serveur d’IA dans la configuration (p. ex. Ollama).",
             .instLlamaStarted: "Serveur d’IA démarré.",
+            .instLlamaSilent: "Le serveur d’IA ne répond pas encore. Journal : ~/Library/Logs/DT3 Agent/llama.log",
             .instDone: "Terminé. Le moteur fonctionne. À la première action, macOS demande si « DT3 Agent Engine » peut contrôler DEVONthink 3 : « OK ».",
             .instFailed: "Erreur",
             .instQuitDT3: "DT3 est ouvert : le script de la règle intelligente n’a pas été copié. Quittez DT3 et cliquez à nouveau sur « Installer ».",
@@ -688,6 +691,7 @@ struct L10n {
             .instNoPython: "Questo pacchetto non contiene Python. Usi il pacchetto completo.",
             .instNoLlama: "Nessun server IA in questo pacchetto: inserisca l’indirizzo del Suo server IA nella configurazione (p. es. Ollama).",
             .instLlamaStarted: "Server IA avviato.",
+            .instLlamaSilent: "Il server IA non risponde ancora. Log: ~/Library/Logs/DT3 Agent/llama.log",
             .instDone: "Fatto. Il motore è in funzione. Alla prima azione macOS chiede se «DT3 Agent Engine» può controllare DEVONthink 3: «OK».",
             .instFailed: "Errore",
             .instQuitDT3: "DT3 è aperto: lo script della regola intelligente non è stato copiato. Chiuda DT3 e clicchi di nuovo su «Installa».",

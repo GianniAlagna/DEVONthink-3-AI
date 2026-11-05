@@ -55,7 +55,8 @@ final class InstallerModel: ObservableObject {
                 if llama {
                     try self.startAgent(self.paths.llamaPlist,
                                         self.paths.llamaPlistContent(threads: ProcessInfo.processInfo.activeProcessorCount))
-                    self.say(self.t[.instLlamaStarted])
+                    // started means answering: loading the model takes up to a minute on the floor Mac
+                    self.say(self.t[self.aiAnswers(within: 120) ? .instLlamaStarted : .instLlamaSilent])
                 } else {
                     self.say(self.t[.instNoLlama])
                 }
@@ -84,7 +85,15 @@ final class InstallerModel: ObservableObject {
     private func stopAgents() {
         for label in [InstallPaths.engineLabel, InstallPaths.llamaLabel,
                       InstallPaths.engineLabel + ".dev", "codes.modular.dt3agent.llama.dev"] {
-            launchctl(["bootout", "gui/\(getuid())/\(label)"])
+            let target = "gui/\(getuid())/\(label)"
+            launchctl(["bootout", target])
+            // bootout returns before launchd has removed the service, and bootstrap fails until it is gone
+            // (floor 2026-11-05: the AI server was reported started but never loaded)
+            var tries = 0
+            while tries < 50, launchctl(["print", target]) == 0 {
+                Thread.sleep(forTimeInterval: 0.1)
+                tries += 1
+            }
         }
     }
 
@@ -116,7 +125,33 @@ final class InstallerModel: ObservableObject {
     private func startAgent(_ plist: URL, _ content: [String: Any]) throws {
         let data = try PropertyListSerialization.data(fromPropertyList: content, format: .xml, options: 0)
         try data.write(to: plist, options: .atomic)
-        launchctl(["bootstrap", "gui/\(getuid())", plist.path])
+        var status: Int32 = -1
+        for _ in 0..<5 {
+            status = launchctl(["bootstrap", "gui/\(getuid())", plist.path])
+            if status == 0 { return }
+            Thread.sleep(forTimeInterval: 1)
+        }
+        throw NSError(domain: "launchctl", code: Int(status), userInfo: [
+            NSLocalizedDescriptionKey: "launchctl bootstrap \(plist.lastPathComponent): \(status)"])
+    }
+
+    /// True once llama-server answers /health on this Mac.
+    private func aiAnswers(within seconds: Int) -> Bool {
+        guard let url = URL(string: InstallPaths.aiURL + "/health") else { return false }
+        for _ in 0..<seconds {
+            let done = DispatchSemaphore(value: 0)
+            var ok = false
+            var request = URLRequest(url: url)
+            request.timeoutInterval = 2
+            URLSession.shared.dataTask(with: request) { _, response, _ in
+                ok = (response as? HTTPURLResponse)?.statusCode == 200
+                done.signal()
+            }.resume()
+            done.wait()
+            if ok { return true }
+            Thread.sleep(forTimeInterval: 1)
+        }
+        return false
     }
 
     @discardableResult
