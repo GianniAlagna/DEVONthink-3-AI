@@ -140,3 +140,20 @@ def test_bridge_fence_for_add_event(args):
     validate("add_event", good)
     with pytest.raises(BridgeError):
         validate("add_event", {**good, **args})
+
+
+@pytest.mark.parametrize("host_error, code", [("dt3_error_1728", "apply_failed_dt3_error_1728"),
+                                              ("compile_failed", "apply_failed_compile_failed"),
+                                              ("Some sentence with text", "apply_failed")])
+def test_host_error_code_is_passed_on(svc, host_error, code):
+    from dt3agent.bridge import BridgeError
+    real = svc.dt3.call
+
+    def failing(verb, **args):
+        if verb == "add_event":
+            raise BridgeError(host_error)
+        return real(verb, **args)
+    svc.dt3.call = failing
+    with pytest.raises(RPCError) as e:
+        svc.handle("decide", {"id": deadline(svc)[0]["id"], "decision": "accept"})
+    assert str(e.value) == code and deadline(svc)
