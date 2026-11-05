@@ -55,8 +55,8 @@ func ocr(_ images: [CGImage], _ languages: [String]) throws -> String {
         request.usesLanguageCorrection = true
         try VNImageRequestHandler(cgImage: image, options: [:]).perform([request])
         let lines = (request.results ?? []).compactMap { obs -> (CGFloat, String)? in
-            guard let o = obs as? VNRecognizedTextObservation, let best = o.topCandidates(1).first else { return nil }
-            return (o.boundingBox.midY, best.string)
+            guard let best = obs.topCandidates(1).first else { return nil }
+            return (obs.boundingBox.midY, best.string)
         }
         pages.append(lines.sorted { $0.0 > $1.0 }.map { $0.1 }.joined(separator: "\n"))  // origin bottom-left
     }
@@ -69,7 +69,7 @@ func qr(_ images: [CGImage]) throws -> [String] {
         let request = VNDetectBarcodesRequest()
         request.symbologies = [.QR]
         try VNImageRequestHandler(cgImage: image, options: [:]).perform([request])
-        for case let obs as VNBarcodeObservation in request.results ?? [] {
+        for obs in request.results ?? [] {
             payloads.append(Data((obs.payloadStringValue ?? "").utf8).base64EncodedString())
         }
     }

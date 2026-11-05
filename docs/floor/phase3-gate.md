@@ -1,34 +1,114 @@
 # Phase 3 gate — floor test (MacBook Pro 2014, macOS 11.7, DT3 3.9.17)
 
-Goal: the full inbox pipeline on the **test database**: names, metadata, summary, filing, review decisions, OCR,
-duplicates, case folder, urgent letter, Smart Rule on import. Time: about 30 minutes. Nothing is ever deleted.
+Goal: the full inbox pipeline on the **test database**. Nothing is ever deleted.
+Copy **one grey box at a time** into Terminal. Never copy text outside the boxes.
+Where a command needs a number, the step says which number to type.
 
-## Prepare (once)
+## A. Start (every time)
 
-| # | Do | Expected |
-|---|---|---|
-| 1 | `cd ~/dt3agent-dev-kit && bash tools/dev-agent.sh llama` | `llama-server running on http://127.0.0.1:8080` |
-| 2 | In the **test database** create 4 groups: `Finanzen/Rechnungen`, `_AI-Review`, `_Duplicates`, `Recht/Fall-Muster` | groups visible |
-| 3 | `bash tools/dev-agent.sh testconfig "Erika Beispiel"` | `Test settings saved` |
-| 4 | Quit DT3, `bash tools/dev-agent.sh smartrule`, start DT3 (skip if done in Phase 2) | `Installed: …` |
-| 5 | `bash tools/dev-agent.sh install osakit` — click **OK** if macOS asks | `Started (osakit, service)` |
-| 6 | `tools/dt3agent status` | `"ai_ok": true`, `"dry_run": true` |
+```bash
+cd ~/dt3agent-dev-kit && bash tools/dev-agent.sh llama && bash tools/dev-agent.sh install osakit
+```
 
-## Test
+Expected: `llama-server running …` and `Started (osakit, service)`. If macOS asks about "DT3 Agent Engine": **OK**.
 
-| # | Do | Expected |
-|---|---|---|
-| 7 | **Dry run:** drag `samples/Rechnung-Muster-Treuhand.txt` into the test DB, select it, `tools/dt3agent process`, wait 60 s, `tools/dt3agent review` | items `field` with `"planned": true` for **name**, **comment**, **metadata**, **location**; nothing changed in DT3 |
-| 8 | **Live:** `tools/dt3agent live on`, select the same document, `tools/dt3agent process`, wait 60 s, `tools/dt3agent review` | metadata written (Info pane: custom metadata `dt3agentdate 2026-04-17`, `dt3agenttotal CHF 1957.04`); document moved to `_AI-Review`; `name` and `comment` wait as items |
-| 9 | Accept the name: `tools/dt3agent decide <id of the name item> accept` | document renamed `20260417000000_Muster-Treuhand-AG_Erika-Beispiel_…` |
-| 10 | `tools/dt3agent undo` | old name back |
-| 11 | **OCR:** select the scanned PDF from Phase 2 (`PRT10.scan…`) or `samples/ocr-de.pdf`, `tools/dt3agent process`, wait 90 s, `tools/dt3agent review` | no `no_text` any more; items for the scan. If macOS asks for access to a folder: **OK** |
-| 12 | **Duplicate:** drag `samples/Rechnung-Muster-Treuhand.txt` in a second time, select the new copy, `tools/dt3agent process`, wait 60 s, `tools/dt3agent review` | item `duplicate` (`duplicate_exact` or `_near`) |
-| 13 | `tools/dt3agent decide <id> accept` | the new copy gets tag `duplicate` and moves to `_Duplicates` (you delete it yourself if you want) |
-| 14 | **Case folder:** item `case` "Fall Muster" for the invoice → `tools/dt3agent decide <id> accept` | the invoice also appears in `Recht/Fall-Muster` (replicant) |
-| 15 | **Urgent:** drag `samples/Zahlungsbefehl-Muster.txt` in, select, `tools/dt3agent process`, wait 60 s, `tools/dt3agent review` | item `urgent` with `Zahlungsbefehl` |
-| 16 | **Smart Rule on import:** drag `samples/Rechnung-Muster-Treuhand.txt` in once more (do not select, do not process) — wait 60 s, `bash tools/dev-agent.sh status` | a new `job …` line appears without `process` = "On Import" works |
-| 17 | `bash tools/dev-agent.sh status` and `tools/dt3agent review` — send both outputs + screenshots of steps 8, 9, 14 | — |
-| 18 | Cleanup: `tools/dt3agent live off`, `bash tools/dev-agent.sh uninstall` | agents removed |
+```bash
+tools/dt3agent live on
+```
+
+## B. Invoice: metadata, filing, name (already partly done)
+
+1. In DT3 click **Rechnung-Muster-Treuhand** (the one from Phase 2) so it is selected. Then:
+
+```bash
+tools/dt3agent process
+```
+
+2. Wait 60 seconds. In DT3 open the Info pane (Cmd+Shift+I) of that document → **screenshot**.
+   Expected: custom metadata `dt3agentdate 2026-04-17`, `dt3agenttotal CHF 1957.04`, `dt3agentiban …`; the document is now in group `_AI-Review`.
+
+## C. Duplicate
+
+3. Drag `~/dt3agent-dev-kit/samples/Rechnung-Muster-Treuhand.txt` into the test database again. Click the **new** copy. Then:
+
+```bash
+tools/dt3agent process
+```
+
+4. Wait 60 seconds, then:
+
+```bash
+tools/dt3agent review
+```
+
+   Expected: an item with `"kind": "duplicate"`. Note its `"id"` number (for example 9) and type it in place of 9 here:
+
+```bash
+tools/dt3agent decide 9 accept
+```
+
+   Expected: the new copy gets the tag `duplicate` and moves to `_Duplicates`.
+
+## D. Case folder
+
+5. In the list from step 4 find an item with `"kind": "case"`. Type its number in place of 5:
+
+```bash
+tools/dt3agent decide 5 accept
+```
+
+   Expected: the invoice also appears in group `Recht/Fall-Muster` → **screenshot**.
+
+## E. Scan (OCR)
+
+6. In DT3 click the scan **PRT10.scan133209** (or drag in `~/dt3agent-dev-kit/samples/ocr-de.pdf` and click it). Then:
+
+```bash
+tools/dt3agent process
+```
+
+7. Wait 90 seconds, then `tools/dt3agent review`. Expected: items for the scan, **no** `no_text`. If macOS asks for access to a folder: **OK**.
+
+## F. Urgent letter
+
+8. Drag `~/dt3agent-dev-kit/samples/Zahlungsbefehl-Muster.txt` into the test database, click it, then:
+
+```bash
+tools/dt3agent process
+```
+
+9. Wait 60 seconds, then `tools/dt3agent review`. Expected: an item `"kind": "urgent"` with `Zahlungsbefehl`.
+
+## G. Smart Rule on import
+
+10. Drag `~/dt3agent-dev-kit/samples/Zahlungsbefehl-Muster.txt` in **once more**. Do **not** click it, do **not** run process. Wait 60 seconds, then:
+
+```bash
+bash tools/dev-agent.sh status
+```
+
+   Expected: one more `engine job …` line than before → the Smart Rule works on import.
+
+## H. Send and clean up
+
+11. Send the output of these two commands and the screenshots from steps 2 and 5:
+
+```bash
+tools/dt3agent review
+```
+
+```bash
+bash tools/dev-agent.sh status
+```
+
+12. Clean up:
+
+```bash
+tools/dt3agent live off
+```
+
+```bash
+bash tools/dev-agent.sh uninstall
+```
 
 If a step fails, stop and send the full output of that step.
