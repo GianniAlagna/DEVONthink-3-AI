@@ -46,7 +46,8 @@ def plan(record: dict, text: str, ai: dict, cfg: dict, bill: dict | None = None)
             out.append(Proposal("comment", "\n".join(lines), merged["summary"].confidence, merged["summary"].source))
 
     meta = {"dt3agentdate": ("document_date", lambda v: v.isoformat()), "dt3agentiban": ("iban", str),
-            "dt3agentlang": ("lang", str), "dt3agentreference": ("reference", str)}
+            "dt3agentlang": ("lang", str), "dt3agentreference": ("reference", str),
+            "dt3agentuid": ("uid", str)}
     for key, (field, fmt) in meta.items():
         if field in merged and merged[field].source in ("rule", "qr"):
             f = merged[field]
