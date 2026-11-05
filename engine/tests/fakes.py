@@ -18,6 +18,8 @@ class FakeDT3:
         validate(verb, args)  # same fence as the real bridge client
         self.calls.append((verb, args))
         if verb == "info":
+            if getattr(self, "fail_info", False):
+                raise BridgeError("dt3_unreachable")
             return {"version": self.version, "databases": ["DT3Agent-Test"]}
         if verb == "selected":
             return {"uuids": list(self.selected)}
