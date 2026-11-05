@@ -210,6 +210,8 @@ bundle)
     done
     DT3A_BUNDLE_PYTHON="$PYDIR" DT3A_BUNDLE_LLAMA="$LLAMA_SERVER" tools/build-swift.sh build
     [ -f "build/DT3 Agent.app/Contents/Resources/DT3 Agent Enqueue.scpt" ] || echo "Warning: Smart Rule script missing (is DT3 in /Applications?)"
+    # floor 2026-11-05: replacing the app while it runs made 'open' fail (kLSNoExecutableErr); quit it first
+    pkill -x DT3Agent 2>/dev/null && sleep 2 || true
     mkdir -p "$HOME/Applications"
     rm -rf "$HOME/Applications/DT3 Agent.app"
     ditto "build/DT3 Agent.app" "$HOME/Applications/DT3 Agent.app"
