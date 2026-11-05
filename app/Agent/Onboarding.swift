@@ -94,7 +94,8 @@ final class SetupModel: ObservableObject {
         case .ai: save(["ai": ["url": aiURL.trimmingCharacters(in: .whitespaces)]], then: go)
         case .identity:
             let n = cleanName(name) ?? ""
-            save(["identity": ["name": n.isEmpty ? NSNull() : n]], then: go)
+            let value: Any = n.isEmpty ? NSNull() as Any : n as Any
+            save(["identity": ["name": value]], then: go)
         case .naming: save(["naming": ["template": template]], then: go)
         case .finish: rpc("live", ["on": !keepTestMode]) { _ in go() }
         default: go()
