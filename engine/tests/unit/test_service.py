@@ -144,4 +144,5 @@ def test_review_lists_codes_never_raw_output(env):
     svc.tick()
     items = svc.handle("review", {})
     assert len(items) == 1 and items[0]["code"] == "no_text" and items[0]["uuid"] == A
-    assert set(items[0]) == {"id", "uuid", "kind", "code", "tags_add", "created_at"}   # error item: no raw
+    assert set(items[0]) == {"id", "uuid", "kind", "code", "tags_add", "created_at", "record_missing",
+                             "actions"}   # error item: no raw

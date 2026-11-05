@@ -14,6 +14,7 @@ from dt3agent import queue as queuemod
 from dt3agent.adapter import DT3Adapter
 from dt3agent.ai import LlamaClient
 from dt3agent.audit import UUID_RE, AuditLog
+from dt3agent.bridge import BridgeError
 from dt3agent.intake import ingest_spool
 from dt3agent.rpc import RPCError
 from dt3agent.undo import MIGRATIONS as UNDO_MIGRATIONS
@@ -23,8 +24,17 @@ from dt3agent.vision import VisionClient
 STATE_MIGRATIONS = ["CREATE TABLE state (key TEXT PRIMARY KEY, value TEXT NOT NULL)"]
 # Order is part of the schema: append only.
 ENGINE_MIGRATIONS = (queuemod.MIGRATIONS + pipeline.MIGRATIONS + STATE_MIGRATIONS + review.MIGRATIONS
-                     + duplicates.MIGRATIONS)
+                     + duplicates.MIGRATIONS + review.MIGRATIONS_2)
 DEFAULT_DATA = Path.home() / "Library/Application Support/DT3 Agent"
+
+
+def _not_found(e: BaseException | None) -> bool:
+    """True when the bridge said the record does not exist, also when wrapped in an RPCError."""
+    while e is not None:
+        if isinstance(e, BridgeError) and str(e) == "not_found":
+            return True
+        e = e.__cause__ or e.__context__
+    return False
 
 
 class Service:
@@ -99,9 +109,16 @@ class Service:
             return {"queued": len(uuids)}
         if method == "review":
             # codes and planned tags only: raw model output may echo document text and stays in the database
-            rows = self.con.execute("SELECT id, uuid, kind, code, payload_json, created_at FROM review_items "
-                                    "WHERE decided_at IS NULL ORDER BY id DESC LIMIT 20").fetchall()
-            return [self._review_row(i, u, k, c, json.loads(p), t) for i, u, k, c, p, t in rows]
+            rows = self.con.execute("SELECT id, uuid, kind, code, payload_json, created_at, record_missing "
+                                    "FROM review_items WHERE decided_at IS NULL ORDER BY id DESC LIMIT 20").fetchall()
+            out = []
+            for i, u, k, c, p, t, missing in rows:
+                missing = self._record_missing(u, bool(missing))
+                review.set_missing(self.con, i, missing)
+                row = self._review_row(i, u, k, c, json.loads(p), t)
+                row.update(record_missing=missing, actions=["reject"] if missing else ["accept", "edit", "reject"])
+                out.append(row)
+            return out
         if method == "decide":
             return self._decide(params)
         if method == "undo":
@@ -157,9 +174,20 @@ class Service:
             raise RPCError(str(e)) from None
         try:
             return self._apply(result, params)
-        except Exception:
+        except Exception as e:
             review.reopen(self.con, params["id"])  # a failed write must not lose the item
+            if _not_found(e):
+                review.set_missing(self.con, params["id"], True)
+                raise RPCError("record_missing") from None
             raise
+
+    def _record_missing(self, uuid: str, known: bool) -> bool:
+        """Does DT3 still have this record? Any other failure (DT3 closed, host gone) keeps what we knew."""
+        try:
+            self.adapter.read(uuid)
+            return False
+        except BridgeError as e:
+            return True if str(e) == "not_found" else known
 
     def _apply(self, result: dict, params: dict) -> dict:
         if result["kind"] in ("duplicate", "case"):

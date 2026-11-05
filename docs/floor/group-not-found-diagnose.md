@@ -30,6 +30,7 @@ osascript -l JavaScript -e 'const r=Application("DEVONthink 3").selectedRecords(
 | Ausgabe | Bedeutung | Weiter |
 |---|---|---|
 | `"db":"DT3Agent-T1"` | Testdatenbank | Schritt 3 |
+| `TypeError` … `undefined` | **nichts** ausgewählt | in DT3 ein Dokument anklicken, Schritt 2 wiederholen |
 | anderer Name oder Fehler | falsches Dokument angeklickt | Dokument in `DT3Agent-T1` anklicken, Schritt 2 wiederholen |
 
 ## 3. Wie sehen die Gruppen aus? (nur Namen, kein Inhalt)
