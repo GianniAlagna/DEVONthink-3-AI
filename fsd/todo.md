@@ -48,7 +48,7 @@ Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC
 - [x] **P3-8: Vision OCR hook** — done 2026-11-05 (floor check in P3-11) (A1) · Acceptance: `wordCount == 0` → Vision helper (ADR-0006) → text for analysis only, original untouched · Verify: fake helper in tests; floor: the scanned PDF from the Phase 2 run · Size: M
 - [x] **P3-9: pipeline full A1–A9** — done 2026-11-05 (a-d; floor in P3-11) — split at start into (a) field merge rule > QR > AI with confidence and thresholds, (b) write verbs `set_name`, `set_comment`, `set_metadata`, `move` with undo, (c) filing allowlist + `_AI-Review`, (d) summary · Size: L (split)
 - [x] **P3-10: duplicates + case folders** — done 2026-11-05 (floor in P3-11) (A10, brief §5.2) · Acceptance: exact + near duplicates → review items only; actions only after the user's choice · Size: M
-- [ ] **P3-11: Phase 3 floor gate** — runs 1+2 on 2026-11-05 (`docs/floor/phase3-report.md`); all points verified except Smart Rule "On Import" (`docs/floor/phase3-report.md`) · Acceptance: real inbox sample (test DB) → names, tags, filing, review; Smart Rule "On Import" verified (carried from Phase 2) · Size: S
+- [x] **P3-11: Phase 3 floor gate** — floor runs done 2026-11-05 (`docs/floor/phase3-report.md`); awaiting approval · Acceptance: real inbox sample (test DB) → names, tags, filing, review; Smart Rule "On Import" verified (carried from Phase 2) · Size: S
 
 ## Phase 4 — Block B
 - B-0 (from Phase 3 floor): review items whose DT3 record no longer exists → mark `record_missing`, do not offer accept; guide hint "select a document first" for osascript checks
