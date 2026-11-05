@@ -19,14 +19,14 @@ A = "FB2DEBBE-8F8B-4049-8F4E-CE5FD12F20D8"
 
 class FakeAI:
     def __init__(self, tags=None, error=None):
-        self.tags, self.error, self.calls = tags or [], error, 0
+        self.tags, self.error, self.calls, self.extra = tags or [], error, 0, {}
 
     def extract(self, text, schema, lang_hint=None, task=None):
         self.calls += 1
         self.schema, self.task = schema, task
         if self.error:
             raise self.error
-        obj = {"tags": self.tags}
+        obj = {**self.extra, "tags": self.tags}
         return Extraction(obj, json.dumps(obj))
 
 

@@ -33,6 +33,10 @@ DEFAULTS = {
     },
     # Vision OCR helper (ADR-0006); helper path is set by the installer
     "vision": {"helper": None, "languages": ["de-DE", "fr-FR", "it-IT", "en-US"], "max_pages": 5},
+    "identity": {"name": None},          # brief A5: inbound mail is addressed to this name
+    "summary": {"target": "comment"},     # brief A9: 3-line summary into the DT3 comment
+    # brief A8: filing only into groups listed here; off until the user sets the allowlist
+    "filing": {"enabled": False, "groups": {}, "review_group": "/_AI-Review/"},
     "update_check": False,
     "logs": {"content": False},
 }
@@ -41,6 +45,7 @@ DEFAULTS = {
 TYPES = {
     "schema_version": int, "dry_run": bool, "scopes": list, "ai": dict, "naming": dict,
     "thresholds": dict, "update_check": bool, "logs": dict, "tags": dict, "keywords": dict, "vision": dict,
+    "identity": dict, "summary": dict, "filing": dict,
 }
 
 
@@ -75,6 +80,12 @@ def validate(cfg: dict) -> dict:
             and all(isinstance(t, str) and t and words_ok(ws) for t, ws in kw.get("doc_types", {}).items())
             and words_ok(kw.get("urgent", []))):
         raise ConfigError("keywords: doc_types maps names to word lists; urgent is a word list")
+    filing = cfg.get("filing", {})
+    groups = filing.get("groups", {})
+    good_loc = lambda g: isinstance(g, str) and g.startswith("/") and ".." not in g.split("/")  # noqa: E731
+    if not (isinstance(groups, dict) and all(isinstance(k, str) and good_loc(v) for k, v in groups.items())
+            and (filing.get("review_group") is None or good_loc(filing.get("review_group")))):
+        raise ConfigError("filing: groups map doc types to absolute group paths")
     for scope in cfg.get("scopes", []):
         if not (isinstance(scope, dict) and set(scope) == {"database", "group"}
                 and all(isinstance(v, str) and v for v in scope.values())):

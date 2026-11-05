@@ -43,7 +43,8 @@ class Service:
         v = self.cfg["vision"]
         self.vision = VisionClient(v["helper"], v["languages"], v["max_pages"]) if v.get("helper") else None
         self.pipeline = pipeline.Pipeline(self.adapter, self.ai, self.con, dry_run=self.cfg["dry_run"],
-                                          vocabulary=self.cfg["tags"]["vocabulary"], vision=self.vision)
+                                          vocabulary=self.cfg["tags"]["vocabulary"], vision=self.vision,
+                                          settings=self.cfg)
 
     # state ---------------------------------------------------------------
     def _paused(self) -> bool:
@@ -122,14 +123,28 @@ class Service:
         if not isinstance(params["id"], int):
             raise RPCError("bad_params")
         value = params.get("value")
-        if value is not None and pipeline.clean_tags(value if isinstance(value, list) else [], None) != value:
+        kind = self.con.execute("SELECT kind FROM review_items WHERE id = ?", (params["id"],)).fetchone()
+        if kind and kind[0] == "planned" and value is not None \
+                and pipeline.clean_tags(value if isinstance(value, list) else [], None) != value:
             raise RPCError("bad_value")  # same rules as AI tags: no separators, printable, short
+        if kind and kind[0] == "field" and isinstance(value, list):
+            value = " ".join(value)  # the CLI sends words; a field value is one text
+        if kind and kind[0] == "field" and value is not None and not (isinstance(value, str) and value.strip()):
+            raise RPCError("bad_value")
         try:
             result = review.decide(self.con, params["id"], params["decision"], value)
         except review.ReviewError as e:
             raise RPCError(str(e)) from None
         if result["apply"] is None:
             return {"applied": False}
+        if result["kind"] == "field":  # name, comment, metadata, location: through the adapter with undo
+            p = result["payload"]
+            try:
+                self.adapter.set_field(result["uuid"], p["field"], result["apply"], key=p.get("key"),
+                                       batch_id=f"review-{params['id']}", actor="user")
+            except Exception as e:
+                raise RPCError("apply_failed") from e
+            return {"applied": True}
         uuid, add = result["uuid"], [t for t in result["apply"] if isinstance(t, str)]
         current = list(self.adapter.read(uuid).get("tags") or [])
         self.adapter.set_tags(uuid, current + [t for t in add if t not in current],
