@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from dt3agent import duplicates, qrbill
 from dt3agent import fields as fieldsmod
 from dt3agent.ai import AIError
+from dt3agent.embed import EmbedError
 from dt3agent.plan import plan
 from dt3agent.queue import ERROR_RE
 from dt3agent.rules import keywords
@@ -79,10 +80,19 @@ def clean_tags(candidates, vocabulary) -> list[str]:
 
 class Pipeline:
     def __init__(self, adapter, ai, con: sqlite3.Connection, *, dry_run: bool, vocabulary=None, vision=None,
-                 settings: dict | None = None):
-        """settings: the engine config. Without it the pipeline only tags (Phase 2 behaviour)."""
+                 settings: dict | None = None, index=None):
+        """settings: the engine config. Without it the pipeline only tags (Phase 2 behaviour).
+        index: the knowledge index (K-2/K-3), or None; indexing never stops the pipeline."""
         self.adapter, self.ai, self.con, self.vision = adapter, ai, con, vision
-        self.dry_run, self.vocabulary, self.settings = dry_run, vocabulary, settings
+        self.dry_run, self.vocabulary, self.settings, self.index = dry_run, vocabulary, settings, index
+
+    def _add_to_index(self, uuid: str, record: dict, text: str) -> None:
+        if self.index is None or not text.strip():
+            return
+        try:
+            self.index.update(uuid, record.get("database") or "", text)
+        except EmbedError:  # embedding server down: the record is indexed next time it comes through
+            pass
 
     def _now(self) -> str:
         return datetime.now(UTC).isoformat()
@@ -105,6 +115,10 @@ class Pipeline:
         row = self.con.execute("SELECT content_hash, pipeline_version FROM processed WHERE uuid = ?",
                                (uuid,)).fetchone()
         if key and row == (key, PIPELINE_VERSION):
+            if self.index is not None and not self.index.has(uuid):  # processed before the index existed
+                text, complete = self.adapter.read_text(uuid)
+                if complete:
+                    self._add_to_index(uuid, record, text)
             self.adapter.audit.write(actor="engine", action="skip", uuid=uuid, fields_changed=[],
                                      batch_id=batch_id, result="skipped")
             return Outcome("skipped")
@@ -119,6 +133,7 @@ class Pipeline:
             code = "no_text" if not text.strip() else "text_too_long"
             self._review(uuid, "error", code, {}, batch_id, "review")
             return Outcome("review", code=code)
+        self._add_to_index(uuid, record, text)
         if self.settings is not None:
             self._duplicates_and_cases(uuid, text, batch_id)
         schema, task = tag_schema(self.vocabulary), TAG_TASK

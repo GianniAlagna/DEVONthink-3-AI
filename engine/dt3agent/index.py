@@ -111,6 +111,9 @@ class Index:
         with self.con:
             self._remove(uuid)
 
+    def has(self, uuid: str) -> bool:
+        return self.con.execute("SELECT 1 FROM docs WHERE uuid=?", (uuid,)).fetchone() is not None
+
     def count(self) -> int:
         return self.con.execute("SELECT count(*) FROM docs").fetchone()[0]
 
