@@ -130,7 +130,7 @@ cfg["duplicates"]["group"] = "/_Duplicates/"
 cfg["cases"] = [{"name": "Fall Muster", "group": "/Recht/Fall-Muster/", "words": ["Muster Treuhand AG"]}]
 config.save(path, cfg)
 print("Test settings saved. In the TEST database create these groups (a / means: one group inside the other,")
-print("never a / in a group name): Finanzen > Rechnungen,  Recht > Fall-Muster,  _AI-Review,  _Duplicates")
+print("never a / in a group name): Finanzen > Rechnungen,  Recht > Fall-Muster,  _AI-Review,  _Duplicates,  _Urgent")
 PYEOF
     ;;
 install)

@@ -202,3 +202,12 @@ def test_no_bill_or_helper_failure_falls_back_to_text_rules(tmp_path, vision):
     out, meta = run_pipeline(tmp_path, vision)
     assert out.status == "applied" and meta["mddt3agenttotal"] == "CHF 1957.04"
     assert "mddt3agentreference" not in meta
+
+
+@pytest.mark.parametrize("name, ref_type, amount", [("qrr", "QRR", 195704), ("scor", "SCOR", 24998)])
+def test_phase0_fixture_payloads(name, ref_type, amount):
+    # byte-exact payloads read by the Vision helper on the floor machine in Phase 0 (S6)
+    from pathlib import Path
+    path = Path(__file__).resolve().parents[3] / "fixtures" / "spike" / f"qrbill-{name}.payload.txt"
+    b = parse(path.read_text(encoding="utf-8", newline=""))
+    assert (b["reference_type"], b["amount"], b["creditor"]["name"]) == (ref_type, amount, "Muster Treuhand AG")
