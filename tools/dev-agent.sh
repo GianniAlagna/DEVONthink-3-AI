@@ -113,6 +113,26 @@ smartrule)
     osacompile -o "$dir/DT3 Agent Enqueue.scpt" dt3-scripts/SmartRule-Enqueue.applescript
     echo "Installed: Smart Rules/DT3 Agent Enqueue.scpt - now start DEVONthink 3"
     ;;
+testconfig)
+    # Phase 3 floor gate: test settings without editing JSON by hand. The groups must exist in the TEST database.
+    name=${2:-}
+    [ -n "$name" ] || { echo 'usage: tools/dev-agent.sh testconfig "Your Name"'; exit 2; }
+    "$PY" -I - "$REPO/engine" "$DATA" "$name" <<'PYEOF'
+import sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+from dt3agent import config
+path = Path(sys.argv[2]) / "config.json"
+cfg = config.load(path)
+cfg["identity"]["name"] = sys.argv[3]
+cfg["filing"] = {"enabled": True, "groups": {"invoice": "/Finanzen/Rechnungen/"}, "review_group": "/_AI-Review/"}
+cfg["duplicates"]["group"] = "/_Duplicates/"
+cfg["cases"] = [{"name": "Fall Muster", "group": "/Recht/Fall-Muster/", "words": ["Muster Treuhand AG"]}]
+config.save(path, cfg)
+print("Test settings saved. Create these groups in the TEST database: /Finanzen/Rechnungen  /_AI-Review  "
+      "/_Duplicates  /Recht/Fall-Muster")
+PYEOF
+    ;;
 install)
     mode=${2:-osakit}
     uuid=${3:-}
@@ -169,7 +189,7 @@ uninstall)
     echo "LaunchAgents removed. Logs kept in: $(dirname "$LOG"). Data kept in: $DATA"
     ;;
 *)
-    echo "usage: tools/dev-agent.sh python | llama | smartrule | install [osakit|osascript] [record-UUID] [read|tag] | status | uninstall"
+    echo "usage: tools/dev-agent.sh python | llama | smartrule | testconfig NAME | install [osakit|osascript] [record-UUID] [read|tag] | status | uninstall"
     exit 2
     ;;
 esac

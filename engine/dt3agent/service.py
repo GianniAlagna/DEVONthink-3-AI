@@ -101,9 +101,7 @@ class Service:
             # codes and planned tags only: raw model output may echo document text and stays in the database
             rows = self.con.execute("SELECT id, uuid, kind, code, payload_json, created_at FROM review_items "
                                     "WHERE decided_at IS NULL ORDER BY id DESC LIMIT 20").fetchall()
-            return [{"id": i, "uuid": u, "kind": k, "code": c, "created_at": t,
-                     "tags_add": json.loads(p).get("tags_add", []) if k == "planned" else []}
-                    for i, u, k, c, p, t in rows]
+            return [self._review_row(i, u, k, c, json.loads(p), t) for i, u, k, c, p, t in rows]
         if method == "decide":
             return self._decide(params)
         if method == "undo":
@@ -120,6 +118,22 @@ class Service:
         config.save(self.config_path, self.cfg)
         self.pipeline.dry_run = self.cfg["dry_run"]
         return {"dry_run": self.pipeline.dry_run}
+
+    @staticmethod
+    def _review_row(i, u, k, c, p, t) -> dict:
+        """Proposal details for the user's decision; raw model output (error items) is never shown."""
+        row = {"id": i, "uuid": u, "kind": k, "code": c, "created_at": t,
+               "tags_add": p.get("tags_add", []) if k == "planned" else []}
+        if k == "field":
+            row.update(field=p.get("field"), key=p.get("key"), after=p.get("after"),
+                       confidence=p.get("confidence"), planned=bool(p.get("planned")))
+        elif k == "duplicate":
+            row.update(other=p.get("other"), method=p.get("method"), score=p.get("score"))
+        elif k == "case":
+            row.update(case=p.get("case"), group=p.get("group"))
+        elif k == "urgent":
+            row.update(words=p.get("after"))
+        return row
 
     def _decide(self, params: dict) -> dict:
         if not isinstance(params["id"], int):
