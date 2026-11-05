@@ -2,6 +2,7 @@
 import pytest
 
 from dt3agent import config, duplicates, store
+from dt3agent.bridge import BridgeError
 from dt3agent.rpc import RPCError
 from dt3agent.service import Service
 from tests.fakes import FakeDT3, FakeLlamaServer, ai_reply
@@ -112,3 +113,44 @@ def test_failed_decision_keeps_the_item_open(svc):
     with pytest.raises(RPCError):
         svc.handle("decide", {"id": case["id"], "decision": "edit", "value": ["replicate", "/Nope/"]})
     assert case["id"] in [c["id"] for c in items(svc, "case")]
+
+
+def test_missing_record_is_marked_and_only_reject_is_offered(svc):
+    # Floor 2026-11-05 (B-0): records of old review items were gone from DT3; accept then failed with not_found.
+    case = next(c for c in items(svc, "case") if c["uuid"] == A)
+    assert case["record_missing"] is False and case["actions"] == ["accept", "edit", "reject"]
+    del svc.dt3.records[A]
+    case = next(c for c in items(svc, "case") if c["uuid"] == A)
+    assert case["record_missing"] is True and case["actions"] == ["reject"]
+    with pytest.raises(RPCError) as e:
+        svc.handle("decide", {"id": case["id"], "decision": "accept"})
+    assert str(e.value) == "record_missing"
+    assert svc.handle("decide", {"id": case["id"], "decision": "reject"}) == {"applied": False}
+    assert case["id"] not in [c["id"] for c in items(svc, "case")]
+
+
+def test_record_gone_at_decision_time_is_marked(svc):
+    case = next(c for c in items(svc, "case") if c["uuid"] == A)
+    del svc.dt3.records[A]  # removed after the list was shown
+    with pytest.raises(RPCError) as e:
+        svc.handle("decide", {"id": case["id"], "decision": "accept"})
+    assert str(e.value) == "record_missing"
+    assert next(c for c in items(svc, "case") if c["id"] == case["id"])["record_missing"] is True
+
+
+def test_record_back_again_is_unmarked(svc):
+    saved = svc.dt3.records.pop(A)
+    items(svc, "case")
+    svc.dt3.records[A] = saved  # restored from the DT3 trash: same UUID
+    assert all(not c["record_missing"] for c in items(svc, "case"))
+
+
+def test_dt3_not_answering_does_not_mark_records(svc):
+    real = svc.dt3.call
+
+    def down(verb, **args):
+        if verb == "read":
+            raise BridgeError("host_closed")
+        return real(verb, **args)
+    svc.dt3.call = down
+    assert all(not c["record_missing"] for c in items(svc, "case"))

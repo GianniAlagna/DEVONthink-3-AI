@@ -26,6 +26,8 @@ MIGRATIONS = [
     "DROP TABLE review_items",
     "ALTER TABLE review_items_v2 RENAME TO review_items",
 ]
+# B-0: the record behind an item can disappear in DT3 (deleted, emptied trash). Separate list: append only.
+MIGRATIONS_2 = ["ALTER TABLE review_items ADD COLUMN record_missing INTEGER NOT NULL DEFAULT 0"]
 
 
 class ReviewError(ValueError):
@@ -37,10 +39,12 @@ def decide(con: sqlite3.Connection, item_id: int, decision: str, value=None) -> 
     (None for reject or for items without a proposal)."""
     if decision not in ("accept", "edit", "reject"):
         raise ReviewError("bad_decision")
-    row = con.execute("SELECT uuid, kind, payload_json FROM review_items WHERE id = ? AND decided_at IS NULL",
-                      (item_id,)).fetchone()
+    row = con.execute("SELECT uuid, kind, payload_json, record_missing FROM review_items "
+                      "WHERE id = ? AND decided_at IS NULL", (item_id,)).fetchone()
     if row is None:
         raise ReviewError("no_open_item")
+    if row[3] and decision != "reject":
+        raise ReviewError("record_missing")  # nothing to apply to: only closing the item is possible
     uuid, kind, payload = row[0], row[1], json.loads(row[2])
     if decision == "edit" and value is None:
         raise ReviewError("edit_needs_value")
@@ -57,3 +61,8 @@ def reopen(con: sqlite3.Connection, item_id: int) -> None:
     with con:
         con.execute("UPDATE review_items SET decided_at = NULL, decision = NULL, value_json = NULL WHERE id = ?",
                     (item_id,))
+
+
+def set_missing(con: sqlite3.Connection, item_id: int, missing: bool) -> None:
+    with con:
+        con.execute("UPDATE review_items SET record_missing = ? WHERE id = ?", (int(missing), item_id))

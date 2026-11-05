@@ -51,7 +51,7 @@ Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC
 - [x] **P3-11: Phase 3 floor gate** — floor runs done 2026-11-05 (`docs/floor/phase3-report.md`); approved by Gianni 2026-11-05 · Acceptance: real inbox sample (test DB) → names, tags, filing, review; Smart Rule "On Import" verified (carried from Phase 2) · Size: S
 
 ## Phase 4 — Block B
-- B-0 (from Phase 3 floor): review items whose DT3 record no longer exists → mark `record_missing`, do not offer accept; guide hint "select a document first" for osascript checks
+- [x] B-0 (from Phase 3 floor) — done 2026-11-05, floor check open: review items whose DT3 record no longer exists → mark `record_missing`, do not offer accept; guide hint "select a document first" for osascript checks
 - B-1 vision helper · B-2 QR-bill parser (SIX IG cited) · B-3 UID check digit (official source) · B-4 retention table · B-5 deadlines (reminder path decision) · B-6 urgent letters
 
 ## Phase 5 — App
