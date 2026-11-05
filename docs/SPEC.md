@@ -148,7 +148,7 @@ Brief §5.1 exactly: default `{datetime}_{sender}_{receiver}_{subject}`; `YYYYMM
 2. Text: DT3 plain text; if `wordCount == 0` → Vision OCR (analysis only).
 3. Rules (§4.10), QR-bill if present.
 4. AI for missing fields (type, sender/receiver, subject, summary, tags from vocabulary).
-5. Validate + merge: rule > QR > AI > placeholder; each field `{value, source, confidence}`.
+5. Validate + merge: rule > QR > AI > placeholder, except payment fields where QR > rule (§4.16); each field `{value, source, confidence}`.
 6. Decide per field: ≥ threshold → apply; else → review. Dry-run → everything to review as "planned".
 7. Write via adapter with undo; store hash + pipeline version (Phase 2: engine DB table `processed`; custom metadata from Phase 3).
 - Budget (floor, 1-page document): **≤ 60 s** end-to-end (AI ~20 s, OCR ≤ 6 s, DT3 ≤ 2 s).
@@ -163,6 +163,7 @@ Brief §5.1 exactly: default `{datetime}_{sender}_{receiver}_{subject}`; `YYYYMM
 
 ### 4.16 `swiss`
 - QR-bill parser per the current SIX "Swiss Implementation Guidelines QR-bill" (fetch + cite version in code, T-B2). Decoded values beat AI values.
+  Done in `engine/dt3agent/qrbill.py`: SIX IG **v2.4 of 24.02.2026** (SIC release 13.11.2026; v2.3 valid until Nov 2027). Lenient only for older valid bills (address type K, EUR + QRR); checksums never lenient. Payment fields (amount, currency, IBAN, reference) from the QR code beat text rules ("QR-bill wins", §4.10); creditor name beats the AI sender. Note: the SCOR in SIX Annex A Table 20 (`RF72…JSH0438`, unchanged since v2.2) fails ISO 11649; it is refused.
 - Retention table (editable; default example accounting records 10 years, OR Art. 958f; UI says "Not legal advice").
 - Deadline/urgent → review items + notification; never create reminders without confirmation.
 

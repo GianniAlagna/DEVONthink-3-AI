@@ -27,8 +27,10 @@ def _created(record: dict) -> datetime:
         return datetime.now(UTC)
 
 
-def plan(record: dict, text: str, ai: dict, cfg: dict) -> list[Proposal]:
-    merged = fieldsmod.merge(fieldsmod.rule_fields(text, cfg), ai, identity=cfg["identity"]["name"])
+def plan(record: dict, text: str, ai: dict, cfg: dict, bill: dict | None = None) -> list[Proposal]:
+    """bill: a parsed QR-bill (B-2) or None."""
+    merged = fieldsmod.merge(fieldsmod.rule_fields(text, cfg), ai, identity=cfg["identity"]["name"],
+                             qr=fieldsmod.qr_fields(bill))
     out: list[Proposal] = []
 
     used = ("document_date", "sender", "receiver", "subject")
@@ -44,14 +46,15 @@ def plan(record: dict, text: str, ai: dict, cfg: dict) -> list[Proposal]:
             out.append(Proposal("comment", "\n".join(lines), merged["summary"].confidence, merged["summary"].source))
 
     meta = {"dt3agentdate": ("document_date", lambda v: v.isoformat()), "dt3agentiban": ("iban", str),
-            "dt3agentlang": ("lang", str)}
+            "dt3agentlang": ("lang", str), "dt3agentreference": ("reference", str)}
     for key, (field, fmt) in meta.items():
-        if field in merged and merged[field].source == "rule":
-            out.append(Proposal("metadata", fmt(merged[field].value), merged[field].confidence, "rule", key))
+        if field in merged and merged[field].source in ("rule", "qr"):
+            f = merged[field]
+            out.append(Proposal("metadata", fmt(f.value), f.confidence, f.source, key))
     if "amount_cents" in merged:
-        c = merged["amount_cents"].value
-        out.append(Proposal("metadata", f"{merged['currency'].value} {c // 100}.{c % 100:02d}",
-                            merged["amount_cents"].confidence, "rule", "dt3agenttotal"))
+        c = merged["amount_cents"]
+        out.append(Proposal("metadata", f"{merged['currency'].value} {c.value // 100}.{c.value % 100:02d}",
+                            c.confidence, c.source, "dt3agenttotal"))
 
     filing = cfg["filing"]
     if filing["enabled"]:

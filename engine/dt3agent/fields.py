@@ -15,6 +15,10 @@ CONF_RULE_STRONG = 0.95
 CONF_RULE = 0.8
 CONF_AI = 0.7
 CONF_SETTINGS = 0.9
+CONF_QR = 0.99  # decoded and checksum-verified (SIX IG QR-bill): exact by construction
+# Payment fields a QR-bill states exactly: they beat text rules (SPEC §4.10 "QR-bill wins"), the rest of the
+# order stays rule > QR > AI (§4.13 step 5).
+QR_WINS = ("amount_cents", "currency", "iban", "qr_iban", "reference")
 
 AI_SCHEMA = {
     "type": "object",
@@ -37,7 +41,7 @@ AI_TASK = ("Task: name the document type, the sender (who wrote it), the receive
 @dataclass(frozen=True)
 class Field:
     value: object
-    source: str      # rule | ai | settings
+    source: str      # rule | qr | ai | settings
     confidence: float
 
 
@@ -67,6 +71,19 @@ def rule_fields(text: str, cfg: dict) -> dict[str, Field]:
     return f
 
 
+def qr_fields(bill: dict | None) -> dict[str, Field]:
+    """Fields from a parsed QR-bill (dt3agent.qrbill.parse)."""
+    if not bill:
+        return {}
+    f = {"iban": Field(bill["iban"], "qr", CONF_QR), "qr_iban": Field(bill["qr_iban"], "qr", CONF_QR),
+         "currency": Field(bill["currency"], "qr", CONF_QR), "sender": Field(bill["creditor"]["name"], "qr", CONF_QR)}
+    if bill["amount"] is not None:  # an open amount says nothing; the text rule may still know the total
+        f["amount_cents"] = Field(bill["amount"], "qr", CONF_QR)
+    if bill["reference"]:
+        f["reference"] = Field(bill["reference"], "qr", CONF_QR)
+    return f
+
+
 def _ai_date(value) -> date | None:
     try:
         return date.fromisoformat(value) if isinstance(value, str) else None
@@ -74,8 +91,17 @@ def _ai_date(value) -> date | None:
         return None
 
 
-def merge(rules: dict[str, Field], ai: dict, *, identity: str | None) -> dict[str, Field]:
+def merge(rules: dict[str, Field], ai: dict, *, identity: str | None, qr: dict[str, Field] | None = None
+          ) -> dict[str, Field]:
     merged = dict(rules)
+    qr = qr or {}
+    if "amount_cents" in qr:  # amount and currency belong together
+        merged["amount_cents"], merged["currency"] = qr["amount_cents"], qr["currency"]
+    for key, field in qr.items():
+        if key in QR_WINS and key not in ("amount_cents", "currency"):
+            merged[key] = field
+        elif key not in merged and key not in QR_WINS:
+            merged[key] = field
     for key in ("type", "lang", "sender", "receiver", "subject", "summary"):
         value = ai.get(key)
         if key in merged or value in (None, "", []):

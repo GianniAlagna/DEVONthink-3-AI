@@ -8,7 +8,7 @@ import sqlite3
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
-from dt3agent import duplicates
+from dt3agent import duplicates, qrbill
 from dt3agent import fields as fieldsmod
 from dt3agent.ai import AIError
 from dt3agent.plan import plan
@@ -16,7 +16,7 @@ from dt3agent.queue import ERROR_RE
 from dt3agent.rules import keywords
 from dt3agent.vision import VisionError
 
-PIPELINE_VERSION = 2  # 2: full Block A (P3-9); bumping re-checks records done by an older pipeline
+PIPELINE_VERSION = 3  # 2: full Block A (P3-9); 3: QR-bill (B-2); bumping re-checks records done by an older pipeline
 MIGRATIONS = [
     """CREATE TABLE processed (
         uuid TEXT PRIMARY KEY,
@@ -135,7 +135,7 @@ class Pipeline:
             return Outcome("review", code=e.code)
         wrote = False
         if self.settings is not None:
-            proposals = plan(record, text, result.obj, self.settings)
+            proposals = plan(record, text, result.obj, self.settings, bill=self._qr_bill(uuid))
             wrote = self._handle_fields(uuid, proposals, batch_id)
         current = list(record.get("tags") or [])
         add = [t for t in clean_tags(result.obj["tags"], self.vocabulary) if t not in current]
@@ -158,6 +158,22 @@ class Pipeline:
         return Outcome("applied", add)
 
     _planned = False
+
+    def _qr_bill(self, uuid: str) -> dict | None:
+        """First valid Swiss QR-bill on the record's first pages (B-2). A missing helper, a file without QR
+        codes or a broken code is not an error: the text rules still apply."""
+        if self.vision is None:
+            return None
+        try:
+            payloads = self.vision.qr(self.adapter.read_path(uuid))
+        except VisionError:
+            return None
+        for text in payloads:
+            try:
+                return qrbill.parse(text)
+            except qrbill.QRBillError:
+                continue
+        return None
 
     def _duplicates_and_cases(self, uuid: str, text: str, batch_id: str) -> None:
         """A10: duplicates and case-folder matches only ever become review items (brief §5.2)."""
