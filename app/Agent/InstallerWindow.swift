@@ -10,6 +10,7 @@ final class InstallerModel: ObservableObject {
     var onChange: () -> Void = {}
     @Published var items: [InstallItem] = []
     @Published var downloadModel = true
+    @Published var downloadEmbed = true
     @Published var removeModel = true
     @Published var removeData = false
     @Published var busy = false
@@ -48,17 +49,27 @@ final class InstallerModel: ObservableObject {
                 self.stopAgents()
                 self.installScript()
                 if self.downloadModel && self.llamaBundled && !self.fm.fileExists(atPath: self.paths.model.path) {
-                    try self.download()
+                    try self.download(DefaultModel.url, sha256: DefaultModel.sha256, to: self.paths.model)
+                }
+                if self.downloadEmbed && self.llamaBundled && !self.fm.fileExists(atPath: self.paths.embedModel.path) {
+                    try self.download(EmbedModel.url, sha256: EmbedModel.sha256, to: self.paths.embedModel)
                 }
                 let llama = self.llamaBundled && self.fm.fileExists(atPath: self.paths.model.path)
-                try self.writeConfig(aiURL: llama ? InstallPaths.aiURL : nil)
+                let embed = self.llamaBundled && self.fm.fileExists(atPath: self.paths.embedModel.path)
+                try self.writeConfig(aiURL: llama ? InstallPaths.aiURL : nil, embedURL: embed ? InstallPaths.embedURL : nil)
                 if llama {
                     try self.startAgent(self.paths.llamaPlist,
                                         self.paths.llamaPlistContent(threads: ProcessInfo.processInfo.activeProcessorCount))
                     // started means answering: loading the model takes up to a minute on the floor Mac
-                    self.say(self.t[self.aiAnswers(within: 120) ? .instLlamaStarted : .instLlamaSilent])
+                    self.say(self.t[self.answers(InstallPaths.aiURL, within: 120) ? .instLlamaStarted : .instLlamaSilent])
                 } else {
                     self.say(self.t[.instNoLlama])
+                }
+                if embed {  // index server (ADR-0011): optional, the agent works without it
+                    try self.startAgent(self.paths.embedPlist,
+                                        self.paths.embedPlistContent(threads: ProcessInfo.processInfo.activeProcessorCount))
+                    let ok = self.answers(InstallPaths.embedURL, within: 120)
+                    self.say(self.t[ok ? .instEmbedStarted : .instEmbedSilent])
                 }
                 try self.startAgent(self.paths.enginePlist, self.paths.enginePlistContent())
                 self.say(self.t[.instDone])
@@ -83,8 +94,9 @@ final class InstallerModel: ObservableObject {
 
     /// Stops our agents, including the developer ones (tools/dev-agent.sh), so only one engine uses the data folder.
     private func stopAgents() {
-        for label in [InstallPaths.engineLabel, InstallPaths.llamaLabel,
-                      InstallPaths.engineLabel + ".dev", "codes.modular.dt3agent.llama.dev"] {
+        for label in [InstallPaths.engineLabel, InstallPaths.llamaLabel, InstallPaths.embedLabel,
+                      InstallPaths.engineLabel + ".dev", "codes.modular.dt3agent.llama.dev",
+                      InstallPaths.embedLabel + ".dev"] {
             let target = "gui/\(getuid())/\(label)"
             launchctl(["bootout", target])
             // bootout returns before launchd has removed the service, and bootstrap fails until it is gone
@@ -113,11 +125,11 @@ final class InstallerModel: ObservableObject {
         }
     }
 
-    private func writeConfig(aiURL: String?) throws {
+    private func writeConfig(aiURL: String?, embedURL: String?) throws {
         var cfg: [String: Any] = [:]
         if let data = try? Data(contentsOf: paths.config),
            let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] { cfg = obj }
-        let patched = patchConfig(cfg, visionHelper: paths.vision.path, aiURL: aiURL)
+        let patched = patchConfig(cfg, visionHelper: paths.vision.path, aiURL: aiURL, embedURL: embedURL)
         let data = try JSONSerialization.data(withJSONObject: patched, options: [.prettyPrinted, .sortedKeys])
         try data.write(to: paths.config, options: .atomic)
     }
@@ -135,9 +147,9 @@ final class InstallerModel: ObservableObject {
             NSLocalizedDescriptionKey: "launchctl bootstrap \(plist.lastPathComponent): \(status)"])
     }
 
-    /// True once llama-server answers /health on this Mac.
-    private func aiAnswers(within seconds: Int) -> Bool {
-        guard let url = URL(string: InstallPaths.aiURL + "/health") else { return false }
+    /// True once a llama-server answers /health on this Mac.
+    private func answers(_ base: String, within seconds: Int) -> Bool {
+        guard let url = URL(string: base + "/health") else { return false }
         for _ in 0..<seconds {
             let done = DispatchSemaphore(value: 0)
             var ok = false
@@ -168,14 +180,14 @@ final class InstallerModel: ObservableObject {
 
     // MARK: model download (consent given by the checkbox; pinned URL and SHA-256, ADR-0003)
 
-    private func download() throws {
+    private func download(_ source: URL, sha256 expected: String, to target: URL) throws {
         say(t[.instDownloading])
         let done = DispatchSemaphore(value: 0)
         var tempURL: URL?
         var failure: Error?
-        let task = URLSession.shared.downloadTask(with: DefaultModel.url) { url, response, error in
+        let task = URLSession.shared.downloadTask(with: source) { url, response, error in
             if let url = url, (response as? HTTPURLResponse)?.statusCode == 200 {
-                let keep = self.paths.models.appendingPathComponent(DefaultModel.name + ".part")
+                let keep = target.appendingPathExtension("part")
                 try? self.fm.removeItem(at: keep)
                 do { try self.fm.moveItem(at: url, to: keep); tempURL = keep } catch { failure = error }
             } else {
@@ -191,11 +203,11 @@ final class InstallerModel: ObservableObject {
         observation = nil
         if let e = failure { throw e }
         guard let file = tempURL else { throw NSError(domain: "download", code: 0) }
-        guard try sha256(of: file) == DefaultModel.sha256 else {
+        guard try sha256(of: file) == expected else {
             try? fm.removeItem(at: file)
             throw NSError(domain: "download", code: 1, userInfo: [NSLocalizedDescriptionKey: t[.instChecksum]])
         }
-        try fm.moveItem(at: file, to: paths.model)
+        try fm.moveItem(at: file, to: target)
         say(t[.instModel])
     }
 
@@ -218,8 +230,8 @@ final class InstallerModel: ObservableObject {
         log = []
         DispatchQueue.global(qos: .userInitiated).async {
             self.stopAgents()
-            var targets = [self.paths.enginePlist, self.paths.llamaPlist, self.paths.script]
-            if self.removeModel { targets.append(self.paths.model) }
+            var targets = [self.paths.enginePlist, self.paths.llamaPlist, self.paths.embedPlist, self.paths.script]
+            if self.removeModel { targets += [self.paths.model, self.paths.embedModel] }
             if self.removeData { targets.append(self.paths.data) }
             for url in targets where self.fm.fileExists(atPath: url.path) {
                 do { try self.fm.removeItem(at: url); self.say(self.t[.instRemoved] + " " + url.path) } catch {
@@ -245,6 +257,8 @@ struct InstallerView: View {
         switch kind {
         case .engine: return t[.instItemEngine]
         case .llama: return t[.instItemLlama]
+        case .embed: return t[.instItemEmbed]
+        case .embedModel: return t[.instItemEmbedModel]
         case .script: return t[.instItemScript]
         case .model: return t[.instItemModel]
         case .data: return t[.instItemData]
@@ -263,6 +277,7 @@ struct InstallerView: View {
             }
             if m.llamaBundled {
                 Toggle(t[.instDownloadModel], isOn: $m.downloadModel)
+                Toggle(t[.instDownloadEmbed], isOn: $m.downloadEmbed)
             }
             if let p = m.progress { ProgressView(value: p).accessibilityLabel(t[.instDownloading]) }
             ForEach(Array(m.log.enumerated()), id: \.offset) { _, line in
@@ -282,7 +297,7 @@ struct InstallerView: View {
             }
         }
         .padding(20)
-        .frame(width: 600, height: 560)
+        .frame(width: 600, height: 680)
     }
 }
 

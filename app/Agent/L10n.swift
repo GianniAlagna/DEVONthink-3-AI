@@ -40,6 +40,7 @@ struct L10n {
         case instItemEngine, instItemLlama, instItemScript, instItemModel, instItemData
         case instNoPython, instNoLlama, instLlamaStarted, instLlamaSilent, instDone, instFailed, instQuitDT3, instScript
         case instDownloading, instChecksum, instModel, instRemoved, instUninstalled
+        case instItemEmbed, instItemEmbedModel, instDownloadEmbed, instEmbedStarted, instEmbedSilent
         // accessibility (U-6): spoken state of a check row
         case a11yOK, a11yWarning
         // knowledge window (K-7)
@@ -226,6 +227,11 @@ struct L10n {
             .errIndex: "Der Index ist nicht eingerichtet: Der KI-Index-Server fehlt.",
             .errQuestion: "Bitte eine Frage mit 1 bis 1000 Zeichen eingeben.",
             .errEmbed: "Der KI-Index-Server antwortet nicht.",
+            .instItemEmbed: "KI-Index-Server (nur auf diesem Mac)",
+            .instItemEmbedModel: "KI-Index-Modell",
+            .instDownloadEmbed: "KI-Index-Modell laden: Qwen3-Embedding 0.6B (Apache-2.0), 639 MB, von huggingface.co. Wird geprüft (SHA-256). Nötig für «Fragen …».",
+            .instEmbedStarted: "KI-Index-Server gestartet.",
+            .instEmbedSilent: "Der KI-Index-Server antwortet noch nicht. Protokoll: ~/Library/Logs/DT3 Agent/embed.log",
         ],
         "en": [
             .appName: "DT3 Agent",
@@ -405,6 +411,11 @@ struct L10n {
             .errIndex: "The index is not set up: the AI index server is missing.",
             .errQuestion: "Please enter a question of 1 to 1000 characters.",
             .errEmbed: "The AI index server does not answer.",
+            .instItemEmbed: "AI index server (this Mac only)",
+            .instItemEmbedModel: "AI index model",
+            .instDownloadEmbed: "Download the AI index model: Qwen3-Embedding 0.6B (Apache-2.0), 639 MB, from huggingface.co. It is checked (SHA-256). Needed for “Ask …”.",
+            .instEmbedStarted: "AI index server started.",
+            .instEmbedSilent: "The AI index server does not answer yet. Log: ~/Library/Logs/DT3 Agent/embed.log",
         ],
         "fr": [
             .appName: "DT3 Agent",
@@ -584,6 +595,11 @@ struct L10n {
             .errIndex: "L’index n’est pas configuré : le serveur d’index IA manque.",
             .errQuestion: "Saisissez une question de 1 à 1000 caractères.",
             .errEmbed: "Le serveur d’index IA ne répond pas.",
+            .instItemEmbed: "Serveur d’index IA (ce Mac seulement)",
+            .instItemEmbedModel: "Modèle d’index IA",
+            .instDownloadEmbed: "Télécharger le modèle d’index IA : Qwen3-Embedding 0.6B (Apache-2.0), 639 Mo, depuis huggingface.co. Il est vérifié (SHA-256). Nécessaire pour « Demander … ».",
+            .instEmbedStarted: "Serveur d’index IA démarré.",
+            .instEmbedSilent: "Le serveur d’index IA ne répond pas encore. Journal : ~/Library/Logs/DT3 Agent/embed.log",
         ],
         "it": [
             .appName: "DT3 Agent",
@@ -763,6 +779,11 @@ struct L10n {
             .errIndex: "L’indice non è configurato: manca il server indice IA.",
             .errQuestion: "Inserisca una domanda da 1 a 1000 caratteri.",
             .errEmbed: "Il server indice IA non risponde.",
+            .instItemEmbed: "Server indice IA (solo questo Mac)",
+            .instItemEmbedModel: "Modello indice IA",
+            .instDownloadEmbed: "Scarica il modello indice IA: Qwen3-Embedding 0.6B (Apache-2.0), 639 MB, da huggingface.co. Viene verificato (SHA-256). Necessario per «Chiedi …».",
+            .instEmbedStarted: "Server indice IA avviato.",
+            .instEmbedSilent: "Il server indice IA non risponde ancora. Log: ~/Library/Logs/DT3 Agent/embed.log",
         ],
     ]
 

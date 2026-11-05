@@ -174,7 +174,7 @@ struct SettingsView: View {
             }
         }
         .padding(16)
-        .frame(width: 640, height: 480)
+        .frame(width: 780, height: 480)  // floor 2026-11-05: tab names were cut at 640
     }
 
     var general: some View {
