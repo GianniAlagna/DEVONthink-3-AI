@@ -49,6 +49,38 @@ class DT3Adapter:
         self.audit.write(actor=actor, action="set_tags", uuid=uuid, fields_changed=["tags"], batch_id=batch_id,
                          result="ok")
 
+    # Generic writes with undo (SPEC §4.5, §4.8): journal the old value first, then write, then audit.
+    WRITE = {"name": ("set_name", "set_name"), "comment": ("set_comment", "set_comment"),
+             "location": ("move", "move"), "metadata": ("set_metadata", "set_metadata")}
+
+    def _current(self, record: dict, field: str, key: str | None = None):
+        if field == "metadata":
+            return {"key": key, "value": (record.get("metadata") or {}).get("md" + key)}
+        return record.get(field)
+
+    def _write(self, uuid: str, field: str, value) -> None:
+        verb = self.WRITE[field][0]
+        if field == "metadata":
+            self.bridge.call(verb, uuid=uuid, key=value["key"], value=value["value"] or "")
+        else:
+            self.bridge.call(verb, uuid=uuid, **{"name": {"name": value}, "comment": {"comment": value},
+                                                 "location": {"location": value}}[field])
+
+    def set_field(self, uuid: str, field: str, value, *, batch_id: str, actor: str, key: str | None = None) -> bool:
+        """Write name, comment, location (move) or one metadata key. Returns False when nothing changed."""
+        if field not in self.WRITE:
+            raise ValueError("field not writable")
+        self.check_dt3()
+        old = self._current(self.read(uuid), field, key)
+        new = {"key": key, "value": value} if field == "metadata" else value
+        if old == new:
+            return False
+        self.journal.record(batch_id, uuid, field, old, new)  # before the write, never after
+        self._write(uuid, field, new)
+        self.audit.write(actor=actor, action=self.WRITE[field][1], uuid=uuid, fields_changed=[field],
+                         batch_id=batch_id, result="ok")
+        return True
+
     def undo_last_batch(self) -> dict:
         batch = self.journal.last_batch()
         return self._undo(self.journal.entries(batch)) if batch else {"restored": 0, "conflicts": []}
@@ -61,12 +93,16 @@ class DT3Adapter:
         self.check_dt3()
         restored, conflicts = 0, []
         for e in entries:
-            current = self.read(e.uuid)[e.field]
+            record = self.read(e.uuid)
+            key = e.new.get("key") if e.field == "metadata" else None
+            current = record.get("tags") if e.field == "tags" else self._current(record, e.field, key)
             if current != e.new:
                 conflicts.append(e.uuid)
                 continue
             if e.field == "tags":
                 self.bridge.call("set_tags", uuid=e.uuid, tags=e.old)
+            else:
+                self._write(e.uuid, e.field, e.old)
             self.journal.mark_undone(e.id)
             self.audit.write(actor="user", action="undo", uuid=e.uuid, fields_changed=[e.field], batch_id=e.batch_id,
                              result="undone")

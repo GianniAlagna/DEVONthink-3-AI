@@ -41,7 +41,8 @@ function info() {
 function read(uuid) {
   const r = rec(uuid);
   return JSON.stringify({ uuid: r.uuid(), name: r.name(), tags: r.tags(), comment: r.comment(), kind: r.kind(),
-    wordCount: r.wordCount(), contentHash: r.contentHash(), location: r.location(), database: r.database().name() });
+    wordCount: r.wordCount(), contentHash: r.contentHash(), location: r.location(), database: r.database().name(),
+    metadata: r.customMetaData() || {} });
 }
 function readText(uuid) {
   const t = rec(uuid).plainText() || '';
@@ -50,13 +51,29 @@ function readText(uuid) {
 function readPath(uuid) {
   return JSON.stringify({ uuid: uuid, path: rec(uuid).path() || '' });
 }
+function setName(uuid, name) { const r = rec(uuid); r.name = name; return JSON.stringify({ uuid: uuid, name: r.name() }); }
+function setComment(uuid, c) { const r = rec(uuid); r.comment = c; return JSON.stringify({ uuid: uuid }); }
+function setMetadata(uuid, key, value) {
+  dt3().addCustomMetaData(value, { for: key, to: rec(uuid) });  // verified Phase 0 (S4); DT3 stores it as "md" + key
+  return JSON.stringify({ uuid: uuid });
+}
+function move(uuid, location) {
+  // Only into an existing group of the same database; the host never creates groups.
+  // UNVERIFIED on the floor: getRecordAt (move itself verified in Phase 0, S4).
+  const r = rec(uuid);
+  const g = dt3().getRecordAt(location, { in: r.database() });
+  if (!g || g.type() !== 'group') throw new Error('group_not_found');
+  dt3().move({ record: r, to: g });
+  return JSON.stringify({ uuid: uuid, location: r.location() });
+}
 function setTags(uuid, tagsJson) {
   const r = rec(uuid);
   r.tags = JSON.parse(tagsJson);
   return JSON.stringify({ uuid: r.uuid(), tags: r.tags() });
 }
 function run(argv) {
-  const verbs = { info: info, selected: selected, read: read, readText: readText, readPath: readPath, setTags: setTags };
+  const verbs = { info: info, selected: selected, read: read, readText: readText, readPath: readPath, setTags: setTags,
+    setName: setName, setComment: setComment, setMetadata: setMetadata, move: move };
   const f = verbs[argv[0]];
   if (!f) throw new Error('unknown_verb');
   return f.apply(null, argv.slice(1));
@@ -108,7 +125,8 @@ final class DT3Bridge {
             let text = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
             guard p.terminationStatus == 0 else {
                 let message = String(data: err.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-                throw HostError(code: message.contains("not_found") ? "not_found" : "dt3_error")
+                throw HostError(code: message.contains("group_not_found") ? "group_not_found"
+                                : message.contains("not_found") ? "not_found" : "dt3_error")
             }
             return text.trimmingCharacters(in: .whitespacesAndNewlines)
         }
@@ -124,6 +142,7 @@ final class DT3Bridge {
 
     private func errorCode(_ error: NSDictionary?) -> String {
         let text = error?.allValues.compactMap { $0 as? String }.joined(separator: " ") ?? ""
+        if text.contains("group_not_found") { return "group_not_found" }
         if text.contains("not_found") { return "not_found" }
         if let number = error?.allValues.compactMap({ $0 as? Int }).first { return "dt3_error_\(abs(number))" }
         return "dt3_error"
@@ -167,6 +186,24 @@ func handle(_ request: [String: Any], bridge: DT3Bridge) throws -> Any {
         try bridge.requireDT3()
         let tagsJSON = String(data: try JSONSerialization.data(withJSONObject: tags), encoding: .utf8)!
         text = try bridge.call("setTags", [try uuid(), tagsJSON])
+    case "set_name":
+        guard args.count == 2, let n = args["name"] as? String, !n.isEmpty, n.count <= 255 else { throw HostError(code: "bad_args") }
+        try bridge.requireDT3()
+        text = try bridge.call("setName", [try uuid(), n])
+    case "set_comment":
+        guard args.count == 2, let c = args["comment"] as? String, c.count <= 4000 else { throw HostError(code: "bad_args") }
+        try bridge.requireDT3()
+        text = try bridge.call("setComment", [try uuid(), c])
+    case "set_metadata":
+        guard args.count == 3, let k = args["key"] as? String, let v = args["value"] as? String, v.count <= 1000,
+              k.range(of: "^[a-z][a-z0-9]{0,39}$", options: .regularExpression) != nil else { throw HostError(code: "bad_args") }
+        try bridge.requireDT3()
+        text = try bridge.call("setMetadata", [try uuid(), k, v])
+    case "move":
+        guard args.count == 2, let l = args["location"] as? String, l.hasPrefix("/"), l.count <= 500,
+              !l.split(separator: "/").contains("..") else { throw HostError(code: "bad_args") }
+        try bridge.requireDT3()
+        text = try bridge.call("move", [try uuid(), l])
     default:
         throw HostError(code: "verb_not_allowed")  // there is no delete verb (brief §2.7)
     }

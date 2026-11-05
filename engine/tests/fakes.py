@@ -12,6 +12,7 @@ class FakeDT3:
         self.records = {u: dict(r, uuid=u) for u, r in (records or {}).items()}
         self.calls = []
         self.selected = []  # UUIDs selected in the fake DT3 window
+        self.groups = {"/", "/Inbox/", "/_AI-Review/"}  # existing group locations
 
     def call(self, verb, **args):
         validate(verb, args)  # same fence as the real bridge client
@@ -30,6 +31,22 @@ class FakeDT3:
         if verb == "read_text":  # same shape as the host: text capped at MAX_TEXT, full length reported
             text = rec.get("text", "")
             return {"uuid": rec["uuid"], "text": text[:MAX_TEXT], "length": len(text)}
+        if verb in ("set_name", "set_comment", "set_metadata", "move") and not self.version.startswith("3."):
+            raise BridgeError("not_dt3")
+        if verb == "set_name":
+            rec["name"] = args["name"]
+            return {"uuid": rec["uuid"], "name": rec["name"]}
+        if verb == "set_comment":
+            rec["comment"] = args["comment"]
+            return {"uuid": rec["uuid"], "comment": rec["comment"]}
+        if verb == "set_metadata":
+            rec.setdefault("metadata", {})["md" + args["key"]] = args["value"]
+            return {"uuid": rec["uuid"]}
+        if verb == "move":
+            if args["location"] not in self.groups:
+                raise BridgeError("group_not_found")  # the host never creates groups
+            rec["location"] = args["location"]
+            return {"uuid": rec["uuid"], "location": rec["location"]}
         if verb == "set_tags":
             if not self.version.startswith("3."):  # the host refuses writes to non-DT3 (main.swift requireDT3)
                 raise BridgeError("not_dt3")
