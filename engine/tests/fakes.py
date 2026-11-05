@@ -65,6 +65,14 @@ class FakeDT3:
                 raise BridgeError("group_not_found")  # the host never creates groups
             rec["location"] = args["location"]
             return {"uuid": rec["uuid"], "location": rec["location"]}
+        if verb == "add_event":
+            if rec.get("reminder"):
+                raise BridgeError("reminder_exists")  # the host never overwrites a reminder
+            new = f"00000000-0000-4000-a000-{len(self.records):012d}"
+            self.records[new] = {"uuid": new, "name": args["name"], "text": args["ics"], "tags": [],
+                                 "location": rec.get("location", "/"), "metadata": {}}
+            rec["reminder"] = args["date"]
+            return {"uuid": new}
         if verb == "set_tags":
             if not self.version.startswith("3."):  # the host refuses writes to non-DT3 (main.swift requireDT3)
                 raise BridgeError("not_dt3")

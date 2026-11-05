@@ -198,7 +198,10 @@ class Pipeline:
         for p in proposals:
             payload = {"field": p.field, "key": p.key, "after": p.value, "confidence": p.confidence,
                        "source": p.source}
-            if p.field == "urgent":
+            if p.field == "deadline":  # B5: always the user's call
+                self._review(uuid, "deadline", "stated_deadline", {**payload, "phrase": p.hints[0]}, batch_id,
+                             "review")
+            elif p.field == "urgent":
                 self._review(uuid, "urgent", "urgent_letter", {**payload, "hints": list(p.hints)}, batch_id, "review")
             elif self.dry_run:
                 self._review(uuid, "field", None, {**payload, "planned": True}, batch_id, "dry_run")

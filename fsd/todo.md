@@ -56,8 +56,10 @@ Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC
 - [x] B-2 QR-bill parser (SIX IG v2.4 cited) + pipeline (QR beats text rules for payment fields) — done 2026-11-05
 - [x] B-3 UID check digit (eCH-0097 v5.2.0 §2.4) + metadata `dt3agentuid` — done 2026-11-05
 - [x] B-4 retention table (config `retention`, metadata `dt3agentretention` + basis, hint only, default OR Art. 958f) — done 2026-11-05
-- B-5 deadlines (reminder path decision)
+- [x] B-5 deadlines — done 2026-11-05: Gianni chose DT3 reminder + calendar event as .ics in DT3; stated dates only; floor check open (AppleScript `import`/`make new reminder` UNVERIFIED)
 - [x] B-6 urgent letters (accept → `_Urgent`, SchKG Art. 74 hint "bitte prüfen", `urgent_open` in status for the app notification, tax office words) — done 2026-11-05
+
+- [ ] **P4-G: Phase 4 floor gate** — B-0 record_missing, QR-bill PDF (synthetic), UID, retention, urgent → `_Urgent`, deadline → .ics + DT3 reminder
 
 ## Phase 5 — App
 - U-1 menu bar + status · U-2 onboarding · U-3 settings · U-4 review window · U-5 installer · U-6 de-CH/fr-CH/it-CH/en + accessibility pass

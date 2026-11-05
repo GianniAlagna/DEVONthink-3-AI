@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from dt3agent import fields as fieldsmod
 from dt3agent.naming import build_name
 from dt3agent.retention import NOTE, keep_until
-from dt3agent.rules import keywords
+from dt3agent.rules import deadlines, keywords
 
 
 @dataclass(frozen=True)
@@ -78,6 +78,25 @@ def plan(record: dict, text: str, ai: dict, cfg: dict, bill: dict | None = None)
             out.append(Proposal("location", group, t.confidence, t.source))
         elif filing["review_group"]:  # A8: not sure where it belongs -> the review group, never a guess
             out.append(Proposal("location", filing["review_group"], 1.0, "rule"))
+
+    found = [x for x in deadlines.find_deadlines(text) if x.date and ("document_date" not in merged
+                                                                       or x.date >= merged["document_date"].value)]
+    if found:  # B5: a stated deadline becomes a calendar proposal; never created without the user's OK
+        who = merged["sender"].value if "sender" in merged else record.get("name") or "Dokument"
+        notes = []
+        if "amount_cents" in merged:
+            c = merged["amount_cents"].value
+            amount = f"{merged['currency'].value} {c // 100}.{c % 100:02d}"
+            notes.append(f"Betrag: {amount}")
+        if "iban" in merged:
+            notes.append(f"IBAN: {merged['iban'].value}")
+        if "reference" in merged:
+            notes.append(f"Referenz: {merged['reference'].value}")
+        notes.append(f"Laut Dokument: {found[0].phrase} {found[0].date:%d.%m.%Y}")
+        title = f"Frist: {who}" + (f", {amount}" if "amount_cents" in merged else "")
+        out.append(Proposal("deadline", {"date": found[0].date.isoformat(), "title": title[:150],
+                                         "notes": "\n".join(notes)}, fieldsmod.CONF_RULE_STRONG, "rule",
+                            hints=(found[0].phrase,)))
 
     if "urgent" in merged:
         hints = tuple(h["text"] for h in cfg["urgent"]["hints"] if keywords.scan(text, {"urgent": h["words"]}).urgent)

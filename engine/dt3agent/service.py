@@ -6,7 +6,7 @@ import json
 import os
 import re
 import sqlite3
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from dt3agent import __version__, config, duplicates, pipeline, review, store
@@ -15,6 +15,7 @@ from dt3agent.adapter import DT3Adapter
 from dt3agent.ai import LlamaClient
 from dt3agent.audit import UUID_RE, AuditLog
 from dt3agent.bridge import BridgeError
+from dt3agent.ics import build_event
 from dt3agent.intake import ingest_spool
 from dt3agent.rpc import RPCError
 from dt3agent.undo import MIGRATIONS as UNDO_MIGRATIONS
@@ -156,6 +157,9 @@ class Service:
             row.update(case=p.get("case"), group=p.get("group"))
         elif k == "urgent":
             row.update(words=p.get("after"), hints=p.get("hints", []))
+        elif k == "deadline":
+            after = p.get("after") or {}
+            row.update(date=after.get("date"), title=after.get("title"), phrase=p.get("phrase"))
         return row
 
     def _decide(self, params: dict) -> dict:
@@ -170,6 +174,14 @@ class Service:
             value = " ".join(value)  # the CLI sends words; a field value is one text
         if kind and kind[0] == "field" and value is not None and not (isinstance(value, str) and value.strip()):
             raise RPCError("bad_value")
+        if kind and kind[0] == "deadline" and value is not None:
+            value = " ".join(value) if isinstance(value, list) else value
+            try:
+                ok = isinstance(value, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", value) and date.fromisoformat(value)
+            except ValueError:
+                ok = False
+            if not ok:
+                raise RPCError("bad_value")  # edit = another date, YYYY-MM-DD
         if kind and kind[0] == "urgent" and value is not None:
             raise RPCError("bad_value")  # accept (move to the urgent group) or reject
         if kind and kind[0] in ("duplicate", "case") and value is not None:
@@ -202,6 +214,8 @@ class Service:
             return self._a10(result, params["id"])
         if result["kind"] == "urgent":
             return self._urgent(result, params["id"])
+        if result["kind"] == "deadline":
+            return self._deadline(result, params["id"])
         if result["apply"] is None:
             return {"applied": False}
         if result["kind"] == "field":  # name, comment, metadata, location: through the adapter with undo
@@ -216,6 +230,23 @@ class Service:
         current = list(self.adapter.read(uuid).get("tags") or [])
         self.adapter.set_tags(uuid, current + [t for t in add if t not in current],
                               batch_id=f"review-{params['id']}", actor="user")
+        return {"applied": True}
+
+    def _deadline(self, result: dict, item_id: int) -> dict:
+        """B5 after the user's OK: calendar event (.ics) into DT3 next to the record + DT3 reminder."""
+        if result["apply"] is None:
+            return {"applied": False}
+        p, uuid = result["payload"]["after"], result["uuid"]
+        when = result["apply"] if isinstance(result["apply"], str) else p["date"]
+        title = p["title"]
+        ics = build_event(uid=f"{uuid}-{when}", when=date.fromisoformat(when), title=title, notes=p["notes"],
+                          url=f"x-devonthink-item://{uuid}", stamp=datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ"))
+        name = re.sub(r"[/:\x00-\x1f]", "-", f"{title} {when}")[:110] + ".ics"
+        try:
+            self.adapter.add_event(uuid, name, ics, when, batch_id=f"review-{item_id}")
+        except Exception as e:
+            code = str(e) if str(e) in ("reminder_exists", "group_not_found", "not_dt3") else "apply_failed"
+            raise RPCError(code) from e
         return {"applied": True}
 
     def _urgent(self, result: dict, item_id: int) -> dict:
