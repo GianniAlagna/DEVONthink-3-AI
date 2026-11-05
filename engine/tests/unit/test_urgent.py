@@ -81,3 +81,18 @@ def test_reject_and_edit(svc):
         svc.handle("decide", {"id": item["id"], "decision": "edit", "value": ["x"]})
     assert svc.handle("decide", {"id": item["id"], "decision": "reject"}) == {"applied": False}
     assert svc.dt3.records[A]["location"] == "/Inbox/"
+
+
+def test_review_filtered_by_kind(svc):
+    rows = svc.handle("review", {"kind": "urgent"})
+    assert rows and {r["kind"] for r in rows} == {"urgent"}
+    with pytest.raises(RPCError):
+        svc.handle("review", {"kind": "nonsense"})
+
+
+def test_cli_passes_the_kind(monkeypatch):
+    from dt3agent import cli, rpc
+    seen = {}
+    monkeypatch.setattr(rpc, "call", lambda sock, method, params: seen.update(m=method, p=params) or [])
+    assert cli.main(["review", "deadline"]) == 0 and seen == {"m": "review", "p": {"kind": "deadline"}}
+    assert cli.main(["review"]) == 0 and seen == {"m": "review", "p": {}}

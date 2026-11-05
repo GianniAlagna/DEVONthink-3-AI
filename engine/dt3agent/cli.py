@@ -19,7 +19,8 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("status", help="engine, DT3, AI and queue state")
     p = sub.add_parser("process", help="queue a record (UUID or item link); without one: the DT3 selection")
     p.add_argument("record", nargs="?")
-    sub.add_parser("review", help="open review items (reason codes, planned tags)")
+    p = sub.add_parser("review", help="open review items (reason codes, planned tags); optional: one kind")
+    p.add_argument("kind", nargs="?", choices=["planned", "error", "field", "duplicate", "case", "deadline", "urgent"])
     p = sub.add_parser("decide", help="decide a review item: accept | reject | edit TAG [TAG …]")
     p.add_argument("id", type=int)
     p.add_argument("decision", choices=["accept", "reject", "edit"])
@@ -39,6 +40,8 @@ def main(argv: list[str] | None = None) -> int:
         method, params = "decide", {"id": a.id, "decision": a.decision}
         if a.decision == "edit":  # one word list for tags; joined text for a field such as the name
             params["value"] = a.value
+    elif a.cmd == "review":
+        method, params = "review", ({"kind": a.kind} if a.kind else {})
     elif a.cmd == "live":
         method, params = "live", {"on": a.state == "on"}
     else:

@@ -146,3 +146,15 @@ def test_review_lists_codes_never_raw_output(env):
     assert len(items) == 1 and items[0]["code"] == "no_text" and items[0]["uuid"] == A
     assert set(items[0]) == {"id", "uuid", "kind", "code", "tags_add", "created_at", "record_missing",
                              "actions"}   # error item: no raw
+
+
+def test_restart_frees_a_job_cut_off_by_a_stop(env):
+    svc, dt3, data = env
+    svc.handle("process", {"uuid": A})
+    svc.queue.claim()  # the engine is stopped while this job runs
+    svc.close()
+    again = Service(data, dt3)
+    try:
+        assert again.handle("status", {})["queue"] == {"partial": 1}
+    finally:
+        again.close()

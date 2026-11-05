@@ -87,3 +87,23 @@ def test_done_uuid_can_be_queued_again(q):
     first = queue.enqueue(A, "spool")
     queue.finish(queue.claim().id, "done")
     assert queue.enqueue(A, "menu") != first
+
+
+def test_job_interrupted_by_a_stop_is_retried_not_stuck(q):
+    q, clock = q
+    # Floor 2026-11-05: uninstall stopped the engine mid-job; the job stayed 'running' and blocked the queue.
+    first, second = q.enqueue(A, "cli"), q.enqueue(B, "cli")
+    assert q.claim().id == first          # engine stops here
+    assert q.claim() is None              # still blocked before recovery
+    assert q.recover_interrupted() == 1
+    assert q.counts()["partial"] == 1
+    assert q.claim().id == second         # the queue moves again
+    q.finish(second, "done")
+    clock.now += timedelta(seconds=31)
+    assert q.claim().id == first          # the interrupted one comes back after the back-off
+
+
+def test_recover_with_nothing_running_does_nothing(q):
+    q, _ = q
+    q.enqueue(A, "cli")
+    assert q.recover_interrupted() == 0 and q.counts() == {"queued": 1}
