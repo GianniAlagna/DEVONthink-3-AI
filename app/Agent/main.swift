@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var status: EngineStatus?
     var polling = false
     var timer: Timer?
+    let setup = SetupWindow()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         menu.delegate = self
@@ -17,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         render()
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in self?.refresh() }
+        if !UserDefaults.standard.bool(forKey: "setupDone") { openSetup() }  // first start (brief §6.2)
     }
 
     // Refresh when the user opens the menu, so the numbers are current.
@@ -59,6 +61,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(item(paused ? t[.resume] : t[.pause], #selector(togglePause), enabled: online))
         menu.addItem(item(t[.undo], #selector(undoLastBatch), enabled: online))
         menu.addItem(.separator())
+        menu.addItem(item(t[.setupMenu], #selector(openSetup), enabled: true))
         menu.addItem(item(t[.settings], nil, enabled: false))  // U-3
         menu.addItem(item(t[.help], #selector(openHelp), enabled: true))
         menu.addItem(item(t[.quit], #selector(NSApplication.terminate(_:)), enabled: true, key: "q"))
@@ -104,6 +107,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let conflicts = (r?["conflicts"] as? [Any])?.count ?? 0
             self.notice(self.t.format(.undoDone, restored, conflicts))
         }
+    }
+
+    @objc func openSetup() {
+        setup.show(t: t, work: work) { [weak self] in self?.refresh() }
     }
 
     @objc func openHelp() {

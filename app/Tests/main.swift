@@ -62,5 +62,19 @@ catch let e as RPCError { check(e.code == "bad_reply", "garbage is bad_reply") }
 do { _ = try RPC.call("status", timeout: 1, path: NSTemporaryDirectory() + "dt3agent-no-such.sock"); check(false, "no socket throws") }
 catch let e as RPCError { check(e.code == "engine_not_running", "missing socket is engine_not_running") } catch { check(false, "error type") }
 
+// onboarding
+check(SetupStep.welcome.previous == nil && SetupStep.finish.next == nil, "steps have ends")
+check(SetupStep.allCases.count == 7, "seven steps")
+check(AIHost("http://127.0.0.1:8080") == .thisMac && AIHost("http://localhost:11434") == .thisMac, "this Mac")
+check(AIHost("http://192.168.1.20:8080") == .localNetwork && AIHost("http://10.0.0.5") == .localNetwork, "LAN")
+check(AIHost("http://172.20.1.1") == .localNetwork && AIHost("http://nas.local:8080") == .localNetwork, "LAN 2")
+check(AIHost("http://172.32.1.1") == .internet && AIHost("https://api.example.com") == .internet, "internet")
+check(AIHost("ftp://127.0.0.1") == .invalid && AIHost("") == .invalid && AIHost("127.0.0.1") == .invalid, "invalid")
+check(SystemFacts(macOS: (11, 7), ramGB: 8, appleSilicon: false).macOSSupported, "macOS 11 supported")
+check(!SystemFacts(macOS: (10, 15), ramGB: 8, appleSilicon: false).macOSSupported, "macOS 10.15 not")
+check(!SystemFacts(macOS: (12, 0), ramGB: 4, appleSilicon: true).ramEnough, "4 GB is too little")
+check(cleanName("  Erika Beispiel ") == "Erika Beispiel" && cleanName("") == "", "names are trimmed")
+check(cleanName("a\u{0007}b") == nil && cleanName(String(repeating: "x", count: 201)) == nil, "bad names refused")
+
 if failures > 0 { print("\(failures) failed"); exit(1) }
 print("app tests ok")
