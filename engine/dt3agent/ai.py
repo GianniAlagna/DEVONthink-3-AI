@@ -62,14 +62,20 @@ class LlamaClient:
         if len(text) / CHARS_PER_TOKEN > budget:
             raise AIError("ai_too_long")
         hint = f"Document language (hint): {lang_hint}\n" if lang_hint else ""
+        return self.complete(f"{SYSTEM} {task}" if task else SYSTEM, f"{hint}Document:\n<<<\n{text}\n>>>", schema)
+
+    def complete(self, system: str, user: str, schema: dict, *, name: str = "extract",
+                 max_tokens: int | None = None) -> Extraction:
+        """One chat call whose answer must be JSON matching `schema` (parse, then schema check)."""
+        if len(system + user) / CHARS_PER_TOKEN > self.context - (max_tokens or self.max_tokens):
+            raise AIError("ai_too_long")
         body = {
-            "messages": [{"role": "system", "content": f"{SYSTEM} {task}" if task else SYSTEM},
-                         {"role": "user", "content": f"{hint}Document:\n<<<\n{text}\n>>>"}],
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
             "temperature": 0,
-            "max_tokens": self.max_tokens,
+            "max_tokens": max_tokens or self.max_tokens,
             "cache_prompt": False,
             # ADR-0002: llama-server b12015 reads the schema only from response_format.json_schema.schema
-            "response_format": {"type": "json_schema", "json_schema": {"name": "extract", "schema": schema}},
+            "response_format": {"type": "json_schema", "json_schema": {"name": name, "schema": schema}},
             "chat_template_kwargs": {"enable_thinking": False},
         }
         req = urllib.request.Request(self.url + "/v1/chat/completions", data=json.dumps(body).encode(),
