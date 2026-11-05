@@ -64,5 +64,18 @@ Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC
 ## Phase 5 — App
 - U-1 menu bar + status · U-2 onboarding · U-3 settings · U-4 review window · U-5 installer · U-6 de-CH/fr-CH/it-CH/en + accessibility pass
 
-## Phase 6–8
-- K-1…K-5 knowledge (brief Block C) · J/E epics (Blocks D/E) + 48 h soak · R-1 release (CI signing, DMG, docs, policies)
+## Phase 5 — done
+- [x] **P5-G: Phase 5 floor gate** (report: docs/floor/phase5-report.md) — approved 2026-11-05; VoiceOver deferred to Phase 8
+
+## Phase 6 — Block C (knowledge), SPEC §4.20, ADR-0011
+- [ ] K-1 embeddings: `embed()` client, second llama-server (dev-agent + installer, model download with consent)
+- [ ] K-2 index: `index.db`, chunking, incremental by content hash, `reindex` RPC, hybrid search
+- [ ] K-3 chat with sources: `ask` RPC, no tools, cited ⊆ retrieved, prompt-injection tests
+- [ ] K-4 related documents: review item `related`, accept → metadata `related` (undoable)
+- [ ] K-5 entities (opt-in): proposals → Markdown notes in an existing group
+- [ ] K-6 summary/translation de ↔ fr ↔ it ↔ en: `summary` RPC
+- [ ] K-7 app: chat window, related + summary for the selected record, 4 languages
+- [ ] P6-G floor gate: index speed, chat answers with sources, injection samples
+
+## Phase 7–8
+- J/E epics (Blocks D/E) + 48 h soak · R-1 release (CI signing, DMG, docs, policies)
