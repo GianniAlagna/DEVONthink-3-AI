@@ -1,6 +1,6 @@
 # Phase 3 floor report (MacBook Pro 2014, macOS 11.7.11, DT3 3.9.17)
 
-Runs on 2026-11-05: run 1 (kit c929fe03), run 2 (kit 75eeb6f5), retest 2 (kit f47962e5), retest 3 (kit 727d0fb4). Test database only. Nothing deleted.
+Runs on 2026-11-05: run 1 (kit c929fe03), run 2 (kit 75eeb6f5), retest 2 (kit f47962e5), retest 3 (kit 727d0fb4), retest 4 (kit dc4b0d35). Test database only. Nothing deleted.
 
 | Point | Result | Evidence |
 |---|---|---|
@@ -15,8 +15,8 @@ Runs on 2026-11-05: run 1 (kit c929fe03), run 2 (kit 75eeb6f5), retest 2 (kit f4
 | Case replicate on accept | open | `group_not_found`: group was named `Recht/Fall-Muster` (see 4.) |
 | Dry-run | verified | retest 2: `engine job planned`, 8 planned items, nothing written |
 | Metadata values (A4/A5) | verified | planned: date 2026-04-17, total CHF 1957.04, IBAN, lang de (conf 0.95) |
-| Metadata, filing written | open | screenshot missing |
-| OCR of a scan | open | not run |
+| Metadata, filing written | verified | retest 4: `decide 30` (dt3agentdate) and `decide 34` (move to `/_AI-Review/`) → `applied: true` |
+| OCR of a scan | verified | `ocr-de.pdf` (image only): name and comment built from the recognised text (Steueramt, Veranlagungsverfügung, 30 Tage) |
 | Smart Rule "On Import" | open | all 4 jobs came from `process` |
 
 ## Bugs found and fixed
