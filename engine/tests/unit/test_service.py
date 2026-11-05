@@ -5,14 +5,14 @@ import pytest
 
 from dt3agent import config
 from dt3agent.service import Service
-from tests.fakes import FakeDT3, FakeLlamaServer
+from tests.fakes import FakeDT3, FakeLlamaServer, ai_reply
 
 A = "FB2DEBBE-8F8B-4049-8F4E-CE5FD12F20D8"
 
 
 @pytest.fixture
 def env(tmp_path):
-    server = FakeLlamaServer(reply=json.dumps({"tags": ["Rechnung"]}))
+    server = FakeLlamaServer(reply=ai_reply(["Rechnung"]))
     dt3 = FakeDT3({A: {"name": "x", "tags": [], "contentHash": "h1", "text": "Rechnung"}})
     cfg = config.load(tmp_path / "config.json")
     cfg["ai"]["url"] = server.url
@@ -34,8 +34,10 @@ def test_process_then_tick_in_dry_run_writes_nothing(env):
     svc, dt3, _ = env
     assert svc.handle("process", {"uuid": A}) == {"queued": True}
     assert svc.tick() == "planned"
-    assert dt3.records[A]["tags"] == []
-    assert svc.handle("status", {})["review_items"] == 1
+    assert dt3.records[A]["tags"] == [] and dt3.records[A]["name"] == "x"
+    kinds = sorted(i["kind"] for i in svc.handle("review", {}))
+    assert kinds.count("planned") == 1 and set(kinds) <= {"planned", "field"}  # tags + field proposals, no write
+    assert not [c for c in dt3.calls if c[0].startswith("set_") or c[0] == "move"]
 
 
 def test_live_mode_writes_and_undo_restores(env):
@@ -95,7 +97,7 @@ def test_bad_calls_are_refused(env, method, params):
 
 
 def test_default_vocabulary_is_sent_as_enum(tmp_path):
-    server = FakeLlamaServer(reply=json.dumps({"tags": ["Rechnung"]}))
+    server = FakeLlamaServer(reply=ai_reply(["Rechnung"]))
     dt3 = FakeDT3({A: {"name": "x", "tags": [], "contentHash": "h1", "text": "Rechnung"}})
     cfg = config.load(tmp_path / "config.json")
     cfg["ai"]["url"] = server.url

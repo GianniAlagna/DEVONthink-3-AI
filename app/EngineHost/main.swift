@@ -42,7 +42,7 @@ function read(uuid) {
   const r = rec(uuid);
   return JSON.stringify({ uuid: r.uuid(), name: r.name(), tags: r.tags(), comment: r.comment(), kind: r.kind(),
     wordCount: r.wordCount(), contentHash: r.contentHash(), location: r.location(), database: r.database().name(),
-    metadata: r.customMetaData() || {} });
+    metadata: r.customMetaData() || {}, created: r.creationDate().toISOString() });
 }
 function readText(uuid) {
   const t = rec(uuid).plainText() || '';

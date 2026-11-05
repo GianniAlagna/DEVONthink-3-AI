@@ -8,7 +8,9 @@ import sqlite3
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
+from dt3agent import fields as fieldsmod
 from dt3agent.ai import AIError
+from dt3agent.plan import plan
 from dt3agent.queue import ERROR_RE
 from dt3agent.vision import VisionError
 
@@ -74,9 +76,11 @@ def clean_tags(candidates, vocabulary) -> list[str]:
 
 
 class Pipeline:
-    def __init__(self, adapter, ai, con: sqlite3.Connection, *, dry_run: bool, vocabulary=None, vision=None):
+    def __init__(self, adapter, ai, con: sqlite3.Connection, *, dry_run: bool, vocabulary=None, vision=None,
+                 settings: dict | None = None):
+        """settings: the engine config. Without it the pipeline only tags (Phase 2 behaviour)."""
         self.adapter, self.ai, self.con, self.vision = adapter, ai, con, vision
-        self.dry_run, self.vocabulary = dry_run, vocabulary
+        self.dry_run, self.vocabulary, self.settings = dry_run, vocabulary, settings
 
     def _now(self) -> str:
         return datetime.now(UTC).isoformat()
@@ -86,8 +90,11 @@ class Pipeline:
             self.con.execute("INSERT INTO review_items (uuid, kind, code, payload_json, created_at) "
                              "VALUES (?, ?, ?, ?, ?)", (uuid, kind, code, json.dumps(payload), self._now()))
         action = "set_tags" if kind == "planned" else "review"
-        self.adapter.audit.write(actor="ai", action=action, uuid=uuid, fields_changed=["tags"] if kind == "planned"
-                                 else [], batch_id=batch_id, result=result)
+        field = payload.get("field")
+        changed = ["tags"] if kind == "planned" else [field] if field in ("name", "comment", "metadata", "location") \
+            else []
+        self.adapter.audit.write(actor="ai", action=action, uuid=uuid, fields_changed=changed, batch_id=batch_id,
+                                 result=result)
 
     def process(self, uuid: str, *, batch_id: str) -> Outcome:
         self.adapter.check_dt3()
@@ -110,15 +117,27 @@ class Pipeline:
             code = "no_text" if not text.strip() else "text_too_long"
             self._review(uuid, "error", code, {}, batch_id, "review")
             return Outcome("review", code=code)
+        schema, task = tag_schema(self.vocabulary), TAG_TASK
+        if self.settings is not None:  # one AI call for tags and the fields rules cannot know
+            schema = {**schema, "properties": {**fieldsmod.AI_SCHEMA["properties"], **schema["properties"]},
+                      "required": fieldsmod.AI_SCHEMA["required"] + schema["required"]}
+            task = f"{fieldsmod.AI_TASK} {TAG_TASK}"
         try:
-            result = self.ai.extract(text, tag_schema(self.vocabulary), task=TAG_TASK)
+            result = self.ai.extract(text, schema, task=task)
         except AIError as e:
             if e.code not in REVIEW_CODES:
                 raise
             self._review(uuid, "error", e.code, {"raw": e.raw}, batch_id, "review")
             return Outcome("review", code=e.code)
+        wrote = False
+        if self.settings is not None:
+            proposals = plan(record, text, result.obj, self.settings)
+            wrote = self._handle_fields(uuid, proposals, batch_id)
         current = list(record.get("tags") or [])
         add = [t for t in clean_tags(result.obj["tags"], self.vocabulary) if t not in current]
+        if not add and self.settings is not None:
+            self._mark(uuid, key)
+            return Outcome("applied" if wrote else "planned" if self._planned else "skipped")
         if not add:
             if not clean_tags(result.obj["tags"], self.vocabulary):
                 self._review(uuid, "error", "no_valid_tags", {"raw": result.raw}, batch_id, "review")
@@ -127,10 +146,34 @@ class Pipeline:
             return Outcome("skipped")
         if self.dry_run:
             self._review(uuid, "planned", None, {"tags_add": add}, batch_id, "dry_run")
+            if self.settings is not None:
+                self._mark(uuid, key)
             return Outcome("planned", add)
         self.adapter.set_tags(uuid, current + add, batch_id=batch_id, actor="ai")
         self._mark(uuid, key)
         return Outcome("applied", add)
+
+    _planned = False
+
+    def _handle_fields(self, uuid: str, proposals: list, batch_id: str) -> bool:
+        """Dry-run: every proposal becomes a planned review item. Live: apply what reaches the threshold,
+        the rest becomes a review item. Urgent letters always go to review, never act on their own."""
+        threshold = self.settings["thresholds"]["apply"]
+        wrote, self._planned = False, False
+        for p in proposals:
+            payload = {"field": p.field, "key": p.key, "after": p.value, "confidence": p.confidence,
+                       "source": p.source}
+            if p.field == "urgent":
+                self._review(uuid, "urgent", "urgent_letter", payload, batch_id, "review")
+            elif self.dry_run:
+                self._review(uuid, "field", None, {**payload, "planned": True}, batch_id, "dry_run")
+                self._planned = True
+            elif p.confidence >= threshold:
+                wrote |= self.adapter.set_field(uuid, p.field, p.value, key=p.key, batch_id=batch_id,
+                                                actor="rule" if p.source == "rule" else "ai")
+            else:
+                self._review(uuid, "field", None, payload, batch_id, "review")
+        return wrote
 
     def _mark(self, uuid: str, key: str) -> None:
         if not key:

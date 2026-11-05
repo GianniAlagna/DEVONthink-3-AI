@@ -37,7 +37,7 @@ def main(argv: list[str] | None = None) -> int:
         method, params = "process", {"uuid": a.record.removeprefix("x-devonthink-item://").split("?", 1)[0]}
     elif a.cmd == "decide":
         method, params = "decide", {"id": a.id, "decision": a.decision}
-        if a.decision == "edit":
+        if a.decision == "edit":  # one word list for tags; joined text for a field such as the name
             params["value"] = a.value
     elif a.cmd == "live":
         method, params = "live", {"on": a.state == "on"}

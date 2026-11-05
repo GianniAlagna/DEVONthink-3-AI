@@ -101,3 +101,10 @@ class FakeLlamaServer:
     def close(self):
         self.httpd.shutdown()
         self.httpd.server_close()
+
+
+def ai_reply(tags, **fields) -> str:
+    """A complete answer as llama-server returns it under the field + tag schema (all required keys present)."""
+    base = {"type": None, "sender": None, "receiver": None, "subject": None, "summary": [], "tags": list(tags)}
+    import json
+    return json.dumps({**base, **fields})
