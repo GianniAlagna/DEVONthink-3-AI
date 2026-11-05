@@ -44,6 +44,8 @@ def test_missing_fields_are_placeholders_never_invented():
     ("Città   di  Lugano", "Città-di-Lugano"),         # it accents, runs of spaces
     ("under_score name", "under-score-name"),          # "_" only between fields
     ("  - trim -  ", "trim"),
+    ("Mängelrüge – erneuter Defekt", "Mängelrüge-erneuter-Defekt"),  # floor 2026-11-05: en dash gave "-–-"
+    ("A — B - C", "A-B-C"),                            # em dash and hyphen between words
     ("Café", "Café"),                            # NFC: e + combining accent -> é
 ])
 def test_field_cleaning(raw, clean):
@@ -61,6 +63,19 @@ def test_per_field_and_total_length():
     n = name({"document_date": date(2026, 1, 1), "sender": long, "receiver": long, "subject": long},
              max_field=120)
     assert len(n.value) <= 200
+
+
+def test_long_field_is_cut_between_words():
+    # floor 2026-11-05: "…Getriebedefekt-2.-Gang-nach-Garanti" was cut inside a word
+    n = name({"document_date": date(2026, 1, 1), "sender": "A", "receiver": "B",
+              "subject": "erneuter Getriebedefekt 2. Gang nach Garantie Getriebeersatz"}, max_field=50)
+    assert n.value.split("_")[3] == "erneuter-Getriebedefekt-2.-Gang-nach-Garantie"
+
+
+def test_one_long_word_is_still_cut():
+    n = name({"document_date": date(2026, 1, 1), "sender": "A", "receiver": "B", "subject": "x" * 80},
+             max_field=40)
+    assert n.value.split("_")[3] == "x" * 40
 
 
 def test_collision_suffix_same_second():
