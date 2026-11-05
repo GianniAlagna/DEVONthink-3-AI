@@ -12,7 +12,7 @@ DEFAULTS = {
     "schema_version": SCHEMA_VERSION,
     "dry_run": True,
     "scopes": [],  # [{"database": str, "group": str}]; nothing is processed unless listed
-    "ai": {"backend": None, "url": None, "model": None, "context": 8192},
+    "ai": {"backend": None, "url": None, "model": None, "context": 8192, "embed_url": None},
     "naming": {"template": "{datetime}_{sender}_{receiver}_{subject}", "unknown": "unknown"},
     "thresholds": {"apply": 0.85},
     # Starter list (de-CH); the AI may only pick from it. Edited by the user (onboarding, Phase 5).
@@ -131,10 +131,11 @@ def validate(cfg: dict) -> dict:
     if not tokens or set(tokens) - TOKENS:
         raise ConfigError("naming.template: use only known {tokens}")
     ai = cfg.get("ai", {})
-    url = ai.get("url")
-    if not (url is None or (isinstance(url, str) and len(url) <= 300 and url.split("://")[0] in ("http", "https")
-                            and "://" in url)):
-        raise ConfigError("ai.url: an http:// or https:// address")
+    for key in ("url", "embed_url"):  # embed_url: second llama-server for the index (SPEC §4.20)
+        url = ai.get(key)
+        if not (url is None or (isinstance(url, str) and len(url) <= 300
+                                and url.split("://")[0] in ("http", "https") and "://" in url)):
+            raise ConfigError(f"ai.{key}: an http:// or https:// address")
     if not (ai.get("model") is None or isinstance(ai.get("model"), str)) or not (
             isinstance(ai.get("context", 8192), int) and 512 <= ai.get("context", 8192) <= 262144):
         raise ConfigError("ai: model is text, context 512-262144")

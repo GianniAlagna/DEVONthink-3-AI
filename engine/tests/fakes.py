@@ -83,6 +83,16 @@ class FakeDT3:
         raise BridgeError("verb_not_allowed")
 
 
+def fake_vector(text: str, dims: int = 1024) -> list[float]:
+    """A stable 1024-dimension vector for a text: the same words give a similar direction."""
+    vec = [0.0] * dims
+    for word in text.lower().split():
+        h = sum(ord(c) * 31 ** i for i, c in enumerate(word[:12])) % dims
+        vec[h] += 1.0
+    vec[-1] += 0.001  # never all zeros
+    return vec
+
+
 class FakeLlamaServer:
     """A local HTTP server that answers like llama-server (b12015): /health and /v1/chat/completions.
 
@@ -118,6 +128,9 @@ class FakeLlamaServer:
                 fake.requests.append({"path": self.path, "body": body})
                 if fake.status != 200:
                     return self._send(fake.status, {"error": {"message": "fake failure"}})
+                if self.path == "/v1/embeddings":  # K-1: deterministic vectors from the text
+                    data = [{"index": i, "embedding": fake_vector(t)} for i, t in enumerate(body["input"])]
+                    return self._send(200, {"data": list(reversed(data))})  # order must come from "index"
                 self._send(200, {"choices": [{"message": {"role": "assistant", "content": fake.reply}}],
                                  "timings": {"prompt_n": 42, "predicted_n": 17, "prompt_ms": 10.0,
                                              "predicted_ms": 20.0}})
