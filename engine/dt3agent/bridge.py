@@ -16,7 +16,12 @@ VERBS = {"info": set(), "selected": set(), "read": {"uuid"}, "read_text": {"uuid
          "set_tags": {"uuid", "tags"}, "set_name": {"uuid", "name"}, "set_comment": {"uuid", "comment"},
          "set_metadata": {"uuid", "key", "value"}, "move": {"uuid", "location"},
          "duplicates": {"uuid"}, "replicate": {"uuid", "location"}, "duplicate": {"uuid", "location"},
-         "create_markdown": {"location", "name", "text"}}
+         "create_markdown": {"location", "name", "text"},
+         # B-5: import a calendar event (.ics) next to the record and set its DT3 reminder (no overwrite)
+         "add_event": {"uuid", "name", "ics", "date"}}
+MAX_ICS = 8000
+ICS_NAME_RE = re.compile(r"[^/:\x00-\x1f]{1,116}\.ics")
+DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 MAX_NOTE = 2000
 MAX_NAME = 255
 MAX_COMMENT = 4000
@@ -51,6 +56,14 @@ def validate(verb: str, args: dict) -> None:
         raise BridgeError("bad metadata value")
     if "text" in args and not (isinstance(args["text"], str) and len(args["text"]) <= MAX_NOTE):
         raise BridgeError("bad note text")
+    if verb == "add_event":
+        if not (isinstance(args["name"], str) and ICS_NAME_RE.fullmatch(args["name"])):
+            raise BridgeError("bad event name")
+        ics = args["ics"]
+        if not (isinstance(ics, str) and ics.startswith("BEGIN:VCALENDAR") and len(ics) <= MAX_ICS):
+            raise BridgeError("bad event")
+        if not (isinstance(args["date"], str) and DATE_RE.fullmatch(args["date"])):
+            raise BridgeError("bad date")
     if "location" in args:
         loc = args["location"]
         if not (isinstance(loc, str) and loc.startswith("/") and len(loc) <= 500 and ".." not in loc.split("/")):

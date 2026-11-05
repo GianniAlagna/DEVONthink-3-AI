@@ -129,6 +129,36 @@ function run(argv) {
 }
 """
 
+// B-5 calendar event + DT3 reminder. AppleScript, because DT3 3.9 refuses or crashes on reminders made from JXA
+// (DEVONtechnologies forum "JS: make reminder syntax", 2021). UNVERIFIED on the floor until the Phase 4 gate:
+// `get record with uuid`, `parent 1 of`, `import … to`, `make new reminder … at`.
+// Never overwrites a reminder; nothing is deleted. Arguments arrive only as handler parameters.
+let appleScriptSource = """
+on addevent(theUUID, icsPath, y, m, d)
+	tell application id "\(dt3BundleID)"
+		set r to get record with uuid theUUID
+		if r is missing value then error "not_found"
+		if reminder of r is not missing value then error "reminder_exists"
+		set g to parent 1 of r
+		set theDate to current date
+		set day of theDate to 1
+		set year of theDate to (y as integer)
+		set month of theDate to (m as integer)
+		set day of theDate to (d as integer)
+		set time of theDate to (9 * hours)
+		set n to import icsPath to g
+		make new reminder with properties {schedule:once, alarm:notification, due date:theDate} at r
+		return "{\\"uuid\\":\\"" & (uuid of n) & "\\"}"
+	end tell
+end addevent
+on run argv
+	if (count of argv) is 6 and item 1 of argv is "addevent" then
+		return addevent(item 2 of argv, item 3 of argv, item 4 of argv, item 5 of argv, item 6 of argv)
+	end if
+	error "unknown_verb"
+end run
+"""
+
 /// Runs the DT3 handlers either in-process via OSAKit or via /usr/bin/osascript as a child of this host.
 /// Verified on macOS 11 (Phase 2 T5): OSAKit (default) passes parameters and keeps the Automation entry on this app;
 /// osascript is the fallback.
@@ -137,12 +167,16 @@ final class DT3Bridge {
     let mode: Mode
     private var script: OSAScript?
     private let scriptFile: URL
+    private var appleScript: OSAScript?  // compiled on first use: it needs DT3's dictionary, CI has no DT3
+    private let appleScriptFile: URL
     private var checkedVersion = false
 
     init(mode: Mode) throws {
         self.mode = mode
         scriptFile = FileManager.default.temporaryDirectory.appendingPathComponent("dt3agent-bridge.js")
         try jxaSource.write(to: scriptFile, atomically: true, encoding: .utf8)
+        appleScriptFile = FileManager.default.temporaryDirectory.appendingPathComponent("dt3agent-bridge.applescript")
+        try appleScriptSource.write(to: appleScriptFile, atomically: true, encoding: .utf8)
         if mode == .osakit {
             guard let language = OSALanguage(forName: "JavaScript") else { throw HostError(code: "no_jxa") }
             let s = OSAScript(source: jxaSource, language: language)
@@ -181,6 +215,43 @@ final class DT3Bridge {
         }
     }
 
+    /// AppleScript handlers (B-5). Same two modes as `call`.
+    func callAppleScript(_ handler: String, _ args: [String]) throws -> String {
+        switch mode {
+        case .osakit:
+            if appleScript == nil {
+                guard let language = OSALanguage(forName: "AppleScript") else { throw HostError(code: "no_applescript") }
+                let s = OSAScript(source: appleScriptSource, language: language)
+                var error: NSDictionary?
+                guard s.compileAndReturnError(&error) else { throw HostError(code: "compile_failed") }
+                appleScript = s
+            }
+            var error: NSDictionary?
+            let descriptors = args.map { NSAppleEventDescriptor(string: $0) }
+            guard let result = appleScript!.executeHandler(withName: handler, arguments: descriptors, error: &error),
+                  let text = result.stringValue else {
+                throw HostError(code: errorCode(error))
+            }
+            return text
+        case .osascript:
+            let p = Process()
+            p.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+            p.arguments = [appleScriptFile.path, handler] + args
+            let out = Pipe(), err = Pipe()
+            p.standardOutput = out
+            p.standardError = err
+            try p.run()
+            p.waitUntilExit()
+            let text = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+            guard p.terminationStatus == 0 else {
+                let message = String(data: err.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+                throw HostError(code: message.contains("reminder_exists") ? "reminder_exists"
+                                : message.contains("not_found") ? "not_found" : "dt3_error")
+            }
+            return text.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+    }
+
     /// Refuses write verbs unless the target answers as DEVONthink 3 (DT4 also answers to scripts).
     func requireDT3() throws {
         if checkedVersion { return }
@@ -192,6 +263,7 @@ final class DT3Bridge {
     private func errorCode(_ error: NSDictionary?) -> String {
         let text = error?.allValues.compactMap { $0 as? String }.joined(separator: " ") ?? ""
         if text.contains("group_not_found") { return "group_not_found" }
+        if text.contains("reminder_exists") { return "reminder_exists" }
         if text.contains("not_found") { return "not_found" }
         if let number = error?.allValues.compactMap({ $0 as? Int }).first { return "dt3_error_\(abs(number))" }
         return "dt3_error"
@@ -267,6 +339,23 @@ func handle(_ request: [String: Any], bridge: DT3Bridge) throws -> Any {
               !l.split(separator: "/").contains("..") else { throw HostError(code: "bad_args") }
         try bridge.requireDT3()
         text = try bridge.call("move", [try uuid(), l])
+    case "add_event":
+        // B-5: the .ics goes to a private temp folder under its final name (DT3 names the record after the file),
+        // DT3 imports it next to the record, then the folder is removed. Same limits as the engine.
+        guard args.count == 4, let n = args["name"] as? String, n.hasSuffix(".ics"), n.count <= 120,
+              n.range(of: "^[^/:\\u0000-\\u001f]+$", options: .regularExpression) != nil,
+              let ics = args["ics"] as? String, ics.hasPrefix("BEGIN:VCALENDAR"), ics.count <= 8000,
+              let d = args["date"] as? String, d.range(of: "^\\d{4}-\\d{2}-\\d{2}$", options: .regularExpression) != nil
+        else { throw HostError(code: "bad_args") }
+        try bridge.requireDT3()
+        let ymd = d.split(separator: "-").map(String.init)
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("dt3agent-event-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: false,
+                                                attributes: [.posixPermissions: 0o700])
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let file = dir.appendingPathComponent(n)
+        try ics.write(to: file, atomically: true, encoding: .utf8)
+        text = try bridge.callAppleScript("addevent", [try uuid(), file.path, ymd[0], ymd[1], ymd[2]])
     default:
         throw HostError(code: "verb_not_allowed")  // there is no delete verb (brief §2.7)
     }

@@ -111,6 +111,15 @@ class DT3Adapter:
                          batch_id=batch_id, result="ok")
         return new
 
+    def add_event(self, uuid: str, name: str, ics: str, when: str, *, batch_id: str) -> str:
+        """B-5, after the user's OK: import the .ics next to the record and set its DT3 reminder. Like the A10
+        actions this creates something the engine cannot delete, so it is not part of undo."""
+        self.check_dt3()
+        new = self.bridge.call("add_event", uuid=uuid, name=name, ics=ics, date=when)["uuid"]
+        self.audit.write(actor="user", action="add_event", uuid=uuid, fields_changed=["reminder", "event"],
+                         batch_id=batch_id, result="ok")
+        return new
+
     def undo_last_batch(self) -> dict:
         batch = self.journal.last_batch()
         return self._undo(self.journal.entries(batch)) if batch else {"restored": 0, "conflicts": []}

@@ -9,8 +9,8 @@ from pathlib import Path
 
 ACTORS = {"rule", "ai", "user", "engine"}
 ACTIONS = {"set_name", "set_tags", "set_comment", "set_metadata", "move", "replicate", "duplicate",
-           "create_markdown", "import", "undo", "skip", "review"}
-FIELDS = {"name", "tags", "comment", "metadata", "location", "replicants", "note"}
+           "create_markdown", "import", "undo", "skip", "review", "add_event"}
+FIELDS = {"name", "tags", "comment", "metadata", "location", "replicants", "note", "reminder", "event"}
 RESULTS = {"ok", "skipped", "review", "failed", "undone", "dry_run"}
 UUID_RE = re.compile(r"[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}")
 BATCH_RE = re.compile(r"[A-Za-z0-9_-]{1,64}")
