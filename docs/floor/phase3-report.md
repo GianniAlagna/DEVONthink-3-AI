@@ -36,4 +36,8 @@ Runs on 2026-11-05: run 1 (kit c929fe03), run 2 (kit 75eeb6f5), retest 2 (kit f4
    message ("Create these groups: /Recht/Fall-Muster") was ambiguous. Fix: the message now says
    "Recht > Fall-Muster" and "never a / in a group name". Not a code bug.
 
-Next: `docs/floor/phase3-retest.md` (retest 4).
+5. Retest 4 + group listing (2026-11-05): the groups were still single top-level groups named
+   `Recht/Fall-Muster` and `Finanzen/Rechnungen`. Fix: the host's read-only path walk also accepts a group whose
+   own name holds the rest of the path. Checked with a node test of the host walk function.
+
+Next: `docs/floor/group-not-found-diagnose.md` (step-by-step isolation of `group_not_found`).

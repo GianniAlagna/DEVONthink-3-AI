@@ -72,14 +72,21 @@ function walk(db, location) {
   // Fallback without getRecordAt: follow the path name by name from the database root. Read-only.
   let g = db.root();
   const parts = location.split('/').filter(function (p) { return p.length > 0; });
-  for (let i = 0; i < parts.length; i++) {
+  // A group whose own name holds the rest of the path ("Recht/Fall-Muster" as one name) also counts:
+  // floor 2026-11-05 showed users create groups that way. Read-only; nothing is created or renamed.
+  let i = 0;
+  while (i < parts.length) {
     const kids = g.children();
-    let next = null;
-    for (let k = 0; k < kids.length; k++) {
-      if (kids[k].name() === parts[i] && isGroup(kids[k])) { next = kids[k]; break; }
+    let next = null, used = 0;
+    for (let n = parts.length - i; n >= 1 && !next; n--) {
+      const want = parts.slice(i, i + n).join('/');
+      for (let k = 0; k < kids.length; k++) {
+        if (kids[k].name() === want && isGroup(kids[k])) { next = kids[k]; used = n; break; }
+      }
     }
     if (!next) return null;
     g = next;
+    i += used;
   }
   return g;
 }
