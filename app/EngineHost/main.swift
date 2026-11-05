@@ -130,15 +130,20 @@ function run(argv) {
 """
 
 // B-5 calendar event + DT3 reminder. AppleScript, because DT3 3.9 refuses or crashes on reminders made from JXA
-// (DEVONtechnologies forum "JS: make reminder syntax", 2021). UNVERIFIED on the floor until the Phase 4 gate:
-// `get record with uuid`, `parent 1 of`, `import … to`, `make new reminder … at`.
+// (DEVONtechnologies forum "JS: make reminder syntax", 2021). Verified on the floor 2026-11-05 (osascript, DT3 3.9.17):
+// `get record with uuid`, `parent 1 of`, `import … to`; reminder form taken from DT3's bundled "Remind Me Tomorrow".
 // Never overwrites a reminder; nothing is deleted. Arguments arrive only as handler parameters.
 let appleScriptSource = """
 on addevent(theUUID, icsPath, y, m, d)
 	tell application id "\(dt3BundleID)"
 		set r to get record with uuid theUUID
 		if r is missing value then error "not_found"
-		if reminder of r is not missing value then error "reminder_exists"
+		-- floor 2026-11-05: without a reminder DT3 returns no result at all (-2763), so test inside try
+		set hasReminder to false
+		try
+			if (reminder of r) is not missing value then set hasReminder to true
+		end try
+		if hasReminder then error "reminder_exists"
 		set g to parent 1 of r
 		set theDate to current date
 		set day of theDate to 1
@@ -146,8 +151,10 @@ on addevent(theUUID, icsPath, y, m, d)
 		set month of theDate to (m as integer)
 		set day of theDate to (d as integer)
 		set time of theDate to (9 * hours)
+		-- form of DT3's own "Remind Me Tomorrow" script; "make ... at r" fails with -10008 (floor 2026-11-05).
+		-- Reminder first: if it fails, nothing has been imported yet.
+		tell r to make new reminder with properties {schedule:once, alarm:notification, due date:theDate}
 		set n to import icsPath to g
-		make new reminder with properties {schedule:once, alarm:notification, due date:theDate} at r
 		return "{\\"uuid\\":\\"" & (uuid of n) & "\\"}"
 	end tell
 end addevent

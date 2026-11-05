@@ -36,27 +36,32 @@ tools/dt3agent review field
 
 ## C. Deadline → calendar event + DT3 reminder (B-5)
 
-3. Drag `~/dt3agent-dev-kit/samples/Frist-Muster.txt` into the test database. Click it. Then:
+The `Frist-Muster` from the last run is still in the test database and carries the **test reminder** you set by hand.
+First check that the agent never overwrites it, then let it create its own.
 
-```bash
-tools/dt3agent process
-```
-
-4. Wait until the queue is empty: repeat `tools/dt3agent status` every 2–3 minutes until no `"queued"` is shown. Then:
+3. List the deadline items:
 
 ```bash
 tools/dt3agent review deadline
 ```
 
-   Expected: an item `"kind": "deadline"` with `"date": "2026-12-17"`. Type its number in place of 7:
+   Note the `"id"` of the item with `"date": "2026-12-17"`. Type it in place of 7:
 
 ```bash
 tools/dt3agent decide 7 accept
 ```
 
-   Expected: next to the document a new record `Frist … 2026-12-17.ics`; the document has a reminder
-   (Info pane, bell). Double-click the `.ics` → macOS Calendar shows the event on 17.12.2026 → **screenshots**.
-   If you see an error, copy it to me — the reminder commands are the part not yet tested on this Mac.
+   Expected: `dt3agent: reminder_exists` (the document already has your test reminder; nothing is changed).
+
+4. In DT3 remove the test reminder: click `Frist-Muster`, Info pane (Cmd+Shift+I) → reminder → **none**. Then again (same number):
+
+```bash
+tools/dt3agent decide 7 accept
+```
+
+   Expected: `{"applied": true}`. Next to the document a new record `Frist Muster Verwaltung AG … 2026-12-17.ics`;
+   the document has a reminder (bell) for 17.12.2026, 09:00. Double-click the `.ics` → macOS Calendar shows the
+   event on 17.12.2026 → **screenshots**. If an error appears, copy it exactly.
 
 ## D. Urgent letter (B-6)
 
