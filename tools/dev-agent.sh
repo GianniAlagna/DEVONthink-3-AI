@@ -128,6 +128,8 @@ cfg["identity"]["name"] = sys.argv[3]
 cfg["filing"] = {"enabled": True, "groups": {"invoice": "/Finanzen/Rechnungen/"}, "review_group": "/_AI-Review/"}
 cfg["duplicates"]["group"] = "/_Duplicates/"
 cfg["cases"] = [{"name": "Fall Muster", "group": "/Recht/Fall-Muster/", "words": ["Muster Treuhand AG"]}]
+# a config saved by an older kit keeps its old urgent words; the test uses the current defaults
+cfg["keywords"]["urgent"] = list(config.DEFAULTS["keywords"]["urgent"])
 config.save(path, cfg)
 print("Test settings saved. In the TEST database create these groups (a / means: one group inside the other,")
 print("never a / in a group name): Finanzen > Rechnungen,  Recht > Fall-Muster,  _AI-Review,  _Duplicates,  _Urgent")
