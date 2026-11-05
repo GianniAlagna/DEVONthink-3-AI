@@ -41,6 +41,11 @@ DEFAULTS = {
     "duplicates": {"near_threshold": 0.8, "group": "/_Duplicates/"},
     # Case folders: [{"name": str, "group": "/Path/", "words": [str, ...]}] -> matches become review items
     "cases": [],
+    # brief B4: user-editable retention table; a hint in metadata only, never deletes (UI: not legal advice).
+    # Example default: accounting records 10 years, OR Art. 958f.
+    "retention": {"enabled": True, "classes": {"invoice": {"years": 10, "basis": "OR Art. 958f"},
+                                               "receipt": {"years": 10, "basis": "OR Art. 958f"},
+                                               "statement": {"years": 10, "basis": "OR Art. 958f"}}},
     "update_check": False,
     "logs": {"content": False},
 }
@@ -50,6 +55,7 @@ TYPES = {
     "schema_version": int, "dry_run": bool, "scopes": list, "ai": dict, "naming": dict,
     "thresholds": dict, "update_check": bool, "logs": dict, "tags": dict, "keywords": dict, "vision": dict,
     "identity": dict, "summary": dict, "filing": dict, "duplicates": dict, "cases": list,
+    "retention": dict,
 }
 
 
@@ -94,6 +100,13 @@ def validate(cfg: dict) -> dict:
         if not (isinstance(case, dict) and set(case) == {"name", "group", "words"} and isinstance(case["name"], str)
                 and case["name"].strip() and good_loc(case["group"]) and words_ok(case["words"]) and case["words"]):
             raise ConfigError("cases: each needs name, group (absolute path) and a non-empty word list")
+    retention = cfg.get("retention", {})
+    classes = retention.get("classes", {})
+    if not (isinstance(retention.get("enabled", True), bool) and isinstance(classes, dict) and all(
+            isinstance(t, str) and t.strip() and isinstance(c, dict) and set(c) == {"years", "basis"}
+            and isinstance(c["years"], int) and not isinstance(c["years"], bool) and 0 <= c["years"] <= 100
+            and isinstance(c["basis"], str) and 0 < len(c["basis"]) <= 120 for t, c in classes.items())):
+        raise ConfigError("retention: enabled is true/false; classes map doc types to {years 0-100, basis}")
     for scope in cfg.get("scopes", []):
         if not (isinstance(scope, dict) and set(scope) == {"database", "group"}
                 and all(isinstance(v, str) and v for v in scope.values())):

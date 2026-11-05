@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 
 from dt3agent import fields as fieldsmod
 from dt3agent.naming import build_name
+from dt3agent.retention import NOTE, keep_until
 
 
 @dataclass(frozen=True)
@@ -56,6 +57,16 @@ def plan(record: dict, text: str, ai: dict, cfg: dict, bill: dict | None = None)
         c = merged["amount_cents"]
         out.append(Proposal("metadata", f"{merged['currency'].value} {c.value // 100}.{c.value % 100:02d}",
                             c.confidence, c.source, "dt3agenttotal"))
+
+    ret = cfg["retention"]
+    t, d = merged.get("type"), merged.get("document_date")
+    cls = ret["classes"].get(t.value) if ret["enabled"] and t and d else None
+    if cls:  # B4: a hint only; nothing is ever deleted or expired by the engine
+        conf = min(t.confidence, d.confidence)
+        src = "rule" if t.source == d.source == "rule" else "ai"
+        out.append(Proposal("metadata", keep_until(d.value, cls["years"]).isoformat(), conf, src,
+                            "dt3agentretention"))
+        out.append(Proposal("metadata", f"{cls['basis']} · {NOTE}", conf, src, "dt3agentretentionbasis"))
 
     filing = cfg["filing"]
     if filing["enabled"]:

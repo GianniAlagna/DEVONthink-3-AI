@@ -78,7 +78,7 @@ def test_live_applies_rule_fields_and_reviews_ai_fields(run):
     assert r["name"] == "scan.txt"                       # AI-based name waits for the user
     fields = [f for (f,) in con.execute("SELECT json_extract(payload_json, '$.field') FROM review_items "
                                         "WHERE kind = 'field'")]
-    assert sorted(fields) == ["comment", "name"]
+    assert sorted(fields) == ["comment", "metadata", "metadata", "name"]  # + retention hint (type 0.8)
     assert ad.undo_last_batch()["restored"] >= 4 and r["metadata"]["mddt3agentdate"] == ""
 
 
