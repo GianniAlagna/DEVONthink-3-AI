@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var timer: Timer?
     let setup = SetupWindow()
     let settings = SettingsWindow()
+    let reviewWindow = ReviewWindow()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         menu.delegate = self
@@ -54,9 +55,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let online = status != nil
         menu.addItem(item(t[.processSelected], #selector(processSelected), enabled: online))
         menu.addItem(info(t.format(.queue, status?.pending ?? 0)))
-        // The review window follows in U-4; the count is shown already.
-        menu.addItem(info(t.format(.review, status?.reviewItems ?? 0)))
-        if let urgent = status?.urgentOpen, urgent > 0 { menu.addItem(info(t.format(.urgent, urgent))) }
+        menu.addItem(item(t.format(.review, status?.reviewItems ?? 0), #selector(openReview), enabled: online))
+        if let urgent = status?.urgentOpen, urgent > 0 {
+            menu.addItem(item(t.format(.urgent, urgent), #selector(openReview), enabled: online))
+        }
         menu.addItem(.separator())
         let paused = status?.paused ?? false
         menu.addItem(item(paused ? t[.resume] : t[.pause], #selector(togglePause), enabled: online))
@@ -112,6 +114,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc func openSetup() {
         setup.show(t: t, work: work) { [weak self] in self?.refresh() }
+    }
+
+    @objc func openReview() {
+        reviewWindow.show(t: t, work: work) { [weak self] in self?.refresh() }
     }
 
     @objc func openSettings() {

@@ -82,6 +82,10 @@ func errorText(_ code: String, _ t: L10n) -> String {
     case "engine_not_running", "engine_unreachable": return t[.errEngine]
     case "nothing_selected": return t[.errNothingSelected]
     case "undo_failed": return t[.errUndo]
+    case "group_not_found": return t[.errGroupMissing]
+    case "reminder_exists": return t[.errReminderExists]
+    case "record_missing", "not_found": return t[.errRecordMissing]
+    case "bad_value": return t[.errBadValue]
     default: return t[.errOther] + " (" + code + ")"
     }
 }

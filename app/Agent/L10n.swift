@@ -28,6 +28,11 @@ struct L10n {
         case setUrgentWords, setUrgentGroup, setRetention, setDuplicatesGroup, setNear, setCases
         case setLogContent, setLogWarning, setApply, setApplyNote, setThresholds
         case save, revert, saved, setFix
+        // review queue (U-4)
+        case reviewTitle, reviewEmpty, refresh, accept, edit, reject, openInDT3, before, after, confidenceN, missingRecord
+        case kindTags, kindName, kindComment, kindLocation, kindMetadata, kindDuplicate, kindCase, kindDeadline
+        case kindUrgent, kindError, editHintTags, editHintDate, editHintGroup, editInvalid
+        case errGroupMissing, errReminderExists, errRecordMissing, errBadValue
     }
 
     static let table: [String: [Key: String]] = [
@@ -138,6 +143,35 @@ struct L10n {
             .revert: "Verwerfen",
             .saved: "Gesichert.",
             .setFix: "Bitte prüfen: %@",
+            .reviewTitle: "Prüfliste",
+            .reviewEmpty: "Keine offenen Entscheide.",
+            .refresh: "Aktualisieren",
+            .accept: "Annehmen",
+            .edit: "Ändern",
+            .reject: "Ablehnen",
+            .openInDT3: "In DT3 zeigen",
+            .before: "Vorher",
+            .after: "Vorschlag",
+            .confidenceN: "Sicherheit: %d %%",
+            .missingRecord: "Dieses Dokument gibt es in DT3 nicht mehr. Nur Ablehnen ist möglich.",
+            .kindTags: "Tags",
+            .kindName: "Name",
+            .kindComment: "Kommentar",
+            .kindLocation: "Ablageort",
+            .kindMetadata: "Metadaten: %@",
+            .kindDuplicate: "Duplikat",
+            .kindCase: "Fall: %@",
+            .kindDeadline: "Frist mit Erinnerung und Kalendereintrag",
+            .kindUrgent: "Dringender Brief",
+            .kindError: "Nicht verarbeitet (%@)",
+            .editHintTags: "Tags mit Komma getrennt",
+            .editHintDate: "Datum als JJJJ-MM-TT",
+            .editHintGroup: "replicate /Gruppe/, copy /Gruppe/ oder link /Gruppe/",
+            .editInvalid: "Diese Eingabe passt nicht.",
+            .errGroupMissing: "Die Gruppe fehlt in DT3. Lege sie an und versuche es nochmals.",
+            .errReminderExists: "Das Dokument hat schon eine Erinnerung. Es wurde nichts geändert.",
+            .errRecordMissing: "Das Dokument gibt es in DT3 nicht mehr.",
+            .errBadValue: "Dieser Wert ist nicht gültig.",
         ],
         "en": [
             .appName: "DT3 Agent",
@@ -246,6 +280,35 @@ struct L10n {
             .revert: "Revert",
             .saved: "Saved.",
             .setFix: "Please check: %@",
+            .reviewTitle: "Review Queue",
+            .reviewEmpty: "No open decisions.",
+            .refresh: "Refresh",
+            .accept: "Accept",
+            .edit: "Edit",
+            .reject: "Reject",
+            .openInDT3: "Show in DT3",
+            .before: "Before",
+            .after: "Proposal",
+            .confidenceN: "Confidence: %d %%",
+            .missingRecord: "This document no longer exists in DT3. Only Reject is possible.",
+            .kindTags: "Tags",
+            .kindName: "Name",
+            .kindComment: "Comment",
+            .kindLocation: "Location",
+            .kindMetadata: "Metadata: %@",
+            .kindDuplicate: "Duplicate",
+            .kindCase: "Case: %@",
+            .kindDeadline: "Deadline with reminder and calendar event",
+            .kindUrgent: "Urgent letter",
+            .kindError: "Not processed (%@)",
+            .editHintTags: "Tags separated by commas",
+            .editHintDate: "Date as YYYY-MM-DD",
+            .editHintGroup: "replicate /Group/, copy /Group/ or link /Group/",
+            .editInvalid: "This input does not fit.",
+            .errGroupMissing: "The group is missing in DT3. Create it and try again.",
+            .errReminderExists: "The document already has a reminder. Nothing was changed.",
+            .errRecordMissing: "The document no longer exists in DT3.",
+            .errBadValue: "This value is not valid.",
         ],
     ]
 

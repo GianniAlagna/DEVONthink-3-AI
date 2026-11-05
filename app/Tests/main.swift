@@ -111,5 +111,39 @@ check(importChanges(["vision": ["helper": "/evil"], "dry_run": true]).map { $0["
       "import drops locked keys")
 check(importChanges(["vision": [:]]) == nil && importChanges("x") == nil, "nothing to import")
 
+// review queue
+let de = L10n(preferred: ["de"])
+let nameItem = ReviewItem(json: ["id": 3, "uuid": "AB4B045D-7D33-44B0-B97F-991CCD829D09", "kind": "field",
+                                 "field": "name", "after": "20260417_Muster-Treuhand-AG", "before": "scan01",
+                                 "confidence": 0.7, "record_name": "scan01", "record_missing": false,
+                                 "actions": ["accept", "edit", "reject"]])!
+check(nameItem.title(de) == "Name" && nameItem.before == "scan01" && nameItem.after == "20260417_Muster-Treuhand-AG",
+      "field item before/after")
+check(nameItem.editValue("  neuer Name ") as? String == "neuer Name" && nameItem.editValue("  ") == nil, "field edit")
+check(nameItem.link?.absoluteString == "x-devonthink-item://AB4B045D-7D33-44B0-B97F-991CCD829D09", "link to DT3")
+let tagItem = ReviewItem(json: ["id": 4, "uuid": "U", "kind": "planned", "tags_add": ["Rechnung", "Steuern"],
+                                "before": ["Steuern"], "actions": ["accept", "edit", "reject"]])!
+check(tagItem.before == "Steuern" && tagItem.after == "Steuern, Rechnung", "tags after = old + new, no doubles")
+check(tagItem.editStart == "Rechnung, Steuern", "tag edit starts with the proposed tags")
+check(tagItem.editValue("A, B ,") as? [String] == ["A", "B"], "tag edit is a list")
+let deadline = ReviewItem(json: ["id": 5, "uuid": "U", "kind": "deadline", "date": "2026-12-17",
+                                 "title": "Frist: Muster Verwaltung AG", "actions": ["accept", "edit", "reject"]])!
+check(deadline.after == "2026-12-17 – Frist: Muster Verwaltung AG" && deadline.editStart == "2026-12-17", "deadline")
+check(deadline.editValue("2026-12-20") as? String == "2026-12-20" && deadline.editValue("20.12.2026") == nil,
+      "deadline edit is a date")
+let caseItem = ReviewItem(json: ["id": 6, "uuid": "U", "kind": "case", "case": "Fall Muster", "group": "/Recht/Fall-Muster/",
+                                 "actions": ["accept", "edit", "reject"]])!
+check(caseItem.title(de) == "Fall: Fall Muster" && caseItem.editStart == "replicate /Recht/Fall-Muster/", "case item")
+check(caseItem.editValue("copy /X/") as? String == "copy /X/" && caseItem.editValue("delete /X/") == nil,
+      "case edit: only replicate, copy or link")
+let urgentItem = ReviewItem(json: ["id": 7, "uuid": "U", "kind": "urgent", "group": "/_Urgent/",
+                                   "hints": ["SchKG Art. 74"], "actions": ["accept", "reject"]])!
+check(!urgentItem.canEdit && urgentItem.hints == ["SchKG Art. 74"] && urgentItem.editValue("x") == nil, "urgent")
+let gone = ReviewItem(json: ["id": 8, "uuid": "U", "kind": "field", "field": "comment", "record_missing": true,
+                             "record_name": NSNull(), "before": NSNull(), "actions": ["reject"]])!
+check(gone.missing && gone.recordName == nil && gone.before == "" && gone.actions == ["reject"], "missing record")
+check(ReviewItem(json: ["kind": "field"]) == nil, "item without id is skipped")
+check(errorText("reminder_exists", en) == "The document already has a reminder. Nothing was changed.", "decide errors")
+
 if failures > 0 { print("\(failures) failed"); exit(1) }
 print("app tests ok")
