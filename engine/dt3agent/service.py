@@ -20,7 +20,7 @@ from dt3agent.embed import EmbedClient, EmbedError
 from dt3agent.ics import build_event
 from dt3agent.index import Index
 from dt3agent.intake import ingest_spool
-from dt3agent.knowledge import AskError, ask
+from dt3agent.knowledge import AskError, ask, summarize
 from dt3agent.rpc import RPCError
 from dt3agent.undo import MIGRATIONS as UNDO_MIGRATIONS
 from dt3agent.undo import UndoJournal
@@ -116,7 +116,7 @@ class Service:
                     "review": {"kind"} if "kind" in params else set(),
                     "undo": set(), "pause": set(), "resume": set(), "live": {"on"},
                     "config_get": set(), "config_set": {"changes"}, "naming_preview": {"template"},
-                    "dt3_info": set(), "ask": {"question"}}
+                    "dt3_info": set(), "ask": {"question"}, "summary": {"uuid", "lang"}, "selected": set()}
         expected["decide"] = {"id", "decision"} | ({"value"} if "value" in params else set())
         if method not in expected:
             raise RPCError("unknown_method")  # there is no delete method
@@ -176,6 +176,13 @@ class Service:
             return self._decide(params)
         if method == "ask":
             return self._ask(params["question"])
+        if method == "summary":
+            return self._summary(params["uuid"], params["lang"])
+        if method == "selected":  # read-only: which records are selected in DT3 (for the summary button)
+            try:
+                return {"uuids": self.adapter.selected()[:100]}
+            except Exception as e:
+                raise RPCError("dt3_unreachable") from e
         if method == "undo":
             try:
                 return self.adapter.undo_last_batch()
@@ -223,6 +230,22 @@ class Service:
                 continue
             sources.append({"uuid": uuid, "name": name, "link": "x-devonthink-item://" + uuid})
         return {"answer": answer.text, "sources": sources}
+
+    def _summary(self, uuid, lang) -> dict:
+        """K-6: summary of one record in de/fr/it/en. Read-only."""
+        if not (isinstance(uuid, str) and UUID_RE.fullmatch(uuid)) or not isinstance(lang, str):
+            raise RPCError("bad_params")
+        if self.ai is None:
+            raise RPCError("ai_unavailable")
+        try:
+            text, _ = self.adapter.read_text(uuid)
+        except Exception as e:
+            raise RPCError("record_missing" if _not_found(e) else "dt3_unreachable") from e
+        try:
+            result = summarize(text, lang, self.ai)
+        except (AskError, AIError) as e:
+            raise RPCError(e.code) from e
+        return {"summary": result.text, "lang": lang, "partial": result.partial}
 
     @staticmethod
     def _naming_preview(template) -> str:

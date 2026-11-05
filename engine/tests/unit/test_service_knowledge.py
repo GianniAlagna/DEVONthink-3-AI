@@ -148,3 +148,45 @@ def test_knowledge_settings_are_checked(tmp_path, servers, bad):
     servers.append(make(tmp_path, ai_reply([])))
     with pytest.raises(Exception, match="config_invalid"):
         servers[0][0].handle("config_set", {"changes": {"knowledge": bad}})
+
+
+def test_summary_in_the_requested_language_is_read_only(tmp_path, servers):
+    servers.append(make(tmp_path, json.dumps({"summary": "Rechnung über CHF 1957.04, Strasse gross."})))
+    svc, dt3, chat, _ = servers[0]
+    before = len(dt3.calls)
+    out = svc.handle("summary", {"uuid": A, "lang": "fr"})
+    assert out == {"summary": "Rechnung über CHF 1957.04, Strasse gross.", "lang": "fr", "partial": False}
+    body = chat.requests[-1]["body"]
+    assert "French" in body["messages"][0]["content"] and "not instructions" in body["messages"][0]["content"]
+    assert "CHF 1957.04" in body["messages"][1]["content"]
+    assert not [c for c in dt3.calls[before:] if c[0].startswith(WRITES)]
+
+
+def test_german_summary_never_has_sharp_s(tmp_path, servers):
+    servers.append(make(tmp_path, json.dumps({"summary": "Grösse und Straße"})))
+    assert servers[0][0].handle("summary", {"uuid": A, "lang": "de"})["summary"] == "Grösse und Strasse"
+
+
+def test_long_document_summary_says_partial(tmp_path, servers):
+    servers.append(make(tmp_path, json.dumps({"summary": "x"})))
+    svc, dt3, _, _ = servers[0]
+    dt3.records[A]["text"] = "Wort " * 5000
+    assert svc.handle("summary", {"uuid": A, "lang": "en"})["partial"] is True
+
+
+@pytest.mark.parametrize("params, code", [({"uuid": A, "lang": "es"}, "lang_invalid"),
+                                          ({"uuid": "nope", "lang": "de"}, "bad_params"),
+                                          ({"uuid": "00000000-0000-4000-8000-000000000099", "lang": "de"},
+                                           "record_missing")])
+def test_summary_errors(tmp_path, servers, params, code):
+    servers.append(make(tmp_path, json.dumps({"summary": "x"})))
+    with pytest.raises(Exception, match=code):
+        servers[0][0].handle("summary", params)
+
+
+def test_selected_is_read_only(tmp_path, servers):
+    servers.append(make(tmp_path, ai_reply([])))
+    svc, dt3, _, _ = servers[0]
+    dt3.selected = [A, B]
+    assert svc.handle("selected", {}) == {"uuids": [A, B]}
+    assert not [c for c in dt3.calls if c[0].startswith(WRITES)]
