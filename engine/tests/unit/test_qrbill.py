@@ -209,5 +209,5 @@ def test_phase0_fixture_payloads(name, ref_type, amount):
     # byte-exact payloads read by the Vision helper on the floor machine in Phase 0 (S6)
     from pathlib import Path
     path = Path(__file__).resolve().parents[3] / "fixtures" / "spike" / f"qrbill-{name}.payload.txt"
-    b = parse(path.read_text(encoding="utf-8", newline=""))
+    b = parse(path.read_bytes().decode("utf-8"))  # bytes: keep CR LF as stored (Python 3.12 has no newline=)
     assert (b["reference_type"], b["amount"], b["creditor"]["name"]) == (ref_type, amount, "Muster Treuhand AG")
