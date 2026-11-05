@@ -1,7 +1,7 @@
 """P3-7 review store + decisions (SPEC §4.12)."""
 import pytest
 
-from dt3agent import config, review
+from dt3agent import config
 from dt3agent.rpc import RPCError
 from dt3agent.service import Service
 from tests.fakes import FakeDT3, FakeLlamaServer, ai_reply
@@ -72,9 +72,10 @@ def test_decided_twice_is_refused(svc):
 
 
 def test_migration_keeps_old_items(tmp_path):
-    from dt3agent import store
-    from dt3agent.service import ENGINE_MIGRATIONS
-    old = ENGINE_MIGRATIONS[:-len(review.MIGRATIONS)]
+    from dt3agent import pipeline, queue, store
+    from dt3agent.service import ENGINE_MIGRATIONS, STATE_MIGRATIONS
+    old = queue.MIGRATIONS + pipeline.MIGRATIONS + STATE_MIGRATIONS   # schema before P3-7
+    assert ENGINE_MIGRATIONS[:len(old)] == old
     con = store.open_db(tmp_path / "engine.db", old)
     with con:
         con.execute("INSERT INTO review_items (uuid, kind, code, payload_json, created_at) "

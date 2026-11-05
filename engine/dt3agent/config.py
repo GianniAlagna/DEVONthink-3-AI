@@ -37,6 +37,10 @@ DEFAULTS = {
     "summary": {"target": "comment"},     # brief A9: 3-line summary into the DT3 comment
     # brief A8: filing only into groups listed here; off until the user sets the allowlist
     "filing": {"enabled": False, "groups": {}, "review_group": "/_AI-Review/"},
+    # A10 (brief §5.2): near-duplicate threshold and the group for marked duplicates (user deletes manually)
+    "duplicates": {"near_threshold": 0.8, "group": "/_Duplicates/"},
+    # Case folders: [{"name": str, "group": "/Path/", "words": [str, ...]}] -> matches become review items
+    "cases": [],
     "update_check": False,
     "logs": {"content": False},
 }
@@ -45,7 +49,7 @@ DEFAULTS = {
 TYPES = {
     "schema_version": int, "dry_run": bool, "scopes": list, "ai": dict, "naming": dict,
     "thresholds": dict, "update_check": bool, "logs": dict, "tags": dict, "keywords": dict, "vision": dict,
-    "identity": dict, "summary": dict, "filing": dict,
+    "identity": dict, "summary": dict, "filing": dict, "duplicates": dict, "cases": list,
 }
 
 
@@ -86,6 +90,10 @@ def validate(cfg: dict) -> dict:
     if not (isinstance(groups, dict) and all(isinstance(k, str) and good_loc(v) for k, v in groups.items())
             and (filing.get("review_group") is None or good_loc(filing.get("review_group")))):
         raise ConfigError("filing: groups map doc types to absolute group paths")
+    for case in cfg.get("cases", []):
+        if not (isinstance(case, dict) and set(case) == {"name", "group", "words"} and isinstance(case["name"], str)
+                and case["name"].strip() and good_loc(case["group"]) and words_ok(case["words"]) and case["words"]):
+            raise ConfigError("cases: each needs name, group (absolute path) and a non-empty word list")
     for scope in cfg.get("scopes", []):
         if not (isinstance(scope, dict) and set(scope) == {"database", "group"}
                 and all(isinstance(v, str) and v for v in scope.values())):

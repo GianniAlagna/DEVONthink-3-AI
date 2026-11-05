@@ -49,4 +49,4 @@ def decide(con: sqlite3.Connection, item_id: int, decision: str, value=None) -> 
     with con:
         con.execute("UPDATE review_items SET decided_at = ?, decision = ?, value_json = ? WHERE id = ?",
                     (datetime.now(UTC).isoformat(), decision, json.dumps(apply), item_id))
-    return {"uuid": uuid, "kind": kind, "payload": payload, "apply": apply}
+    return {"uuid": uuid, "kind": kind, "payload": payload, "apply": apply, "decision": decision}

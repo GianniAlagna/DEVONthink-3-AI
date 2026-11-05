@@ -4,11 +4,12 @@ Single-threaded on purpose: the DT3 bridge is one pipe, so rpc requests and pipe
 """
 import json
 import os
+import re
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
-from dt3agent import __version__, config, pipeline, review, store
+from dt3agent import __version__, config, duplicates, pipeline, review, store
 from dt3agent import queue as queuemod
 from dt3agent.adapter import DT3Adapter
 from dt3agent.ai import LlamaClient
@@ -21,7 +22,8 @@ from dt3agent.vision import VisionClient
 
 STATE_MIGRATIONS = ["CREATE TABLE state (key TEXT PRIMARY KEY, value TEXT NOT NULL)"]
 # Order is part of the schema: append only.
-ENGINE_MIGRATIONS = queuemod.MIGRATIONS + pipeline.MIGRATIONS + STATE_MIGRATIONS + review.MIGRATIONS
+ENGINE_MIGRATIONS = (queuemod.MIGRATIONS + pipeline.MIGRATIONS + STATE_MIGRATIONS + review.MIGRATIONS
+                     + duplicates.MIGRATIONS)
 DEFAULT_DATA = Path.home() / "Library/Application Support/DT3 Agent"
 
 
@@ -131,10 +133,16 @@ class Service:
             value = " ".join(value)  # the CLI sends words; a field value is one text
         if kind and kind[0] == "field" and value is not None and not (isinstance(value, str) and value.strip()):
             raise RPCError("bad_value")
+        if kind and kind[0] in ("duplicate", "case") and value is not None:
+            value = " ".join(value) if isinstance(value, list) else value
+            if not (isinstance(value, str) and re.fullmatch(r"(replicate|copy|link) /\S.*", value)):
+                raise RPCError("bad_value")  # edit = "replicate /Group/" | "copy /Group/" | "link /Group/"
         try:
             result = review.decide(self.con, params["id"], params["decision"], value)
         except review.ReviewError as e:
             raise RPCError(str(e)) from None
+        if result["kind"] in ("duplicate", "case"):
+            return self._a10(result, params["id"])
         if result["apply"] is None:
             return {"applied": False}
         if result["kind"] == "field":  # name, comment, metadata, location: through the adapter with undo
@@ -149,6 +157,39 @@ class Service:
         current = list(self.adapter.read(uuid).get("tags") or [])
         self.adapter.set_tags(uuid, current + [t for t in add if t not in current],
                               batch_id=f"review-{params['id']}", actor="user")
+        return {"applied": True}
+
+    def _a10(self, result: dict, item_id: int) -> dict:
+        """Execute the user's A10 choice (brief §5.2). Nothing is ever deleted."""
+        uuid, p, decision, batch = result["uuid"], result["payload"], result["decision"], f"review-{item_id}"
+        try:
+            if decision == "reject":
+                if result["kind"] == "duplicate":
+                    duplicates.dismiss(self.con, uuid, p["other"])  # never ask again for this pair
+                return {"applied": False}
+            if decision == "accept" and result["kind"] == "case":
+                self.adapter.replicate(uuid, p["group"], batch_id=batch)
+            elif decision == "accept":  # mark as duplicate: tag + move to the duplicates group if it exists
+                current = list(self.adapter.read(uuid).get("tags") or [])
+                if "duplicate" not in current:
+                    self.adapter.set_tags(uuid, current + ["duplicate"], batch_id=batch, actor="user")
+                try:
+                    self.adapter.set_field(uuid, "location", self.cfg["duplicates"]["group"], batch_id=batch,
+                                           actor="user")
+                except Exception:
+                    pass  # no such group: the tag is enough, the user moves or deletes manually
+            else:
+                action, location = result["apply"].split(" ", 1)
+                if action == "replicate":
+                    self.adapter.replicate(uuid, location, batch_id=batch)
+                elif action == "copy":
+                    self.adapter.duplicate_copy(uuid, location, batch_id=batch)
+                else:
+                    self.adapter.link_note(uuid, location, self.adapter.read(uuid).get("name", ""), batch_id=batch)
+        except RPCError:
+            raise
+        except Exception as e:
+            raise RPCError(str(e) if str(e) in ("group_not_found", "not_dt3") else "apply_failed") from e
         return {"applied": True}
 
     def close(self) -> None:

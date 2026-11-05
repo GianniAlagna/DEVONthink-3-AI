@@ -8,10 +8,12 @@ import sqlite3
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
+from dt3agent import duplicates
 from dt3agent import fields as fieldsmod
 from dt3agent.ai import AIError
 from dt3agent.plan import plan
 from dt3agent.queue import ERROR_RE
+from dt3agent.rules import keywords
 from dt3agent.vision import VisionError
 
 PIPELINE_VERSION = 1
@@ -117,6 +119,8 @@ class Pipeline:
             code = "no_text" if not text.strip() else "text_too_long"
             self._review(uuid, "error", code, {}, batch_id, "review")
             return Outcome("review", code=code)
+        if self.settings is not None:
+            self._duplicates_and_cases(uuid, text, batch_id)
         schema, task = tag_schema(self.vocabulary), TAG_TASK
         if self.settings is not None:  # one AI call for tags and the fields rules cannot know
             schema = {**schema, "properties": {**fieldsmod.AI_SCHEMA["properties"], **schema["properties"]},
@@ -154,6 +158,21 @@ class Pipeline:
         return Outcome("applied", add)
 
     _planned = False
+
+    def _duplicates_and_cases(self, uuid: str, text: str, batch_id: str) -> None:
+        """A10: duplicates and case-folder matches only ever become review items (brief §5.2)."""
+        found = {u: ("exact", 1.0) for u in self.adapter.duplicates(uuid)
+                 if not duplicates.dismissed(self.con, uuid, u)}
+        for other, score in duplicates.near(self.con, uuid, text, self.settings["duplicates"]["near_threshold"]):
+            found.setdefault(other, ("near", score))
+        for other, (method, score) in found.items():
+            self._review(uuid, "duplicate", f"duplicate_{method}", {"other": other, "method": method,
+                                                                    "score": score}, batch_id, "review")
+        for case in self.settings["cases"]:
+            hits = keywords.scan(text, {"urgent": case["words"]}).urgent
+            if hits:
+                self._review(uuid, "case", "case_match", {"case": case["name"], "group": case["group"],
+                                                          "words": sorted({h.word for h in hits})}, batch_id, "review")
 
     def _handle_fields(self, uuid: str, proposals: list, batch_id: str) -> bool:
         """Dry-run: every proposal becomes a planned review item. Live: apply what reaches the threshold,
