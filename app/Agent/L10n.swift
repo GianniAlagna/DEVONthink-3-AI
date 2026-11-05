@@ -1,5 +1,6 @@
 // Texts of the menu-bar app: de-CH, fr-CH, it-CH and en (U-6). Other languages fall back to en.
-// DT3 menu terms in fr/it texts (On Import, Execute Script) stay in English: a localised DT3 UI is UNVERIFIED.
+// DT3 menu terms (On Import, Apply Script › External) are quoted as the English DT3 shows them (floor 2026-11-05);
+// a localised DT3 UI is UNVERIFIED.
 // de-CH: "ss", never "ß" (a test checks it).
 import Foundation
 
@@ -111,7 +112,7 @@ struct L10n {
             .namingInvalid: "Diese Vorlage enthält unbekannte Felder.",
             .namingReset: "Standard",
             .ruleTitle: "Smart Rule in DT3",
-            .ruleText: "DT3 Agent arbeitet nur in Gruppen, die du freigibst: Lege in DT3 eine Smart Rule an (Ereignis «Beim Importieren», Aktion «Skript ausführen: DT3 Agent Enqueue»). Ohne Smart Rule verarbeitest du Dokumente über das Menü «Ausgewählte Dokumente verarbeiten».",
+            .ruleText: "DT3 Agent arbeitet nur in Gruppen, die du freigibst: Lege in DT3 eine Smart Rule an (Ereignis «On Import», Aktion «Apply Script › External › DT3 Agent Enqueue»). Ohne Smart Rule verarbeitest du Dokumente über das Menü «Ausgewählte Dokumente verarbeiten».",
             .ruleDatabases: "Offene Datenbanken: %@",
             .finishTitle: "Bereit",
             .finishText: "Im Testmodus schreibt DT3 Agent nichts in DT3. Alle Vorschläge erscheinen in der Prüfliste. Den Testmodus kannst du jederzeit in den Einstellungen ausschalten.",
@@ -276,7 +277,7 @@ struct L10n {
             .namingInvalid: "This template contains unknown fields.",
             .namingReset: "Default",
             .ruleTitle: "Smart Rule in DT3",
-            .ruleText: "DT3 Agent works only in groups you enable: in DT3, create a Smart Rule (event “On Import”, action “Execute Script: DT3 Agent Enqueue”). Without a Smart Rule, process documents with the menu item “Process selected records”.",
+            .ruleText: "DT3 Agent works only in groups you enable: in DT3, create a Smart Rule (event “On Import”, action “Apply Script › External › DT3 Agent Enqueue”). Without a Smart Rule, process documents with the menu item “Process selected records”.",
             .ruleDatabases: "Open databases: %@",
             .finishTitle: "Ready",
             .finishText: "In test mode DT3 Agent writes nothing to DT3. All proposals appear in the Review Queue. You can switch test mode off at any time in Settings.",
@@ -441,7 +442,7 @@ struct L10n {
             .namingInvalid: "Ce modèle contient des champs inconnus.",
             .namingReset: "Par défaut",
             .ruleTitle: "Règle intelligente dans DT3",
-            .ruleText: "DT3 Agent travaille seulement dans les groupes que vous activez : dans DT3, créez une règle intelligente (Smart Rule ; événement « On Import », action « Execute Script: DT3 Agent Enqueue »). Sans règle intelligente, traitez les documents avec la commande « Traiter les documents sélectionnés ».",
+            .ruleText: "DT3 Agent travaille seulement dans les groupes que vous activez : dans DT3, créez une règle intelligente (Smart Rule ; événement « On Import », action « Apply Script › External › DT3 Agent Enqueue »). Sans règle intelligente, traitez les documents avec la commande « Traiter les documents sélectionnés ».",
             .ruleDatabases: "Bases de données ouvertes : %@",
             .finishTitle: "Prêt",
             .finishText: "En mode test, DT3 Agent n’écrit rien dans DT3. Toutes les propositions apparaissent dans la liste de contrôle. Vous pouvez désactiver le mode test à tout moment dans les réglages.",
@@ -606,7 +607,7 @@ struct L10n {
             .namingInvalid: "Questo modello contiene campi sconosciuti.",
             .namingReset: "Predefinito",
             .ruleTitle: "Regola intelligente in DT3",
-            .ruleText: "DT3 Agent lavora solo nei gruppi che Lei attiva: in DT3 crei una regola intelligente (Smart Rule; evento «On Import», azione «Execute Script: DT3 Agent Enqueue»). Senza regola intelligente, elabori i documenti con la voce di menu «Elabora i documenti selezionati».",
+            .ruleText: "DT3 Agent lavora solo nei gruppi che Lei attiva: in DT3 crei una regola intelligente (Smart Rule; evento «On Import», azione «Apply Script › External › DT3 Agent Enqueue»). Senza regola intelligente, elabori i documenti con la voce di menu «Elabora i documenti selezionati».",
             .ruleDatabases: "Database aperti: %@",
             .finishTitle: "Pronto",
             .finishText: "In modalità test DT3 Agent non scrive nulla in DT3. Tutte le proposte appaiono nella lista di controllo. Può disattivare la modalità test in qualsiasi momento nelle impostazioni.",
