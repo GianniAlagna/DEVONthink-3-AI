@@ -7,7 +7,7 @@ dropped, so nothing is invented. `decide` splits fields into apply / review by t
 from dataclasses import dataclass
 from datetime import date
 
-from dt3agent.rules import amounts, dates, keywords, language, payment
+from dt3agent.rules import amounts, dates, keywords, language, payment, uid
 
 # Confidence per source. Rules are deterministic; AI answers are not calibrated, so they stay below the
 # default apply threshold (0.85) and go to review until the user trusts them (SPEC §4.13 step 6).
@@ -63,6 +63,9 @@ def rule_fields(text: str, cfg: dict) -> dict[str, Field]:
     if ibans:
         f["iban"] = Field(ibans[0].iban, "rule", CONF_RULE_STRONG)
         f["qr_iban"] = Field(ibans[0].qr, "rule", CONF_RULE_STRONG)
+    uids = [u for u in uid.find_uids(text) if u.valid]
+    if uids:  # the first valid one: the letterhead of the sender comes first
+        f["uid"] = Field(uids[0].uid + (" MWST" if uids[0].vat else ""), "rule", CONF_RULE_STRONG)
     hits = keywords.scan(text, cfg["keywords"])
     if hits.doc_type():
         f["type"] = Field(hits.doc_type(), "rule", CONF_RULE)

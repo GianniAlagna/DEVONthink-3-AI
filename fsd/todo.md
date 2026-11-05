@@ -54,7 +54,8 @@ Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC
 - [x] B-0 (from Phase 3 floor) — done 2026-11-05, floor check open: review items whose DT3 record no longer exists → mark `record_missing`, do not offer accept; guide hint "select a document first" for osascript checks
 - [x] B-1 vision helper (engine QR client; Swift `qr` mode from Phase 0) — done 2026-11-05
 - [x] B-2 QR-bill parser (SIX IG v2.4 cited) + pipeline (QR beats text rules for payment fields) — done 2026-11-05
-- B-3 UID check digit (official source) · B-4 retention table · B-5 deadlines (reminder path decision) · B-6 urgent letters
+- [x] B-3 UID check digit (eCH-0097 v5.2.0 §2.4) + metadata `dt3agentuid` — done 2026-11-05
+- B-4 retention table · B-5 deadlines (reminder path decision) · B-6 urgent letters
 
 ## Phase 5 — App
 - U-1 menu bar + status · U-2 onboarding · U-3 settings · U-4 review window · U-5 installer · U-6 de-CH/fr-CH/it-CH/en + accessibility pass

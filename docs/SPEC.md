@@ -132,7 +132,7 @@ rpc ── app ── installer
 | IBAN / QR-IBAN | normalized, valid (mod 97), is_qr (IID 30000–31999) | ISO 13616; SIX IG |
 | QR reference | valid (mod 10 recursive) | SIX IG |
 | SCOR | valid (ISO 11649) | ISO 11649 |
-| UID / MWST | `CHE-123.456.789`, valid check digit | algorithm from official source, cited in code (`UNVERIFIED` until T-B3) |
+| UID / MWST | `CHE-123.456.789` (+ MWST/TVA/IVA), valid check digit | eCH-0097 v5.2.0 §2.4: weights 5,4,3,2,7,6,5,4, mod 11, "10" never issued (verified T-B3) |
 | Keywords | doc-type hints, urgent hints (Betreibung, Zahlungsbefehl, Gericht, Steueramt…) | user-editable lists |
 | Deadline | stated date + phrase | "innert 30 Tagen", "dans les dix jours"… → **hint only** |
 
