@@ -33,6 +33,11 @@ struct L10n {
         case kindTags, kindName, kindComment, kindLocation, kindMetadata, kindDuplicate, kindCase, kindDeadline
         case kindUrgent, kindError, editHintTags, editHintDate, editHintGroup, editInvalid
         case errGroupMissing, errReminderExists, errRecordMissing, errBadValue
+        // installer (U-5)
+        case instMenu, instTitle, instText, instInstall, instUninstall, instDownloadModel, instRemoveModel, instRemoveData
+        case instItemEngine, instItemLlama, instItemScript, instItemModel, instItemData
+        case instNoPython, instNoLlama, instLlamaStarted, instDone, instFailed, instQuitDT3, instScript
+        case instDownloading, instChecksum, instModel, instRemoved, instUninstalled
     }
 
     static let table: [String: [Key: String]] = [
@@ -172,6 +177,31 @@ struct L10n {
             .errReminderExists: "Das Dokument hat schon eine Erinnerung. Es wurde nichts geändert.",
             .errRecordMissing: "Das Dokument gibt es in DT3 nicht mehr.",
             .errBadValue: "Dieser Wert ist nicht gültig.",
+            .instMenu: "Installation …",
+            .instTitle: "DT3 Agent installieren",
+            .instText: "Folgendes wird eingerichtet (grün = schon vorhanden). In deinen DT3-Datenbanken wird nichts verändert. «Entfernen» nimmt alles wieder weg.",
+            .instInstall: "Installieren",
+            .instUninstall: "Entfernen",
+            .instDownloadModel: "KI-Modell laden: Qwen3 1.7B (Apache-2.0), über 1 GB, von huggingface.co. Wird geprüft (SHA-256).",
+            .instRemoveModel: "Beim Entfernen auch das KI-Modell löschen",
+            .instRemoveData: "Beim Entfernen auch Einstellungen, Prüfliste und Protokolle löschen",
+            .instItemEngine: "Engine (startet bei der Anmeldung)",
+            .instItemLlama: "KI-Server llama.cpp (nur auf diesem Mac)",
+            .instItemScript: "Skript für die Smart Rule in DT3",
+            .instItemModel: "KI-Modell",
+            .instItemData: "Ordner für Einstellungen und Daten",
+            .instNoPython: "Diesem Paket fehlt die Python-Laufzeit. Bitte das vollständige Paket verwenden.",
+            .instNoLlama: "Kein KI-Server in diesem Paket: Trage in der Einrichtung die Adresse deines KI-Servers ein (z. B. Ollama).",
+            .instLlamaStarted: "KI-Server gestartet.",
+            .instDone: "Fertig. Die Engine läuft. Bei der ersten Aktion fragt macOS, ob «DT3 Agent Engine» DEVONthink 3 steuern darf: «OK».",
+            .instFailed: "Fehler",
+            .instQuitDT3: "DT3 ist geöffnet: Das Smart-Rule-Skript wurde nicht kopiert. DT3 beenden und nochmals «Installieren».",
+            .instScript: "Smart-Rule-Skript installiert.",
+            .instDownloading: "KI-Modell wird geladen …",
+            .instChecksum: "Prüfsumme stimmt nicht: Download verworfen.",
+            .instModel: "KI-Modell geladen und geprüft.",
+            .instRemoved: "Entfernt:",
+            .instUninstalled: "DT3 Agent ist entfernt. Die App selbst kannst du in den Papierkorb ziehen.",
         ],
         "en": [
             .appName: "DT3 Agent",
@@ -309,6 +339,31 @@ struct L10n {
             .errReminderExists: "The document already has a reminder. Nothing was changed.",
             .errRecordMissing: "The document no longer exists in DT3.",
             .errBadValue: "This value is not valid.",
+            .instMenu: "Installation …",
+            .instTitle: "Install DT3 Agent",
+            .instText: "The following is set up (green = already there). Nothing in your DT3 databases is changed. “Remove” takes everything away again.",
+            .instInstall: "Install",
+            .instUninstall: "Remove",
+            .instDownloadModel: "Download the AI model: Qwen3 1.7B (Apache-2.0), over 1 GB, from huggingface.co. It is checked (SHA-256).",
+            .instRemoveModel: "When removing, also delete the AI model",
+            .instRemoveData: "When removing, also delete settings, review queue and logs",
+            .instItemEngine: "Engine (starts at login)",
+            .instItemLlama: "AI server llama.cpp (this Mac only)",
+            .instItemScript: "Script for the Smart Rule in DT3",
+            .instItemModel: "AI model",
+            .instItemData: "Folder for settings and data",
+            .instNoPython: "This package has no Python runtime. Please use the complete package.",
+            .instNoLlama: "No AI server in this package: enter the address of your AI server in Setup (e.g. Ollama).",
+            .instLlamaStarted: "AI server started.",
+            .instDone: "Done. The engine is running. At the first action macOS asks whether “DT3 Agent Engine” may control DEVONthink 3: “OK”.",
+            .instFailed: "Error",
+            .instQuitDT3: "DT3 is open: the Smart Rule script was not copied. Quit DT3 and click “Install” again.",
+            .instScript: "Smart Rule script installed.",
+            .instDownloading: "Downloading the AI model …",
+            .instChecksum: "Checksum does not match: download discarded.",
+            .instModel: "AI model downloaded and checked.",
+            .instRemoved: "Removed:",
+            .instUninstalled: "DT3 Agent is removed. You can drag the app itself to the Trash.",
         ],
     ]
 

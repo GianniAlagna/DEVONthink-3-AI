@@ -26,7 +26,7 @@ lipo -info "$APP/Contents/MacOS/DT3AgentEngine"
 codesign -d -r- "$APP" 2>&1 | tail -1
 
 # Menu-bar app "DT3 Agent.app" (U-1): app logic tests first (host architecture), then the universal app
-CORE="app/Agent/Core.swift app/Agent/L10n.swift app/Agent/RPC.swift app/Agent/Setup.swift app/Agent/Settings.swift app/Agent/Review.swift"
+CORE="app/Agent/Core.swift app/Agent/L10n.swift app/Agent/RPC.swift app/Agent/Setup.swift app/Agent/Settings.swift app/Agent/Review.swift app/Agent/Install.swift"
 # shellcheck disable=SC2086
 xcrun swiftc -O -target "$(uname -m)-apple-macos11.0" $CORE app/Tests/main.swift -o "$OUT/dt3agent-app-tests"
 "$OUT/dt3agent-app-tests"
@@ -35,10 +35,27 @@ rm -rf "$UI"
 mkdir -p "$UI/Contents/MacOS"
 for arch in x86_64 arm64; do
     # shellcheck disable=SC2086
-    xcrun swiftc -O -target "$arch-apple-macos11.0" $CORE app/Agent/Onboarding.swift app/Agent/SettingsWindow.swift app/Agent/ReviewWindow.swift app/Agent/main.swift -o "$OUT/DT3Agent-$arch"
+    xcrun swiftc -O -target "$arch-apple-macos11.0" $CORE app/Agent/Onboarding.swift app/Agent/SettingsWindow.swift app/Agent/ReviewWindow.swift app/Agent/InstallerWindow.swift app/Agent/main.swift -o "$OUT/DT3Agent-$arch"
 done
 lipo -create "$OUT/DT3Agent-x86_64" "$OUT/DT3Agent-arm64" -output "$UI/Contents/MacOS/DT3Agent"
 cp app/Agent/Info.plist "$UI/Contents/Info.plist"
+# U-5: everything the installer needs, inside the app. Python and llama-server are added for a release (Phase 8)
+# or for a floor test: DT3A_BUNDLE_PYTHON=<python dir> DT3A_BUNDLE_LLAMA=<llama-server binary>.
+mkdir -p "$UI/Contents/Helpers" "$UI/Contents/Resources/engine"
+ditto "$APP" "$UI/Contents/Helpers/DT3 Agent Engine.app"
+rsync -a --exclude __pycache__ --exclude tests engine/dt3agent "$UI/Contents/Resources/engine/"
+# osacompile needs the DT3 dictionary, so the Smart Rule script is only compiled where DT3 is installed
+# (the floor/release Mac). CI has no DT3; the installer then skips the script step.
+if [ -d "/Applications/DEVONthink 3.app" ]; then
+    osacompile -o "$UI/Contents/Resources/DT3 Agent Enqueue.scpt" dt3-scripts/SmartRule-Enqueue.applescript
+else
+    echo "note: DEVONthink 3 not installed here; Smart Rule script not bundled"
+fi
+if [ -n "${DT3A_BUNDLE_PYTHON:-}" ]; then ditto "$DT3A_BUNDLE_PYTHON" "$UI/Contents/Resources/python"; fi
+if [ -n "${DT3A_BUNDLE_LLAMA:-}" ]; then
+    mkdir -p "$UI/Contents/Resources/llama"
+    cp "$DT3A_BUNDLE_LLAMA" "$UI/Contents/Resources/llama/llama-server"
+fi
 plutil -lint "$UI/Contents/Info.plist"
 codesign --force --sign "$IDENTITY" --timestamp=none "$UI"
 lipo -info "$UI/Contents/MacOS/DT3Agent"
