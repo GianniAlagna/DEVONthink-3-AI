@@ -83,7 +83,7 @@ Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC
 - [ ] K-5 entities (opt-in, proposals → Markdown notes in an existing group)
 - [ ] J-1 bridge verb `list` (read-only, scopes) + floor check — built, floor check open
 - [ ] J-2 scheduler (jobs_runs, due times, skip when paused / battery / memory pressure) — built
-- [ ] J-3 nightly incremental (D1)
+- [ ] J-3 nightly incremental (D1) — built
 - [ ] J-4 weekly digest + hygiene report (D2, D3) as Markdown proposals
 - [ ] J-5 tag hygiene (D4) proposals
 - [ ] J-6 RSS/mail summaries (D5, opt-in)

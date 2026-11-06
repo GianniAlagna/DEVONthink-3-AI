@@ -11,7 +11,7 @@ import time
 from datetime import UTC, date, datetime
 from pathlib import Path
 
-from dt3agent import __version__, config, duplicates, jobs, naming, pipeline, review, store
+from dt3agent import __version__, config, duplicates, jobs, naming, nightly, pipeline, review, store
 from dt3agent import queue as queuemod
 from dt3agent.adapter import DT3Adapter
 from dt3agent.ai import AIError, LlamaClient
@@ -64,7 +64,8 @@ class Service:
         self.index = None
         self.power = Power()
         self.scheduler = jobs.Scheduler(self.con)
-        self.job_runners = {}  # name -> callable returning "ok" or a short error code (J-3, J-4 add theirs)
+        # name -> callable returning "ok" or a short error code; J-4 adds digest and hygiene
+        self.job_runners = {"nightly": lambda: nightly.run(self.adapter, self.queue, self.cfg.get("scopes", []))}
         self.local_clock = lambda: datetime.now().astimezone()
         self._use_config(self.cfg)
 
