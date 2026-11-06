@@ -50,6 +50,43 @@ func formatCases(_ cases: [CaseFolder]) -> String {
     cases.map { "\($0.name) | \($0.group) | \($0.words.joined(separator: ", "))" }.joined(separator: "\n")
 }
 
+/// Scope line: "Database | /Group/" (SPEC §4.21; nothing outside a scope is listed or processed at night).
+struct Scope: Equatable {
+    var database: String
+    var group: String
+    var json: [String: Any] { ["database": database, "group": group] }
+}
+
+func parseScopes(_ text: String) -> [Scope]? {
+    var out: [Scope] = []
+    for line in lines(text) {
+        let parts = line.split(separator: "|", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+        guard parts.count == 2, !parts[0].isEmpty, parts[1].hasPrefix("/") else { return nil }
+        out.append(Scope(database: parts[0], group: parts[1]))
+    }
+    return out
+}
+
+func formatScopes(_ scopes: [Scope]) -> String {
+    scopes.map { "\($0.database) | \($0.group)" }.joined(separator: "\n")
+}
+
+/// Job days as the engine stores them (SPEC §4.21), and their names in the app language.
+let jobDays = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+let reportLanguages = ["de", "fr", "it", "en"]
+
+func weekdayName(_ code: String, language: String) -> String {
+    let f = DateFormatter()
+    f.locale = Locale(identifier: language)
+    guard let i = jobDays.firstIndex(of: code), let names = f.weekdaySymbols, names.count == 7 else { return code }
+    return names[(i + 1) % 7]  // weekdaySymbols starts on Sunday
+}
+
+func validJobTime(_ s: String) -> Bool {
+    s.range(of: #"^([01]\d|2[0-3]):[0-5]\d$"#, options: .regularExpression) != nil
+}
+
 /// The values the settings window edits. Unknown or locked settings (vision, schema_version, …) are not touched.
 struct SettingsValues: Equatable {
     var dryRun = true
@@ -69,6 +106,25 @@ struct SettingsValues: Equatable {
     var cases = ""               // "Name | /Group/ | words" per line
     var applyThreshold = 0.85
     var logContent = false
+    // Phase 7 (SPEC §4.21/4.22): scopes, scheduled jobs, power mode
+    var scopes = ""              // "Database | /Group/" per line
+    var nightlyOn = true
+    var nightlyTime = "02:30"
+    var digestOn = false
+    var digestDay = "mon"
+    var digestTime = "07:30"
+    var digestGroup = ""
+    var digestLang = "de"
+    var hygieneOn = false
+    var hygieneDay = "sun"
+    var hygieneTime = "03:30"
+    var hygieneGroup = ""
+    var hygieneLang = "de"
+    var hygieneInbox = "/Inbox/"
+    var hygieneDays = 14
+    var hygieneTags = true
+    var pauseOnBattery = true
+    var pauseOnMemory = true
 
     init() {}
 
@@ -97,6 +153,29 @@ struct SettingsValues: Equatable {
         cases = formatCases(caseList)
         applyThreshold = (section("thresholds")["apply"] as? NSNumber)?.doubleValue ?? 0.85
         logContent = section("logs")["content"] as? Bool ?? false
+        scopes = formatScopes((c["scopes"] as? [[String: Any]] ?? []).compactMap { d in
+            guard let db = d["database"] as? String, let g = d["group"] as? String else { return nil }
+            return Scope(database: db, group: g)
+        })
+        let jobs = section("jobs")
+        func job(_ n: String) -> [String: Any] { jobs[n] as? [String: Any] ?? [:] }
+        nightlyOn = job("nightly")["enabled"] as? Bool ?? true
+        nightlyTime = job("nightly")["time"] as? String ?? "02:30"
+        digestOn = job("digest")["enabled"] as? Bool ?? false
+        digestDay = job("digest")["day"] as? String ?? "mon"
+        digestTime = job("digest")["time"] as? String ?? "07:30"
+        digestGroup = job("digest")["group"] as? String ?? ""
+        digestLang = job("digest")["lang"] as? String ?? "de"
+        hygieneOn = job("hygiene")["enabled"] as? Bool ?? false
+        hygieneDay = job("hygiene")["day"] as? String ?? "sun"
+        hygieneTime = job("hygiene")["time"] as? String ?? "03:30"
+        hygieneGroup = job("hygiene")["group"] as? String ?? ""
+        hygieneLang = job("hygiene")["lang"] as? String ?? "de"
+        hygieneInbox = job("hygiene")["inbox"] as? String ?? "/Inbox/"
+        hygieneDays = job("hygiene")["days"] as? Int ?? 14
+        hygieneTags = job("hygiene")["tags"] as? Bool ?? true
+        pauseOnBattery = section("power")["pause_on_battery"] as? Bool ?? true
+        pauseOnMemory = section("power")["pause_on_memory_pressure"] as? Bool ?? true
     }
 
     /// Which field has bad input, by key; empty when all can be sent to the engine.
@@ -107,6 +186,11 @@ struct SettingsValues: Equatable {
         if parseMap(filingGroups) == nil { p.append(.setFilingGroups) }
         if parseCases(cases) == nil { p.append(.setCases) }
         if !(0.5...1.0).contains(nearThreshold) || !(0.5...1.0).contains(applyThreshold) { p.append(.setThresholds) }
+        if parseScopes(scopes) == nil { p.append(.setScopes) }
+        if ![nightlyTime, digestTime, hygieneTime].allSatisfy(validJobTime) { p.append(.setJobTimeBad) }
+        if (digestOn && !digestGroup.hasPrefix("/")) || (hygieneOn && !hygieneGroup.hasPrefix("/"))
+            || !hygieneInbox.hasPrefix("/") { p.append(.setReportGroup) }
+        if !(1...365).contains(hygieneDays) { p.append(.setInboxDays) }
         return p
     }
 
@@ -129,6 +213,16 @@ struct SettingsValues: Equatable {
             "cases": (parseCases(cases) ?? []).map { $0.json },
             "thresholds": ["apply": applyThreshold],
             "logs": ["content": logContent],
+            "scopes": (parseScopes(scopes) ?? []).map { $0.json },
+            "jobs": [
+                "nightly": ["enabled": nightlyOn, "time": nightlyTime] as [String: Any],
+                "digest": ["enabled": digestOn, "day": digestDay, "time": digestTime, "group": digestGroup,
+                           "lang": digestLang] as [String: Any],
+                "hygiene": ["enabled": hygieneOn, "day": hygieneDay, "time": hygieneTime, "group": hygieneGroup,
+                            "lang": hygieneLang, "inbox": hygieneInbox, "days": hygieneDays,
+                            "tags": hygieneTags] as [String: Any],
+            ] as [String: Any],
+            "power": ["pause_on_battery": pauseOnBattery, "pause_on_memory_pressure": pauseOnMemory],
         ]
         return out
     }

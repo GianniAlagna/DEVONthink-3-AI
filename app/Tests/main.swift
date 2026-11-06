@@ -133,6 +133,32 @@ check((ch["tags"] as? [String: Any])?["vocabulary"] as? [String] == ["Rechnung",
 check((ch["identity"] as? [String: Any])?["name"] as? String == "Erika Beispiel", "name sent")
 sv.name = ""
 check((sv.changes["identity"] as? [String: Any])?["name"] is NSNull, "empty name is sent as null")
+
+// Phase 7 schedule tab
+check(parseScopes("DT3Agent-T1 | /\n Archiv | /Rechnungen/ ") == [Scope(database: "DT3Agent-T1", group: "/"),
+                                                                Scope(database: "Archiv", group: "/Rechnungen/")],
+      "scope lines")
+check(parseScopes("only one part") == nil && parseScopes("DB | Inbox") == nil, "bad scope lines refused")
+check(validJobTime("02:30") && validJobTime("23:59") && !validJobTime("24:00") && !validJobTime("2:30"), "job times")
+check(weekdayName("mon", language: "de") == "Montag" && weekdayName("sun", language: "en") == "Sunday",
+      "weekday names in the app language")
+var jv = SettingsValues(config: ["scopes": [["database": "DB", "group": "/"]],
+                                 "jobs": ["nightly": ["enabled": true, "time": "03:15"],
+                                          "digest": ["enabled": true, "day": "tue", "time": "08:00",
+                                                     "group": "/_Berichte/", "lang": "fr"]],
+                                 "power": ["pause_on_battery": false]])
+check(jv.scopes == "DB | /" && jv.nightlyTime == "03:15" && jv.digestDay == "tue" && jv.digestLang == "fr"
+      && !jv.pauseOnBattery && jv.pauseOnMemory && jv.hygieneDays == 14, "schedule read from config")
+check(jv.problems.isEmpty, "valid schedule has no problems")
+let jobsOut = jv.changes["jobs"] as? [String: Any]
+check((jobsOut?["digest"] as? [String: Any])?["group"] as? String == "/_Berichte/"
+      && (jobsOut?["hygiene"] as? [String: Any])?["tags"] as? Bool == true, "jobs sent in full")
+check((jv.changes["scopes"] as? [[String: Any]])?.first?["database"] as? String == "DB", "scopes sent")
+jv.hygieneOn = true
+check(jv.problems.contains(.setReportGroup), "a report needs its group")
+jv.hygieneGroup = "/_Berichte/"
+jv.nightlyTime = "25:00"
+check(jv.problems == [.setJobTimeBad], "bad time refused")
 sv.filingGroups = "broken"
 sv.applyThreshold = 0.2
 check(sv.problems.contains(.setFilingGroups) && sv.problems.contains(.setThresholds), "problems are named")
