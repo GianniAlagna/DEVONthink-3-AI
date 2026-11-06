@@ -405,6 +405,13 @@ struct SettingsView: View {
             Slider(value: $m.v.applyThreshold, in: 0.5...1.0, step: 0.05)
                 .accessibilityLabel(t.format(.setApply, Int((m.v.applyThreshold * 100).rounded())))
             Text(t[.setApplyNote]).font(.callout).foregroundColor(.secondary)
+            Divider()
+            VStack(alignment: .leading, spacing: 8) {
+                Toggle(t[.setEntities], isOn: $m.v.entities)
+                LabeledField(label: t[.setEntityGroup], text: $m.v.entityGroup)
+                Text(t[.setEntitiesNote]).font(.callout).foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             Spacer()
         }.padding()
     }

@@ -134,6 +134,8 @@ struct SettingsValues: Equatable {
     var pauseOnBattery = true
     var pauseOnMemory = true
     var useKey = false           // E-7: the key itself is only in the Keychain
+    var entities = false         // K-5: entity notes, opt-in
+    var entityGroup = ""
 
     init() {}
 
@@ -144,6 +146,8 @@ struct SettingsValues: Equatable {
         aiURL = section("ai")["url"] as? String ?? ""
         context = section("ai")["context"] as? Int ?? 8192
         useKey = section("ai")["use_key"] as? Bool ?? false
+        entities = section("knowledge")["entities"] as? Bool ?? false
+        entityGroup = section("knowledge")["entity_group"] as? String ?? ""
         template = section("naming")["template"] as? String ?? defaultTemplate
         vocabulary = (section("tags")["vocabulary"] as? [String] ?? []).joined(separator: "\n")
         filingEnabled = section("filing")["enabled"] as? Bool ?? false
@@ -201,6 +205,7 @@ struct SettingsValues: Equatable {
         if (digestOn && !digestGroup.hasPrefix("/")) || (hygieneOn && !hygieneGroup.hasPrefix("/"))
             || !hygieneInbox.hasPrefix("/") { p.append(.setReportGroup) }
         if !(1...365).contains(hygieneDays) { p.append(.setInboxDays) }
+        if entities && !entityGroup.hasPrefix("/") { p.append(.setEntityGroup) }
         return p
     }
 
@@ -234,6 +239,7 @@ struct SettingsValues: Equatable {
                             "tags": hygieneTags] as [String: Any],
             ] as [String: Any],
             "power": ["pause_on_battery": pauseOnBattery, "pause_on_memory_pressure": pauseOnMemory],
+            "knowledge": ["entities": entities, "entity_group": entityGroup] as [String: Any],
         ]
         return out
     }
