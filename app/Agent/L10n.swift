@@ -45,7 +45,7 @@ struct L10n {
         case a11yOK, a11yWarning
         // knowledge window (K-7)
         case askMenu, askTitle, askQuestion, askButton, askWorking, askSources, askNotFound
-        case summaryTitle, summaryLanguage, summaryButton, summaryPartial, errIndex, errQuestion, errEmbed, errWriteRefused
+        case summaryTitle, summaryLanguage, summaryButton, summaryPartial, errIndex, errQuestion, errEmbed, errWriteRefused, askFiltered
     }
 
     static let table: [String: [Key: String]] = [
@@ -233,6 +233,7 @@ struct L10n {
             .instEmbedStarted: "KI-Index-Server gestartet.",
             .instEmbedSilent: "Der KI-Index-Server antwortet noch nicht. Protokoll: ~/Library/Logs/DT3 Agent/embed.log",
             .errWriteRefused: "Fragen kann nur lesen. Ändern, Taggen, Verschieben oder Löschen machst du selbst in DT3 oder über die Prüfliste.",
+            .askFiltered: "Ein Dokument enthielt Anweisungen an eine KI. Sie wurden entfernt und nicht befolgt.",
         ],
         "en": [
             .appName: "DT3 Agent",
@@ -418,6 +419,7 @@ struct L10n {
             .instEmbedStarted: "AI index server started.",
             .instEmbedSilent: "The AI index server does not answer yet. Log: ~/Library/Logs/DT3 Agent/embed.log",
             .errWriteRefused: "Ask can only read. You change, tag, move or delete documents yourself in DT3 or through the Review Queue.",
+            .askFiltered: "A document contained instructions to an AI. They were removed and not followed.",
         ],
         "fr": [
             .appName: "DT3 Agent",
@@ -603,6 +605,7 @@ struct L10n {
             .instEmbedStarted: "Serveur d’index IA démarré.",
             .instEmbedSilent: "Le serveur d’index IA ne répond pas encore. Journal : ~/Library/Logs/DT3 Agent/embed.log",
             .errWriteRefused: "« Demander » ne fait que lire. Modifier, étiqueter, déplacer ou supprimer : faites-le vous-même dans DT3 ou via la liste de contrôle.",
+            .askFiltered: "Un document contenait des instructions destinées à une IA. Elles ont été retirées et ignorées.",
         ],
         "it": [
             .appName: "DT3 Agent",
@@ -788,6 +791,7 @@ struct L10n {
             .instEmbedStarted: "Server indice IA avviato.",
             .instEmbedSilent: "Il server indice IA non risponde ancora. Log: ~/Library/Logs/DT3 Agent/embed.log",
             .errWriteRefused: "«Chiedi» può solo leggere. Modificare, etichettare, spostare o cancellare lo fa Lei in DT3 o tramite la lista di controllo.",
+            .askFiltered: "Un documento conteneva istruzioni per un’IA. Sono state rimosse e non seguite.",
         ],
     ]
 

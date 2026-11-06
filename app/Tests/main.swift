@@ -222,6 +222,7 @@ check(cleanQuestion("   ") == nil && cleanQuestion(String(repeating: "x", count:
 check(summaryLanguages == ["de", "fr", "it", "en"], "four summary languages")
 check(errorText("index_unavailable", de) == de[.errIndex], "index error text")
 check(errorText("write_refused", de) == de[.errWriteRefused], "a change request gets its own text")
+check(AskAnswer(json: ["answer": "x", "filtered": 2])!.filtered == 2 && ans.filtered == 0, "filtered count read")
 
 if failures > 0 { print("\(failures) failed"); exit(1) }
 print("app tests ok")

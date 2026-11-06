@@ -229,7 +229,7 @@ class Service:
                 self.index.remove(uuid)
                 continue
             sources.append({"uuid": uuid, "name": name, "link": "x-devonthink-item://" + uuid})
-        return {"answer": answer.text, "sources": sources}
+        return {"answer": answer.text, "sources": sources, "filtered": answer.filtered}
 
     def _summary(self, uuid, lang) -> dict:
         """K-6: summary of one record in de/fr/it/en. Read-only."""
