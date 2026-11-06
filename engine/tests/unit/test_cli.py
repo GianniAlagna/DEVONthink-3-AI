@@ -26,3 +26,10 @@ def test_process_without_record_uses_the_dt3_selection(monkeypatch):
     monkeypatch.setattr(cli.rpc, "call", lambda path, m, p: calls.append((m, p)) or {})
     assert cli.main(["process"]) == 0 and cli.main(["review"]) == 0
     assert calls == [("process_selected", {}), ("review", {})]
+
+
+def test_ask_for_calibration(monkeypatch):
+    calls = []
+    monkeypatch.setattr(cli.rpc, "call", lambda path, m, p, timeout=120.0: calls.append((m, p, timeout)) or {})
+    assert cli.main(["ask", "Was", "steht", "im", "Mietvertrag?"]) == 0
+    assert calls == [("ask", {"question": "Was steht im Mietvertrag?"}, 600.0)]  # answers take a minute on the floor

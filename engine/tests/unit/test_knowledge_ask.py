@@ -34,7 +34,7 @@ def server_with(reply):
 def run(idx, reply, question="Wie hoch ist die Rechnung von Muster Treuhand?"):
     s = server_with(reply)
     try:
-        return ask(question, idx, LlamaClient(s.url, context=8192)), s.requests
+        return ask(question, idx, LlamaClient(s.url, context=8192), min_score=0.0), s.requests
     finally:
         s.close()
 
@@ -78,7 +78,7 @@ def test_off_schema_output_is_an_error_never_a_partial_answer(idx, reply):
 def test_ask_has_no_way_to_write():
     # ask() gets no bridge and no tools: nothing the model writes can act on DT3
     import inspect
-    assert set(inspect.signature(ask).parameters) == {"question", "index", "llm", "databases", "k"}
+    assert set(inspect.signature(ask).parameters) == {"question", "index", "llm", "databases", "k", "min_score"}
 
 
 @pytest.mark.parametrize("question", ["", "   ", "x" * 1001])
@@ -123,3 +123,18 @@ def test_orders_in_documents_never_reach_the_model(idx):
     user = reqs[0]["body"]["messages"][1]["content"]
     assert "HACKED" not in user and "IGNORE ALL PREVIOUS" not in user and "[99]" not in user
     assert answer.filtered >= 1
+
+
+# Q-1 (Phase 6 carry-over): "Was steht in meinem Mietvertrag?" got one-word or wrong answers from the model
+def test_weak_matches_are_not_found_without_a_model_call(idx):
+    answer = ask("Mietvertrag Wohnung Kündigungsfrist", idx, None, min_score=0.99)  # llm None: never called
+    assert answer.text == "" and answer.sources == [] and answer.not_found
+
+
+def test_good_matches_still_reach_the_model(idx):
+    s = server_with({"answer": "CHF 1957.04", "cited": [1]})
+    try:
+        answer = ask("Rechnung Muster Treuhand", idx, LlamaClient(s.url, context=8192), min_score=0.1)
+    finally:
+        s.close()
+    assert answer.text == "CHF 1957.04" and not answer.not_found and answer.best > 0.1

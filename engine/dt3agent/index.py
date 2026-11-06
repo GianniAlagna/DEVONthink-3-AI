@@ -35,7 +35,8 @@ class Hit:
     uuid: str
     n: int
     text: str
-    score: float
+    score: float         # fused rank score (for ordering)
+    cosine: float = 0.0  # vector similarity to the question, 0..1 (for "not found", Q-1)
 
 
 def chunks(text: str, size: int = CHUNK, overlap: int = OVERLAP) -> list[str]:
@@ -136,11 +137,13 @@ class Index:
             scored.append((sum(map(operator.mul, qvec, vec)), (uuid, n)))
             texts[(uuid, n)] = text
         scored.sort(reverse=True)
+        cos = {key: c for c, key in scored}
         fused = {key: 1 / (RRF_K + rank) for rank, (_, key) in enumerate(scored)}
         for rank, key in enumerate(self._keyword(query, texts)):
             fused[key] = fused.get(key, 0) + 1 / (RRF_K + rank)
         best = sorted(fused.items(), key=lambda kv: kv[1], reverse=True)[:k]
-        return [Hit(uuid, n, texts[(uuid, n)], round(score, 6)) for (uuid, n), score in best]
+        return [Hit(uuid, n, texts[(uuid, n)], round(score, 6), round(max(0.0, cos[(uuid, n)]), 4))
+                for (uuid, n), score in best]
 
     def _keyword(self, query: str, allowed: dict) -> list[tuple[str, int]]:
         if not self.fts:

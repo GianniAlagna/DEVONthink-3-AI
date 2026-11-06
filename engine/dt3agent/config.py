@@ -43,7 +43,7 @@ DEFAULTS = {
     # A10 (brief §5.2): near-duplicate threshold and the group for marked duplicates (user deletes manually)
     "duplicates": {"near_threshold": 0.8, "group": "/_Duplicates/"},
     # Phase 6 (SPEC §4.20): related records are proposed when their similarity reaches related_min (UNVERIFIED)
-    "knowledge": {"related": True, "related_min": 0.75},
+    "knowledge": {"related": True, "related_min": 0.75, "min_score": 0.35},
     # Case folders: [{"name": str, "group": "/Path/", "words": [str, ...]}] -> matches become review items
     "cases": [],
     # brief B4: user-editable retention table; a hint in metadata only, never deletes (UI: not legal advice).
@@ -124,9 +124,11 @@ def validate(cfg: dict) -> dict:
         raise ConfigError("urgent: group is an absolute path; hints are {words, text}")
     know = cfg.get("knowledge", {})
     rmin = know.get("related_min", 0.75)
+    smin = know.get("min_score", 0.35)
     if not (isinstance(know.get("related", True), bool) and isinstance(rmin, (int, float))
-            and not isinstance(rmin, bool) and 0.5 <= rmin <= 0.99):
-        raise ConfigError("knowledge: related is true/false, related_min 0.5-0.99")
+            and not isinstance(rmin, bool) and 0.5 <= rmin <= 0.99
+            and isinstance(smin, (int, float)) and not isinstance(smin, bool) and 0.0 <= smin <= 0.9):
+        raise ConfigError("knowledge: related is true/false, related_min 0.5-0.99, min_score 0-0.9")
     ident = cfg.get("identity", {}).get("name")
     if not (ident is None or (isinstance(ident, str) and len(ident) <= 200 and ident.isprintable())):
         raise ConfigError("identity.name: text up to 200 characters")

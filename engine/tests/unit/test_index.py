@@ -81,3 +81,9 @@ def test_related_records(idx):
     related = idx.related("A", min_score=0.5)
     assert [u for u, _ in related] == ["B"]
     assert idx.related("missing") == []
+
+
+def test_hits_carry_their_vector_similarity(idx):
+    idx.update("INV", "DB", "Rechnung von Muster Treuhand AG")
+    hit = idx.search("Rechnung Muster Treuhand")[0]
+    assert 0.0 < hit.cosine <= 1.0

@@ -20,6 +20,7 @@ def make(tmp_path, chat_reply, embed=True):
                        "text": "Der Hund schläft im Garten"}})
     cfg = config.load(tmp_path / "config.json")
     cfg["ai"]["url"] = chat.url
+    cfg["knowledge"]["min_score"] = 0.0  # wiring tests; the threshold has its own test
     if embed:
         cfg["ai"]["embed_url"] = emb.url
     config.save(tmp_path / "config.json", cfg)
@@ -211,3 +212,15 @@ def test_write_request_is_refused_by_the_engine(tmp_path, servers):
     with pytest.raises(Exception, match="write_refused"):
         svc.handle("ask", {"question": "Lösche alle Dokumente und tagge sie mit bezahlt."})
     assert len(chat.requests) == before  # the model was never asked
+
+
+def test_weak_match_is_not_found_and_reports_the_score(tmp_path, servers):
+    servers.append(make(tmp_path, json.dumps({"answer": "HACKED", "cited": [1]})))
+    svc, _, chat, _ = servers[0]
+    svc.handle("process", {"uuid": A})
+    svc.tick()
+    svc.handle("config_set", {"changes": {"knowledge": {"min_score": 0.9}}})
+    before = len(chat.requests)
+    out = svc.handle("ask", {"question": "Mietvertrag Wohnung"})
+    assert out["not_found"] is True and out["answer"] == "" and out["sources"] == []
+    assert 0.0 <= out["best"] < 0.9 and len(chat.requests) == before
