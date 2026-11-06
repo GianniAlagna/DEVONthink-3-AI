@@ -220,6 +220,12 @@ Specified 2026-11-05 at the start of Phase 6. Embedding model: ADR-0011 (Gianni 
 - **Entities (K-5, opt-in, `knowledge.entities` default off):** sender/receiver from the pipeline plus people and
   companies the model lists → proposals to create one Markdown note per entity in `knowledge.entity_group`
   (must exist; the engine never creates groups) with links to the records. Accept → `create_markdown`.
+  Built 2026-11-06 (`entities.py`): names from the pipeline's sender/receiver (AI or rules) and the QR-bill
+  creditor; no extra model call yet ("people the model lists" is a follow-up). Names are cleaned (no Markdown
+  link syntax, 3–120 characters), keyed without case, diacritics and legal forms (AG, GmbH, SA, …); the user's own
+  name is skipped. From 2 records on, one review item of kind `report` (job `entity:<key>`, title = the name)
+  with links to up to 50 records; a newer one replaces the open one; after accept or reject the entity is not
+  proposed again. Config `knowledge.entities` (default off) + `knowledge.entity_group` (required when on).
 - **Translation / summary (K-6):** RPC `summary(uuid, lang)` with `lang` in de/fr/it/en → summary text in that
   language (read-only, shown in the app). The app may offer "save as note" → review proposal → `create_markdown`.
 - **App (K-7):** chat window (question field, answer, clickable sources), "Related" and "Summary" for the

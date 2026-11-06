@@ -46,7 +46,8 @@ DEFAULTS = {
     # A10 (brief §5.2): near-duplicate threshold and the group for marked duplicates (user deletes manually)
     "duplicates": {"near_threshold": 0.8, "group": "/_Duplicates/"},
     # Phase 6 (SPEC §4.20): related records are proposed when their similarity reaches related_min (UNVERIFIED)
-    "knowledge": {"related": True, "related_min": 0.75, "min_score": 0.35},
+    # K-5: entity notes are opt-in and need an existing group (SPEC §4.20)
+    "knowledge": {"related": True, "related_min": 0.75, "min_score": 0.35, "entities": False, "entity_group": ""},
     # Case folders: [{"name": str, "group": "/Path/", "words": [str, ...]}] -> matches become review items
     "cases": [],
     # brief B4: user-editable retention table; a hint in metadata only, never deletes (UI: not legal advice).
@@ -134,6 +135,10 @@ def validate(cfg: dict) -> dict:
                     and isinstance(h["text"], str) and 0 < len(h["text"]) <= 200 for h in urgent.get("hints", []))):
         raise ConfigError("urgent: group is an absolute path; hints are {words, text}")
     know = cfg.get("knowledge", {})
+    egroup = know.get("entity_group", "")
+    if not (isinstance(know.get("entities", False), bool) and isinstance(egroup, str) and len(egroup) <= 500
+            and ".." not in egroup.split("/") and (egroup.startswith("/") or not know.get("entities", False))):
+        raise ConfigError("knowledge: entities is true/false and needs entity_group like /Group/ when on")
     rmin = know.get("related_min", 0.75)
     smin = know.get("min_score", 0.35)
     if not (isinstance(know.get("related", True), bool) and isinstance(rmin, (int, float))
