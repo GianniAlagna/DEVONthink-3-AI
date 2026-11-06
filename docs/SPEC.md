@@ -286,6 +286,11 @@ Specified 2026-11-06 at the start of Phase 7.
   `tags_add: [kept]` (max 50 per run, no duplicate open item); accept adds the tag with undo, nothing is removed.
 - **RSS / mail summaries (D5):** for records of kind RSS/HTML/email in scope: a summary note proposal per day
   (uses K-6 `summarize`, sanitized input). Opt-in (`jobs.feeds`, default off).
+  Built 2026-11-06 (`feeds.py`): `jobs.feeds {enabled, time 06:30, group, lang}`; records whose DT3 `kind` contains
+  rss/feed/html/web/mail/eml/message (UNVERIFIED kind texts on DT3 3.9) changed since the last run (first run:
+  last 24 h; watermark per scope in `pull_state` under `feeds:<group>`), newest 10, each summarised (sanitised,
+  no tools); one `report` review item per run; accept writes the note. Results `ok`, `no_items`, `no_group`,
+  `no_ai`. App switch: follow-up.
 
 ### 4.22 `ops` (Phase 7, brief Block E)
 - **Health (E1):** `status` adds `embed_ok`, `queue_backlog` (oldest queued age in minutes), `last_job`; the app

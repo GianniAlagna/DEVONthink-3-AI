@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 MIGRATIONS = [
     """CREATE TABLE jobs_runs (name TEXT PRIMARY KEY, due TEXT NOT NULL, ran_at TEXT, result TEXT)""",
 ]
-ORDER = ("nightly", "hygiene", "digest")  # fixed order when several are due
+ORDER = ("nightly", "feeds", "hygiene", "digest")  # fixed order when several are due
 WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 
 

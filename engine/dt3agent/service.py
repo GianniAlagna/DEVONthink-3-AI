@@ -17,6 +17,7 @@ from dt3agent import (
     diagnostics,
     duplicates,
     entities,
+    feeds,
     jobs,
     keychain,
     naming,
@@ -82,7 +83,8 @@ class Service:
         self.scheduler = jobs.Scheduler(self.con)
         # name -> callable returning "ok" or a short error code
         self.job_runners = {"nightly": lambda: nightly.run(self.adapter, self.queue, self.cfg.get("scopes", [])),
-                            "digest": lambda: self._report("digest"), "hygiene": lambda: self._report("hygiene")}
+                            "digest": lambda: self._report("digest"), "hygiene": lambda: self._report("hygiene"),
+                            "feeds": self._feeds}
         self.local_clock = lambda: datetime.now().astimezone()
         self.diagnostics_dir = Path.home() / "Downloads"
         self._use_config(self.cfg)
@@ -492,6 +494,21 @@ class Service:
         except Exception as e:
             raise RPCError(str(e) if str(e) in ("group_not_found", "not_dt3") else "apply_failed") from e
         return {"applied": True}
+
+    def _feeds(self) -> str:
+        """J-6: one note proposal with summaries of the day's new feed and mail records (opt-in)."""
+        spec = self.cfg["jobs"]["feeds"]
+        if not spec.get("group"):
+            return "no_group"
+        if self.ai is None:
+            return "no_ai"
+        now = self.local_clock()
+        items = feeds.collect(self.adapter, self.queue, self.cfg.get("scopes", []), now)
+        if not items:
+            return "no_items"
+        title, text = feeds.build(self.adapter, self.ai, items, spec["lang"], now)
+        reports.propose(self.con, "feeds", title, text, spec["group"], now)
+        return "ok"
 
     def _report(self, job: str) -> str:
         spec = self.cfg["jobs"][job]
