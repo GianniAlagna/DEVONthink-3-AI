@@ -18,7 +18,9 @@ VERBS = {"info": set(), "selected": set(), "read": {"uuid"}, "read_text": {"uuid
          "duplicates": {"uuid"}, "replicate": {"uuid", "location"}, "duplicate": {"uuid", "location"},
          "create_markdown": {"location", "name", "text"},
          # B-5: import a calendar event (.ics) next to the record and set its DT3 reminder (no overwrite)
-         "add_event": {"uuid", "name", "ics", "date"}}
+         "add_event": {"uuid", "name", "ics", "date"},
+         # J-1: read-only listing of the records inside one scope group (SPEC §4.21)
+         "list": {"database", "group", "since"}}
 MAX_ICS = 8000
 ICS_NAME_RE = re.compile(r"[^/:\x00-\x1f]{1,116}\.ics")
 DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
@@ -27,6 +29,8 @@ MAX_NAME = 255
 MAX_COMMENT = 4000
 MAX_META = 1000
 META_KEY_RE = re.compile(r"[a-z][a-z0-9]{0,39}")
+SINCE_RE = re.compile(r"\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z)?")
+MAX_DB_NAME = 200
 
 
 class BridgeError(RuntimeError):
@@ -64,10 +68,19 @@ def validate(verb: str, args: dict) -> None:
             raise BridgeError("bad event")
         if not (isinstance(args["date"], str) and DATE_RE.fullmatch(args["date"])):
             raise BridgeError("bad date")
-    if "location" in args:
-        loc = args["location"]
+    if verb == "list":
+        db = args["database"]
+        if not (isinstance(db, str) and 0 < len(db) <= MAX_DB_NAME and db.isprintable()):
+            raise BridgeError("bad database name")
+        since = args["since"]
+        if not (isinstance(since, str) and (since == "" or SINCE_RE.fullmatch(since))):
+            raise BridgeError("bad since")
+    for key in ("location", "group"):
+        if key not in args:
+            continue
+        loc = args[key]
         if not (isinstance(loc, str) and loc.startswith("/") and len(loc) <= 500 and ".." not in loc.split("/")):
-            raise BridgeError("bad location")
+            raise BridgeError(f"bad {key}")
 
 
 class Bridge:

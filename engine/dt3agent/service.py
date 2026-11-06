@@ -7,6 +7,7 @@ import json
 import os
 import re
 import sqlite3
+import time
 from datetime import UTC, date, datetime
 from pathlib import Path
 
@@ -118,7 +119,8 @@ class Service:
                     "review": {"kind"} if "kind" in params else set(),
                     "undo": set(), "pause": set(), "resume": set(), "live": {"on"},
                     "config_get": set(), "config_set": {"changes"}, "naming_preview": {"template"},
-                    "dt3_info": set(), "ask": {"question"}, "summary": {"uuid", "lang"}, "selected": set()}
+                    "dt3_info": set(), "ask": {"question"}, "summary": {"uuid", "lang"}, "selected": set(),
+                    "list": {"since"} if "since" in params else set()}
         expected["decide"] = {"id", "decision"} | ({"value"} if "value" in params else set())
         if method not in expected:
             raise RPCError("unknown_method")  # there is no delete method
@@ -181,6 +183,19 @@ class Service:
             return self._ask(params["question"])
         if method == "summary":
             return self._summary(params["uuid"], params["lang"])
+        if method == "list":  # J-1 floor check: read-only listing of every enabled scope, with timing
+            out = []
+            for scope in self.cfg.get("scopes", []):
+                started = time.monotonic()
+                row = {"database": scope["database"], "group": scope["group"]}
+                try:
+                    recs = self.adapter.list_scope(scope["database"], scope["group"], params.get("since", ""))
+                    row.update(count=len(recs), newest=recs[0]["modified"] if recs else None)
+                except BridgeError as e:
+                    row["error"] = str(e)
+                row["seconds"] = round(time.monotonic() - started, 1)
+                out.append(row)
+            return {"scopes": out}
         if method == "selected":  # read-only: which records are selected in DT3 (for the summary button)
             try:
                 return {"uuids": self.adapter.selected()[:100]}

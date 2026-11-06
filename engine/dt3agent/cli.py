@@ -1,6 +1,6 @@
 """dt3agent command line (Phase 2 T9). Talks to the running engine over its private socket.
 
-  dt3agent status | process [<UUID or item link>] | review | undo | pause | resume | live on|off
+  dt3agent status | process [<UUID or item link>] | review | undo | pause | resume | live on|off | list [SINCE]
   process without a record takes the records selected in DEVONthink 3.
 """
 import argparse
@@ -30,6 +30,8 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("resume", help="continue processing")
     p = sub.add_parser("ask", help="ask the documents (read-only); shows sources and the best similarity")
     p.add_argument("question", nargs="+")
+    p = sub.add_parser("list", help="list the records of every enabled scope (read-only); count and seconds")
+    p.add_argument("since", nargs="?", help="only records changed after this date (YYYY-MM-DD)")
     p = sub.add_parser("live", help="on: write to DT3 · off: dry-run (plan only, the default)")
     p.add_argument("state", choices=["on", "off"])
     a = ap.parse_args(argv)
@@ -46,12 +48,14 @@ def main(argv: list[str] | None = None) -> int:
         method, params = "review", ({"kind": a.kind} if a.kind else {})
     elif a.cmd == "ask":
         method, params = "ask", {"question": " ".join(a.question)}
+    elif a.cmd == "list":
+        method, params = "list", ({"since": a.since} if a.since else {})
     elif a.cmd == "live":
         method, params = "live", {"on": a.state == "on"}
     else:
         method, params = a.cmd, {}
     try:
-        if method == "ask":
+        if method in ("ask", "list"):
             result = rpc.call(a.data / "engine.sock", method, params, timeout=600.0)
         else:
             result = rpc.call(a.data / "engine.sock", method, params)

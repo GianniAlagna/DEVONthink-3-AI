@@ -23,6 +23,16 @@ class FakeDT3:
             return {"version": self.version, "databases": ["DT3Agent-Test"]}
         if verb == "selected":
             return {"uuids": list(self.selected)}
+        if verb == "list":  # J-1: deep, newest first, at most 500; the fake database is "DT3Agent-Test"
+            if args["group"] not in self.groups:
+                raise BridgeError("group_not_found")
+            hits = [r for r in self.records.values()
+                    if r.get("database", "DT3Agent-Test") == args["database"]
+                    and r.get("location", "").startswith(args["group"])
+                    and r.get("modified", "") > args["since"]]
+            hits.sort(key=lambda r: r.get("modified", ""), reverse=True)
+            return {"records": [{"uuid": r["uuid"], "modified": r.get("modified", ""), "kind": r.get("kind", "")}
+                                for r in hits[:500]]}
         if verb == "create_markdown":
             if args["location"] not in self.groups:
                 raise BridgeError("group_not_found")
