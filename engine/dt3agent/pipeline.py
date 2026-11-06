@@ -8,7 +8,7 @@ import sqlite3
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
-from dt3agent import duplicates, qrbill
+from dt3agent import duplicates, entities, qrbill
 from dt3agent import fields as fieldsmod
 from dt3agent.ai import AIError
 from dt3agent.embed import EmbedError
@@ -159,8 +159,10 @@ class Pipeline:
             return Outcome("review", code=e.code)
         wrote = False
         if self.settings is not None:
-            proposals = plan(record, text, result.obj, self.settings, bill=self._qr_bill(uuid))
+            bill = self._qr_bill(uuid)
+            proposals = plan(record, text, result.obj, self.settings, bill=bill)
             wrote = self._handle_fields(uuid, proposals, batch_id)
+            self._entities(uuid, record, result.obj, bill)
         current = list(record.get("tags") or [])
         add = [t for t in clean_tags(result.obj["tags"], self.vocabulary) if t not in current]
         if not add and self.settings is not None:
@@ -224,6 +226,20 @@ class Pipeline:
             links = " ".join("x-devonthink-item://" + other for other, _ in found)
             self._review(uuid, "field", None, {"field": "metadata", "key": RELATED_KEY, "after": links,
                                                "confidence": found[0][1], "source": "index"}, batch_id, "review")
+
+    def _entities(self, uuid: str, record: dict, obj: dict, bill) -> None:
+        """K-5 (opt-in): who wrote or received this record; a note proposal once someone is in 2+ records."""
+        know = self.settings.get("knowledge", {})
+        if not know.get("entities") or not know.get("entity_group"):
+            return
+        names = [obj.get("sender"), obj.get("receiver")]
+        if bill:
+            names.append((bill.get("creditor") or {}).get("name"))
+        now = datetime.now(UTC)
+        identity = (self.settings.get("identity") or {}).get("name")
+        for key in entities.record(self.con, uuid, record.get("name") or "", names, identity, now):
+            if not entities.decided(self.con, key):
+                entities.propose(self.con, key, know["entity_group"], now)
 
     def _handle_fields(self, uuid: str, proposals: list, batch_id: str) -> bool:
         """Dry-run: every proposal becomes a planned review item. Live: apply what reaches the threshold,

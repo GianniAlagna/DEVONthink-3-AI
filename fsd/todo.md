@@ -80,7 +80,7 @@ Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC
 
 ## Phase 7 — Blocks D + E, SPEC §4.21/4.22
 - [ ] Q-1 answer quality: not-found threshold (no model call below knowledge.min_score)
-- [ ] K-5 entities (opt-in, proposals → Markdown notes in an existing group)
+- [ ] K-5 entities (opt-in, proposals → Markdown notes in an existing group) — engine built; app switch open
 - [ ] J-1 bridge verb `list` (read-only, scopes) + floor check — built, floor check open
 - [ ] J-2 scheduler (jobs_runs, due times, skip when paused / battery / memory pressure) — built
 - [ ] J-3 nightly incremental (D1) — built

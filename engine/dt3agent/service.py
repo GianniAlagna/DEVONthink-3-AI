@@ -16,6 +16,7 @@ from dt3agent import (
     config,
     diagnostics,
     duplicates,
+    entities,
     jobs,
     keychain,
     naming,
@@ -45,7 +46,8 @@ from dt3agent.vision import VisionClient
 STATE_MIGRATIONS = ["CREATE TABLE state (key TEXT PRIMARY KEY, value TEXT NOT NULL)"]
 # Order is part of the schema: append only.
 ENGINE_MIGRATIONS = (queuemod.MIGRATIONS + pipeline.MIGRATIONS + STATE_MIGRATIONS + review.MIGRATIONS
-                     + duplicates.MIGRATIONS + review.MIGRATIONS_2 + jobs.MIGRATIONS + review.MIGRATIONS_3)
+                     + duplicates.MIGRATIONS + review.MIGRATIONS_2 + jobs.MIGRATIONS + review.MIGRATIONS_3
+                     + entities.MIGRATIONS)
 # Settings the app may not change over rpc: the vision helper is a program the engine runs (set by the installer).
 RPC_LOCKED = {"schema_version", "vision"}
 DEFAULT_DATA = Path.home() / "Library/Application Support/DT3 Agent"
