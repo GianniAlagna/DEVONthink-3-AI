@@ -78,5 +78,21 @@ Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC
 - [ ] K-5 entities (opt-in) → Phase 7
 - [ ] answer quality: not-found threshold, optional larger model → Phase 7
 
-## Phase 7–8
-- J/E epics (Blocks D/E) + 48 h soak · R-1 release (CI signing, DMG, docs, policies)
+## Phase 7 — Blocks D + E, SPEC §4.21/4.22
+- [ ] Q-1 answer quality: not-found threshold (no model call below knowledge.min_score)
+- [ ] K-5 entities (opt-in, proposals → Markdown notes in an existing group)
+- [ ] J-1 bridge verb `list` (read-only, scopes) + floor check
+- [ ] J-2 scheduler (jobs_runs, due times, skip when paused / battery / memory pressure)
+- [ ] J-3 nightly incremental (D1)
+- [ ] J-4 weekly digest + hygiene report (D2, D3) as Markdown proposals
+- [ ] J-5 tag hygiene (D4) proposals
+- [ ] J-6 RSS/mail summaries (D5, opt-in)
+- [ ] E-1 health (embed_ok, backlog, last job) in status + app
+- [ ] E-6 power mode (battery, memory pressure, idle stop of the index server)
+- [ ] E-7 remote AI key in the Keychain
+- [ ] E-8 diagnostics export (no personal data)
+- [ ] App: schedules + power settings tabs, export diagnostics
+- [ ] P7-G 48 h soak on the floor Mac
+
+## Phase 8
+- R-1 release (signing per ADR-0010, DMG, docs, PRIVACY/SUPPORT/SECURITY, changelog, VoiceOver check from Phase 5)
