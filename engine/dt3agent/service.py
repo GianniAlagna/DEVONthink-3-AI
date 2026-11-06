@@ -11,7 +11,7 @@ import time
 from datetime import UTC, date, datetime
 from pathlib import Path
 
-from dt3agent import __version__, config, duplicates, naming, pipeline, review, store
+from dt3agent import __version__, config, duplicates, jobs, naming, pipeline, review, store
 from dt3agent import queue as queuemod
 from dt3agent.adapter import DT3Adapter
 from dt3agent.ai import AIError, LlamaClient
@@ -31,7 +31,7 @@ from dt3agent.vision import VisionClient
 STATE_MIGRATIONS = ["CREATE TABLE state (key TEXT PRIMARY KEY, value TEXT NOT NULL)"]
 # Order is part of the schema: append only.
 ENGINE_MIGRATIONS = (queuemod.MIGRATIONS + pipeline.MIGRATIONS + STATE_MIGRATIONS + review.MIGRATIONS
-                     + duplicates.MIGRATIONS + review.MIGRATIONS_2)
+                     + duplicates.MIGRATIONS + review.MIGRATIONS_2 + jobs.MIGRATIONS)
 # Settings the app may not change over rpc: the vision helper is a program the engine runs (set by the installer).
 RPC_LOCKED = {"schema_version", "vision"}
 DEFAULT_DATA = Path.home() / "Library/Application Support/DT3 Agent"
@@ -63,6 +63,9 @@ class Service:
         self.adapter = DT3Adapter(bridge, UndoJournal(self.undo_con), AuditLog(self.data / "audit"))
         self.index = None
         self.power = Power()
+        self.scheduler = jobs.Scheduler(self.con)
+        self.job_runners = {}  # name -> callable returning "ok" or a short error code (J-3, J-4 add theirs)
+        self.local_clock = lambda: datetime.now().astimezone()
         self._use_config(self.cfg)
 
     def _use_config(self, cfg: dict) -> None:
@@ -109,9 +112,31 @@ class Service:
     def tick(self) -> str | None:
         """Pick up spool files, then process at most one job. Returns the outcome or error code."""
         ingest_spool(self.spool, self.queue)
-        if self._paused() or self.ai is None or self.power.hold(self.cfg.get("power", {})):
+        if self._paused() or self.power.hold(self.cfg.get("power", {})):
             return None  # E-6: the queue keeps filling; work resumes when the Mac is on power again
+        job = self._run_due_job()
+        if job:
+            return job
+        if self.ai is None:
+            return None
         return self.pipeline.run_once(self.queue)
+
+    def _run_due_job(self) -> str | None:
+        """J-2: at most one scheduled job per tick; a job without a runner yet is left alone."""
+        now = self.local_clock()
+        for name in self.scheduler.due(self.cfg.get("jobs", {}), now):
+            runner = self.job_runners.get(name)
+            if runner is None:
+                continue
+            try:
+                result = runner()
+            except Exception as e:  # a job failure never stops the engine; a short code is kept, never content
+                code = str(e)
+                result = code if isinstance(e, BridgeError) and re.fullmatch(r"[a-z][a-z0-9_]{0,39}", code) \
+                    else "job_failed"
+            self.scheduler.done(name, now, result)
+            return f"job:{name}:{result}"
+        return None
 
     # rpc -----------------------------------------------------------------
     def handle(self, method: str, params: dict):
@@ -139,7 +164,8 @@ class Service:
                     "urgent_open": self.con.execute("SELECT COUNT(*) FROM review_items WHERE kind = 'urgent' "
                                                     "AND decided_at IS NULL").fetchone()[0],
                     "index_docs": self.index.count() if self.index else None,
-                    "power": {**self.power.state(), "held": self.power.hold(self.cfg.get("power", {}))}}
+                    "power": {**self.power.state(), "held": self.power.hold(self.cfg.get("power", {}))},
+                    "jobs": {n: self.scheduler.last(n) for n in jobs.ORDER}}
         if method == "process":
             uuid = params["uuid"]
             if not (isinstance(uuid, str) and UUID_RE.fullmatch(uuid)):

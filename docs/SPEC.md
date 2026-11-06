@@ -244,6 +244,10 @@ Specified 2026-11-06 at the start of Phase 7.
   `digest` (weekday + HH:MM, default Monday 07:30), `hygiene` (weekday, default Sunday). A job runs at most once per
   due time (state table `jobs_runs`), skips while paused, on battery or under memory pressure (E6), and never runs
   two at once. Missed runs (Mac asleep) run once at the next tick, not once per missed day.
+  Built 2026-11-06 (`jobs.py`): config `jobs.{nightly: {enabled, time}, digest|hygiene: {enabled, day, time}}`
+  (local time; digest/hygiene off by default, hygiene Sunday 03:30). The first start records a baseline and runs
+  nothing. A failed run counts for its due time (result = short code, never content). `status` adds
+  `jobs: {name: {due, ran_at, result} | null}`. DST can shift one run by an hour.
 - **Nightly incremental (D1):** `list` per scope with `since` = last run → enqueue changed records (queue source
   `nightly`); unchanged content hash is skipped by the pipeline as today. Index update rides on the pipeline.
 - **Weekly digest (D2):** Markdown note (proposal → review item → accept → `create_markdown` into
