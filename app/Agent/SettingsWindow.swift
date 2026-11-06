@@ -1,5 +1,5 @@
 // Settings window (brief §6.3, U-3). Tabs for what the engine supports today; every save goes through
-// config_set, so the engine checks it. Schedules and power settings come with their features (Phase 6/7).
+// config_set, so the engine checks it. Phase 7 adds the schedule tab (scopes, jobs, reports, power).
 import AppKit
 import SwiftUI
 
@@ -156,6 +156,7 @@ struct SettingsView: View {
                 duplicates.tabItem { Text(t[.tabDuplicates]) }
                 privacy.tabItem { Text(t[.tabPrivacy]) }
                 advanced.tabItem { Text(t[.tabAdvanced]) }
+                jobs.tabItem { Text(t[.tabJobs]) }  // 10 tabs: the ViewBuilder limit on the floor's Swift 5.5
             }
             HStack {
                 if let msg = m.message {
@@ -174,7 +175,7 @@ struct SettingsView: View {
             }
         }
         .padding(16)
-        .frame(width: 780, height: 480)  // floor 2026-11-05: tab names were cut at 640
+        .frame(width: 900, height: 540)  // floor 2026-11-05: tab names were cut at 640; 10 tabs since Phase 7
     }
 
     var general: some View {
@@ -261,6 +262,63 @@ struct SettingsView: View {
             Text(t[.setLogWarning]).font(.callout).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
             Spacer()
         }.padding()
+    }
+
+    // Phase 7 (SPEC §4.21/4.22): scopes, nightly run, reports, power mode. Groups keep each stack ≤ 10 views.
+    var jobs: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                LinesField(label: t[.setScopes], text: $m.v.scopes)
+                Text(t[.setScopesNote]).font(.callout).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+                HStack {
+                    Toggle(t[.setNightly], isOn: $m.v.nightlyOn)
+                    TextField("02:30", text: $m.v.nightlyTime).frame(width: 70).accessibilityLabel(t[.setTime])
+                }
+                Divider()
+                report(t[.setDigest], on: $m.v.digestOn, day: $m.v.digestDay, time: $m.v.digestTime,
+                       group: $m.v.digestGroup, lang: $m.v.digestLang)
+                Divider()
+                report(t[.setHygiene], on: $m.v.hygieneOn, day: $m.v.hygieneDay, time: $m.v.hygieneTime,
+                       group: $m.v.hygieneGroup, lang: $m.v.hygieneLang)
+                hygieneExtras
+                Divider()
+                power
+            }.padding()
+        }
+    }
+
+    var hygieneExtras: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            LabeledField(label: t[.setInbox], text: $m.v.hygieneInbox)
+            Stepper(t.format(.setInboxDays, m.v.hygieneDays), value: $m.v.hygieneDays, in: 1...365)
+                .accessibilityLabel(t.format(.setInboxDays, m.v.hygieneDays))
+            Toggle(t[.setTagHygiene], isOn: $m.v.hygieneTags)
+        }
+    }
+
+    var power: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(t[.setPower]).font(.headline)
+            Toggle(t[.setPauseBattery], isOn: $m.v.pauseOnBattery)
+            Toggle(t[.setPauseMemory], isOn: $m.v.pauseOnMemory)
+        }
+    }
+
+    func report(_ title: String, on: Binding<Bool>, day: Binding<String>, time: Binding<String>,
+                group: Binding<String>, lang: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle(title, isOn: on)
+            HStack {
+                Picker(t[.setDay], selection: day) {
+                    ForEach(jobDays, id: \.self) { d in Text(weekdayName(d, language: t.language)).tag(d) }
+                }.frame(width: 220)
+                TextField("07:30", text: time).frame(width: 70).accessibilityLabel(t[.setTime])
+                Picker(t[.setLang], selection: lang) {
+                    ForEach(reportLanguages, id: \.self) { l in Text(l.uppercased()).tag(l) }
+                }.frame(width: 160)
+            }
+            LabeledField(label: t[.setReportGroup], text: group)
+        }
     }
 
     var advanced: some View {
