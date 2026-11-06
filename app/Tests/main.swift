@@ -167,6 +167,11 @@ var kv = SettingsValues(config: ["ai": ["url": "https://ai.example.com", "use_ke
 check(kv.useKey && (kv.changes["ai"] as? [String: Any])?["use_key"] as? Bool == true, "use_key read and sent")
 kv.useKey = false
 check(!(kv.changes["ai"] as? [String: Any] ?? [:]).keys.contains("key"), "the key is never in the changes")
+var ev = SettingsValues(config: ["knowledge": ["entities": true, "entity_group": "/Kontakte/"]])
+check(ev.entities && ev.entityGroup == "/Kontakte/" && ev.problems.isEmpty, "entity notes read")
+check((ev.changes["knowledge"] as? [String: Any])?["entity_group"] as? String == "/Kontakte/", "entity group sent")
+ev.entityGroup = ""
+check(ev.problems == [.setEntityGroup], "entity notes need a group")
 sv.filingGroups = "broken"
 sv.applyThreshold = 0.2
 check(sv.problems.contains(.setFilingGroups) && sv.problems.contains(.setThresholds), "problems are named")

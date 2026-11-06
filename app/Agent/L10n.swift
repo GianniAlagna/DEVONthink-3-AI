@@ -31,7 +31,7 @@ struct L10n {
         case setLogContent, setLogWarning, setApply, setApplyNote, setThresholds
         case tabJobs, setScopes, setScopesNote, setNightly, setDigest, setHygiene, setDay, setTime, setLang
         case setKey, setKeyNote, setKeySave, setKeyRemove, setKeyStored, setKeyNone, setKeyBad, setUseKey
-        case setDiagnostics, setDiagnosticsDone
+        case setDiagnostics, setDiagnosticsDone, setEntities, setEntityGroup, setEntitiesNote
         case setReportGroup, setInbox, setInboxDays, setTagHygiene, setPower, setPauseBattery, setPauseMemory, setJobTimeBad
         case save, revert, saved, setFix
         // review queue (U-4)
@@ -159,6 +159,9 @@ struct L10n {
             .setApply: "Automatisch anwenden ab Sicherheit: %d %%",
             .setApplyNote: "Vorschläge mit weniger Sicherheit kommen in die Prüfliste.",
             .setThresholds: "Werte zwischen 50 und 100 %",
+            .setEntities: "Notizen zu Personen und Firmen vorschlagen",
+            .setEntityGroup: "Gruppe für diese Notizen (muss in DT3 bestehen)",
+            .setEntitiesNote: "Ab zwei Dokumenten derselben Firma oder Person kommt ein Vorschlag in die Prüfliste. Erst «Annehmen» schreibt die Notiz. Dein eigener Name wird nie vorgeschlagen.",
             .setKey: "API-Schlüssel",
             .setKeyNote: "Nur für einen KI-Server, der einen Schlüssel verlangt. Der Schlüssel liegt nur im Schlüsselbund und wird nur über https oder im eigenen Netz gesendet.",
             .setKeySave: "Im Schlüsselbund sichern",
@@ -376,6 +379,9 @@ struct L10n {
             .setApply: "Apply automatically from confidence: %d %%",
             .setApplyNote: "Proposals with less confidence go to the Review Queue.",
             .setThresholds: "Values between 50 and 100 %",
+            .setEntities: "Propose notes about people and companies",
+            .setEntityGroup: "Group for these notes (must exist in DT3)",
+            .setEntitiesNote: "From two documents of the same company or person on, a proposal appears in the review list. Only "Accept" writes the note. Your own name is never proposed.",
             .setKey: "API key",
             .setKeyNote: "Only for an AI server that asks for a key. The key lives only in the Keychain and is sent only over https or within your own network.",
             .setKeySave: "Save in Keychain",
@@ -593,6 +599,9 @@ struct L10n {
             .setApply: "Appliquer automatiquement à partir d’une confiance de : %d %%",
             .setApplyNote: "Les propositions avec moins de confiance vont dans la liste de contrôle.",
             .setThresholds: "Valeurs entre 50 et 100 %",
+            .setEntities: "Proposer des notes sur les personnes et entreprises",
+            .setEntityGroup: "Groupe pour ces notes (doit exister dans DT3)",
+            .setEntitiesNote: "Dès deux documents de la même entreprise ou personne, une proposition apparaît dans la liste de contrôle. Seul « Accepter » écrit la note. Votre propre nom n’est jamais proposé.",
             .setKey: "Clé API",
             .setKeyNote: "Seulement pour un serveur IA qui demande une clé. La clé reste dans le trousseau et n’est envoyée que par https ou dans votre propre réseau.",
             .setKeySave: "Enregistrer dans le trousseau",
@@ -810,6 +819,9 @@ struct L10n {
             .setApply: "Applica automaticamente da una confidenza di: %d %%",
             .setApplyNote: "Le proposte con meno confidenza vanno nella lista di controllo.",
             .setThresholds: "Valori tra 50 e 100 %",
+            .setEntities: "Proporre note su persone e aziende",
+            .setEntityGroup: "Gruppo per queste note (deve esistere in DT3)",
+            .setEntitiesNote: "Da due documenti della stessa azienda o persona, compare una proposta nella lista di controllo. Solo «Accetta» scrive la nota. Il tuo nome non viene mai proposto.",
             .setKey: "Chiave API",
             .setKeyNote: "Solo per un server IA che richiede una chiave. La chiave resta nel portachiavi ed è inviata solo via https o nella propria rete.",
             .setKeySave: "Salva nel portachiavi",
