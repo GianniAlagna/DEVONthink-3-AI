@@ -327,8 +327,25 @@ Specified 2026-11-06 at the start of Phase 7.
 - **Gate:** 48 h soak on the floor Mac with the nightly job, digest and power mode active; memory and CPU logged
   hourly (without content); no crash, no growth > 20 % in engine memory, no write outside dry-run proposals.
 
-### 4.23 `release`
-Specified at the start of Phase 8 from brief §8.
+### 4.23 `release` (Phase 8, brief §8.4)
+Specified 2026-11-06 at the start of Phase 8. **Nothing is published until Gianni says go** (no tag, no GitHub
+release, no public download).
+
+- **Version:** `1.0.0` in the engine (`dt3agent.__version__`) and both Info.plists, set in the release PR.
+- **Build (R-3):** `tools/release.sh` builds the universal app with the bundled Python runtime and llama-server
+  (as `dev-agent.sh bundle`), signs app and helpers with the project's self-signed certificate (ADR-0010; key only
+  in CI secrets, never on the floor Mac; without the key the build is ad-hoc and marked "not for release"), and
+  packs a DMG: app, `LICENSE`, `README-first-launch.txt` (right-click → Open on macOS 11–14; System Settings →
+  Open Anyway on 15+), SHA-256 file. No model weights in the DMG (downloaded after consent, SHA-256 pinned).
+- **CI (R-3):** a release workflow runs only on a pushed tag `v*` and creates a **draft** GitHub release with the
+  DMG and its checksum; Claude never pushes a tag. Notarization: none (no Apple Developer ID, ADR-0010).
+- **Docs (R-1, R-2):** `PRIVACY.md` (what stays on the Mac, the only network calls: model download from
+  huggingface.co after consent, optional user-configured AI server, no telemetry), `CHANGELOG.md`, user guide in
+  `docs/guide/{de,fr,it,en}.md`, README status. `SUPPORT.md` keeps its placeholders until modular.codes fills them.
+- **Release test (R-4/R-5):** `docs/test-plan.md` — floor Mac (macOS 11, Intel), one Apple Silicon Mac (Q6), one
+  8 GB Mac (Q2) if available; install from DMG, onboarding, Smart Rule, processing, review, undo, ask, reports,
+  removal; VoiceOver and keyboard (from Phase 5); 48 h soak (P7-G); memory and time per document recorded.
+  Regressions against Phase 2–7 measurements block the release.
 
 ## 5. Commands (engine; Swift added in Phase 2)
 
