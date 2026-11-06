@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from dt3agent.sanitize import clean
 
 TOP_K = 6
+MIN_SCORE = 0.35  # Q-1: below this best similarity the answer is "not found" without a model call (UNVERIFIED)
 MAX_QUESTION = 1000
 ASK_SCHEMA = {
     "type": "object",
@@ -54,6 +55,8 @@ class Answer:
     text: str
     sources: list[str]  # record UUIDs, in citation order, each once
     filtered: int = 0   # sentences addressed to an AI that were removed from the excerpts
+    best: float = 0.0   # best vector similarity of the excerpts (Q-1, for calibration)
+    not_found: bool = False
 
 
 def build_prompt(question: str, hits) -> tuple[str, int]:
@@ -70,15 +73,16 @@ def build_prompt(question: str, hits) -> tuple[str, int]:
     return "\n".join(parts), filtered
 
 
-def ask(question: str, index, llm, *, databases=None, k: int = TOP_K) -> Answer:
+def ask(question: str, index, llm, *, databases=None, k: int = TOP_K, min_score: float = MIN_SCORE) -> Answer:
     question = " ".join(str(question).split())
     if not question or len(question) > MAX_QUESTION:
         raise AskError("question_invalid")
     if asks_for_a_change(question):
         raise AskError("write_refused")
     hits = index.search(question, k=k, databases=databases)
-    if not hits:
-        return Answer("", [])
+    best = max((h.cosine for h in hits), default=0.0)
+    if not hits or best < min_score:  # nothing close enough: no model call, no invented answer
+        return Answer("", [], best=best, not_found=True)
     # AIError (ai_schema_mismatch, ai_invalid_json, ...) propagates: never a partial answer
     prompt, filtered = build_prompt(question, hits)
     result = llm.complete(ASK_SYSTEM, prompt, ASK_SCHEMA, name="answer", max_tokens=600)
@@ -86,7 +90,7 @@ def ask(question: str, index, llm, *, databases=None, k: int = TOP_K) -> Answer:
     for n in result.obj["cited"]:
         if isinstance(n, int) and 1 <= n <= len(hits) and hits[n - 1].uuid not in sources:
             sources.append(hits[n - 1].uuid)
-    return Answer(result.obj["answer"].strip(), sources, filtered)
+    return Answer(result.obj["answer"].strip(), sources, filtered, best)
 
 
 # K-6 summary / translation (read-only; the app may offer "save as note" as a separate review proposal)

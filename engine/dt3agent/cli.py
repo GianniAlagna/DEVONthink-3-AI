@@ -28,6 +28,8 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("undo", help="undo the last batch of changes")
     sub.add_parser("pause", help="stop processing (queue keeps filling)")
     sub.add_parser("resume", help="continue processing")
+    p = sub.add_parser("ask", help="ask the documents (read-only); shows sources and the best similarity")
+    p.add_argument("question", nargs="+")
     p = sub.add_parser("live", help="on: write to DT3 · off: dry-run (plan only, the default)")
     p.add_argument("state", choices=["on", "off"])
     a = ap.parse_args(argv)
@@ -42,12 +44,17 @@ def main(argv: list[str] | None = None) -> int:
             params["value"] = a.value
     elif a.cmd == "review":
         method, params = "review", ({"kind": a.kind} if a.kind else {})
+    elif a.cmd == "ask":
+        method, params = "ask", {"question": " ".join(a.question)}
     elif a.cmd == "live":
         method, params = "live", {"on": a.state == "on"}
     else:
         method, params = a.cmd, {}
     try:
-        result = rpc.call(a.data / "engine.sock", method, params)
+        if method == "ask":
+            result = rpc.call(a.data / "engine.sock", method, params, timeout=600.0)
+        else:
+            result = rpc.call(a.data / "engine.sock", method, params)
     except rpc.RPCError as e:
         print(f"dt3agent: {e}", file=sys.stderr)
         return 1

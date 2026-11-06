@@ -218,7 +218,8 @@ class Service:
         if self.ai is None:
             raise RPCError("ai_unavailable")
         try:
-            answer = ask(question, self.index, self.ai)
+            answer = ask(question, self.index, self.ai,
+                         min_score=self.cfg.get("knowledge", {}).get("min_score", 0.35))
         except (AskError, AIError, EmbedError) as e:
             raise RPCError(e.code) from e
         sources = []
@@ -229,7 +230,9 @@ class Service:
                 self.index.remove(uuid)
                 continue
             sources.append({"uuid": uuid, "name": name, "link": "x-devonthink-item://" + uuid})
-        return {"answer": answer.text, "sources": sources, "filtered": answer.filtered}
+        # best: the closest excerpt's similarity, so "not found" can be calibrated on real documents (Q-1)
+        return {"answer": answer.text, "sources": sources, "filtered": answer.filtered,
+                "best": answer.best, "not_found": answer.not_found}
 
     def _summary(self, uuid, lang) -> dict:
         """K-6: summary of one record in de/fr/it/en. Read-only."""
