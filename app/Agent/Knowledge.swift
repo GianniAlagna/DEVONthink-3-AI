@@ -11,10 +11,12 @@ struct AskSource: Identifiable, Equatable {
 struct AskAnswer: Equatable {
     let text: String
     let sources: [AskSource]
+    let filtered: Int   // sentences addressed to an AI that the engine removed from the documents
 
     init?(json: [String: Any]) {
         guard let answer = json["answer"] as? String else { return nil }
         text = answer
+        filtered = json["filtered"] as? Int ?? 0
         sources = (json["sources"] as? [[String: Any]] ?? []).compactMap { s in
             guard let uuid = s["uuid"] as? String,
                   uuid.range(of: #"^[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}$"#, options: .regularExpression) != nil

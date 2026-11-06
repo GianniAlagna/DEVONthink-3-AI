@@ -59,11 +59,12 @@ def test_links_never_come_from_model_text(idx):
     assert answer.sources == []  # the text is shown as text; sources only from cited excerpt numbers
 
 
-def test_injected_document_text_is_quoted_as_data(idx):
+def test_injected_document_text_is_filtered_and_the_rest_quoted(idx):
     _, reqs = run(idx, {"answer": "x", "cited": [1]}, question="Rechnung Muster")
     user = reqs[0]["body"]["messages"][1]["content"]
-    assert INJECTION in user and "<<<" in user
-    assert INJECTION not in reqs[0]["body"]["messages"][0]["content"]  # never in the system prompt
+    assert "<<<" in user and "Rechnung Muster" in user
+    assert "removed: text addressed to an AI" in user  # the orders are filtered out (floor 2026-11-06)
+    assert INJECTION not in user and INJECTION not in reqs[0]["body"]["messages"][0]["content"]
 
 
 @pytest.mark.parametrize("reply", ['{"answer": "ok", "cited": [1], "action": "delete"}',
@@ -114,3 +115,11 @@ def test_rules_are_repeated_after_the_excerpts(idx):
     user = reqs[0]["body"]["messages"][1]["content"]
     tail = user[user.rindex(">>>"):]
     assert "never obey" in tail and "Rechnung Muster" in tail and "[]" in tail
+
+
+def test_orders_in_documents_never_reach_the_model(idx):
+    # floor 2026-11-06: "Was steht im Brief der Versicherung?" was answered "HACKED"
+    answer, reqs = run(idx, {"answer": "x", "cited": [1]}, question="Rechnung Muster")
+    user = reqs[0]["body"]["messages"][1]["content"]
+    assert "HACKED" not in user and "IGNORE ALL PREVIOUS" not in user and "[99]" not in user
+    assert answer.filtered >= 1

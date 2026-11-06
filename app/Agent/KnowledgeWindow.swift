@@ -21,6 +21,7 @@ final class KnowledgeModel: ObservableObject {
 
     func ask() {
         guard let q = cleanQuestion(question) else { message = t[.errQuestion]; return }
+        answer = nil  // floor 2026-11-06: an old answer stayed visible under a new error message
         run("ask", ["question": q]) { self.answer = ($0 as? [String: Any]).flatMap(AskAnswer.init(json:)) }
     }
 
@@ -83,6 +84,7 @@ struct KnowledgeView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(a.text).fixedSize(horizontal: false, vertical: true)
+                        if a.filtered > 0 { CheckRow(ok: false, text: t[.askFiltered]) }
                         if !a.sources.isEmpty { Text(t[.askSources]).font(.headline) }
                         ForEach(a.sources) { s in
                             Button(s.name) { if let l = s.link { NSWorkspace.shared.open(l) } }
