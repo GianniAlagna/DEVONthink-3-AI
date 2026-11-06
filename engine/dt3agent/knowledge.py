@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from dt3agent.sanitize import clean
 
 TOP_K = 6
-MIN_SCORE = 0.35  # Q-1: below this best similarity the answer is "not found" without a model call (UNVERIFIED)
+MIN_SCORE = 0.47  # Q-1: below this best similarity the answer is "not found" without a model call (floor 2026-11-06)
 MAX_QUESTION = 1000
 ASK_SCHEMA = {
     "type": "object",

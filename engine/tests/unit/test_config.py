@@ -58,3 +58,14 @@ def test_tag_vocabulary_is_checked():
     for bad in (["ok", ""], ["x" * 65], "Rechnung", [1], ["a\nb"]):
         with _pytest.raises(_config.ConfigError):
             _config.validate({"tags": {"vocabulary": bad}})
+
+
+def test_q1_old_default_threshold_is_raised_on_load(tmp_path):
+    import json
+
+    from dt3agent import config
+    p = tmp_path / "config.json"
+    p.write_text(json.dumps({"knowledge": {"min_score": 0.35}}))
+    assert config.load(p)["knowledge"]["min_score"] == 0.47      # untouched old default → floor-calibrated value
+    p.write_text(json.dumps({"knowledge": {"min_score": 0.5}}))
+    assert config.load(p)["knowledge"]["min_score"] == 0.5       # any other value is kept

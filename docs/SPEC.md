@@ -320,7 +320,9 @@ Specified 2026-11-06 at the start of Phase 7.
   actions of the last 7 days as counts; LaunchAgent states (not_installed / installed_not_loaded / loaded);
   model file names and sizes. File `~/Downloads/DT3-Agent-Diagnose-<time>.zip`, mode 0600. App button: open.
 - **Phase 6 carry-over (Gianni 2026-11-06):** K-5 entities (opt-in) and answer quality: `ask` answers "not found"
-  without a model call when the best retrieval score is below `knowledge.min_score` (calibrated on the floor);
+  without a model call when the best retrieval score is below `knowledge.min_score` (floor 2026-11-06, test database:
+  no-match question 0.43, real questions 0.50 and 0.64 → default 0.47; files with the untouched first default
+  0.35 get 0.47 on load; margin is small, re-checked in the P7-G soak);
   optional larger model (Granite 3B, ADR-0003) selectable in Settings.
 - **Gate:** 48 h soak on the floor Mac with the nightly job, digest and power mode active; memory and CPU logged
   hourly (without content); no crash, no growth > 20 % in engine memory, no write outside dry-run proposals.
