@@ -159,6 +159,14 @@ check(jv.problems.contains(.setReportGroup), "a report needs its group")
 jv.hygieneGroup = "/_Berichte/"
 jv.nightlyTime = "25:00"
 check(jv.problems == [.setJobTimeBad], "bad time refused")
+
+// E-7 key (the key itself never goes to the engine or config.json)
+check(cleanKey("  sk-abc123 \n") == "sk-abc123" && cleanKey("two words") == nil && cleanKey("") == nil
+      && cleanKey(String(repeating: "x", count: 600)) == nil, "API key input")
+var kv = SettingsValues(config: ["ai": ["url": "https://ai.example.com", "use_key": true]])
+check(kv.useKey && (kv.changes["ai"] as? [String: Any])?["use_key"] as? Bool == true, "use_key read and sent")
+kv.useKey = false
+check(!(kv.changes["ai"] as? [String: Any] ?? [:]).keys.contains("key"), "the key is never in the changes")
 sv.filingGroups = "broken"
 sv.applyThreshold = 0.2
 check(sv.problems.contains(.setFilingGroups) && sv.problems.contains(.setThresholds), "problems are named")
