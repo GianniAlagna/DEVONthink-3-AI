@@ -1,0 +1,55 @@
+name: release
+# R-3 (SPEC §4.23): runs only when a tag v* is pushed. Creates a DRAFT release; publishing it is a manual step
+# by the owner. Refuses to build without the project's signing certificate (ADR-0010). Claude never pushes tags.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  dmg:
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Import the signing certificate (secrets only; never on the floor Mac)
+        env:
+          CERT_P12: ${{ secrets.RELEASE_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.RELEASE_CERT_PASSWORD }}
+        run: |
+          set -euo pipefail
+          [ -n "$CERT_P12" ] && [ -n "$CERT_PASSWORD" ] || { echo "signing certificate missing: no release"; exit 1; }
+          KC="$RUNNER_TEMP/release.keychain-db"
+          KC_PW=$(uuidgen)
+          security create-keychain -p "$KC_PW" "$KC"
+          security set-keychain-settings -lut 3600 "$KC"
+          security unlock-keychain -p "$KC_PW" "$KC"
+          printf '%s' "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KC" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          # a self-signed certificate must be trusted for code signing on this runner (UNVERIFIED until the first tag)
+          openssl pkcs12 -in "$RUNNER_TEMP/cert.p12" -nokeys -passin env:CERT_PASSWORD -out "$RUNNER_TEMP/cert.pem" \
+            || openssl pkcs12 -legacy -in "$RUNNER_TEMP/cert.p12" -nokeys -passin env:CERT_PASSWORD -out "$RUNNER_TEMP/cert.pem"
+          rm -f "$RUNNER_TEMP/cert.p12"
+          sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain "$RUNNER_TEMP/cert.pem"
+          rm -f "$RUNNER_TEMP/cert.pem"
+          security list-keychains -d user -s "$KC" login.keychain-db
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KC_PW" "$KC" >/dev/null
+      - name: Build both DMGs
+        env:
+          IDENTITY: ${{ secrets.RELEASE_CERT_NAME }}
+        run: |
+          set -euo pipefail
+          [ -n "$IDENTITY" ] || { echo "RELEASE_CERT_NAME missing: no release"; exit 1; }
+          VERSION="${GITHUB_REF_NAME#v}"
+          tools/release.sh "$VERSION" x86_64 "$IDENTITY"
+          tools/release.sh "$VERSION" arm64 "$IDENTITY"
+      - name: Draft release (not published)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "$GITHUB_REF_NAME" --draft --verify-tag --title "DT3 Agent ${GITHUB_REF_NAME#v}" \
+            --notes "Draft. See CHANGELOG.md and PRIVACY.md. Checksums attached." \
+            build/DT3-Agent-*.dmg build/DT3-Agent-*.dmg.sha256

@@ -92,7 +92,13 @@ Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC
 - [ ] E-7 remote AI key in the Keychain — engine built, app field open
 - [ ] E-8 diagnostics export (no personal data) — engine + CLI built, app button open
 - [ ] App: schedules + power settings tabs, export diagnostics — built (schedule tab, key field, diagnostics button)
-- [ ] P7-G 48 h soak on the floor Mac
+- [x] **P7 approved** 2026-11-06 (docs/floor/phase7-report.md); P7-G 48 h soak moved to the Phase 8 release test
 
-## Phase 8
-- R-1 release (signing per ADR-0010, DMG, docs, PRIVACY/SUPPORT/SECURITY, changelog, VoiceOver check from Phase 5)
+## Phase 8 — release (SPEC §4.23); nothing is published until Gianni says go
+- [x] R-0 Phase 7 report, release spec (§4.23)
+- [x] R-1 PRIVACY.md, CHANGELOG.md, README status
+- [x] R-2 user guide de/fr/it/en (docs/guide/)
+- [x] R-3 release build: DMG script, self-signed signing (ADR-0010), tag-only workflow (no tag is pushed by Claude) — tools/release.sh, .github/workflows/release.yml, docs/release.md
+- [x] R-4 release test plan (floor + Apple Silicon + 8 GB Mac, VoiceOver, 48 h soak) and pre-launch checklist — docs/test-plan.md
+- [ ] R-5 release test on the floor (Gianni)
+- [ ] R-6 go / publish (Gianni only)

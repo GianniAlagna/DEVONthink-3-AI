@@ -55,6 +55,8 @@ struct InstallPaths {
     var python: URL { resources.appendingPathComponent("python/bin/python3") }
     var llamaServer: URL { resources.appendingPathComponent("llama/llama-server") }
     var bundledScript: URL { resources.appendingPathComponent("DT3 Agent Enqueue.scpt") }
+    /// R-3: release builds run without DT3, so they carry the source; the installer compiles it where DT3 is.
+    var bundledScriptSource: URL { resources.appendingPathComponent("SmartRule-Enqueue.applescript") }
 
     /// LaunchAgent for the engine host (ADR-0005): the signed host is the program, so the Automation permission
     /// carries its name. Arguments are a list, never a shell string.

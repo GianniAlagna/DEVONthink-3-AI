@@ -231,6 +231,8 @@ check(ip.enginePlist.path == "/Users/erika/Library/LaunchAgents/codes.modular.dt
 check(ip.script.path == "/Users/erika/Library/Application Scripts/com.devon-technologies.think3/Smart Rules/DT3 Agent Enqueue.scpt",
       "smart rule script path")
 check(ip.model.path == "/Users/erika/Library/Application Support/DT3 Agent/models/Qwen3-1.7B-Q4_K_M.gguf", "model path")
+check(ip.bundledScriptSource.path == "/Applications/DT3 Agent.app/Contents/Resources/SmartRule-Enqueue.applescript",
+      "the Smart Rule source is bundled for builds without DT3 (R-3)")
 let ep = ip.enginePlistContent()
 check(ep["Label"] as? String == "codes.modular.dt3agent.engine" && ep["KeepAlive"] as? Bool == true, "engine plist")
 check((ep["ProgramArguments"] as? [String])?.first ==
