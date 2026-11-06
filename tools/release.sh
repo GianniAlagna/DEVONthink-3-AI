@@ -17,7 +17,7 @@ case "$ARCH" in x86_64) PYARCH=x86_64; NAME=Intel;; arm64) PYARCH=aarch64; NAME=
 # 1. the version is set in the release PR, never here
 ENGINE_VERSION=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' engine/dt3agent/__init__.py)
 for plist in app/Agent/Info.plist app/EngineHost/Info.plist; do
-    v=$(plutil -extract CFBundleShortVersionString raw "$plist")
+    v=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$plist")   # plutil raw needs macOS 12
     [ "$v" = "$VERSION" ] || { echo "$plist has $v, expected $VERSION"; exit 1; }
 done
 [ "$ENGINE_VERSION" = "$VERSION" ] || { echo "engine has $ENGINE_VERSION, expected $VERSION"; exit 1; }
