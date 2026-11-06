@@ -33,6 +33,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("question", nargs="+")
     p = sub.add_parser("list", help="list the records of every enabled scope (read-only); count and seconds")
     p.add_argument("since", nargs="?", help="only records changed after this date (YYYY-MM-DD)")
+    p = sub.add_parser("job", help="run a scheduled job now: nightly | digest | hygiene")
+    p.add_argument("name", choices=["nightly", "digest", "hygiene"])
     sub.add_parser("diagnostics", help="write a zip without personal data to ~/Downloads (for support)")
     p = sub.add_parser("live", help="on: write to DT3 · off: dry-run (plan only, the default)")
     p.add_argument("state", choices=["on", "off"])
@@ -50,6 +52,8 @@ def main(argv: list[str] | None = None) -> int:
         method, params = "review", ({"kind": a.kind} if a.kind else {})
     elif a.cmd == "ask":
         method, params = "ask", {"question": " ".join(a.question)}
+    elif a.cmd == "job":
+        method, params = "run_job", {"name": a.name}
     elif a.cmd == "list":
         method, params = "list", ({"since": a.since} if a.since else {})
     elif a.cmd == "live":
@@ -57,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         method, params = a.cmd, {}
     try:
-        if method in ("ask", "list"):
+        if method in ("ask", "list", "run_job"):
             result = rpc.call(a.data / "engine.sock", method, params, timeout=600.0)
         else:
             result = rpc.call(a.data / "engine.sock", method, params)

@@ -163,3 +163,22 @@ def test_old_job_settings_get_new_fields(tmp_path):
                                                                           "time": "08:00"}}}))
     cfg = config.load(tmp_path / "config.json")
     assert cfg["jobs"]["digest"]["day"] == "tue" and cfg["jobs"]["digest"]["lang"] == "de"
+
+
+def test_run_job_now_uses_the_same_runner_and_counts_as_its_run(tmp_path):
+    from dt3agent.rpc import RPCError
+    svc = service(tmp_path)
+    runs = []
+    svc.job_runners["nightly"] = lambda: runs.append(1) or "ok"
+    svc.local_clock = lambda: at(2026, 11, 6, 9, 0)
+    assert svc.handle("run_job", {"name": "nightly"}) == {"name": "nightly", "result": "ok"}
+    assert runs == [1] and svc.handle("status", {})["jobs"]["nightly"]["result"] == "ok"
+    with pytest.raises(RPCError, match="bad_params"):
+        svc.handle("run_job", {"name": "delete_all"})
+
+
+def test_cli_job(monkeypatch):
+    from dt3agent import cli
+    calls = []
+    monkeypatch.setattr(cli.rpc, "call", lambda path, m, p, timeout=120.0: calls.append((m, p, timeout)) or {})
+    assert cli.main(["job", "digest"]) == 0 and calls == [("run_job", {"name": "digest"}, 600.0)]

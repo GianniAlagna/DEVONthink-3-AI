@@ -248,6 +248,8 @@ Specified 2026-11-06 at the start of Phase 7.
   (local time; digest/hygiene off by default, hygiene Sunday 03:30). The first start records a baseline and runs
   nothing. A failed run counts for its due time (result = short code, never content). `status` adds
   `jobs: {name: {due, ran_at, result} | null}`. DST can shift one run by an hour.
+  RPC `run_job(name)` / CLI `dt3agent job NAME` runs a job now with the same runner; it counts as that job's run
+  (floor checks, "run now").
 - **Nightly incremental (D1):** `list` per scope with `since` = last run → enqueue changed records (queue source
   `nightly`); unchanged content hash is skipped by the pipeline as today. Index update rides on the pipeline.
   Built 2026-11-06 (`nightly.py`): queue source `pull` (the existing value; no table rebuild), watermark per scope
