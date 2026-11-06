@@ -131,6 +131,10 @@ struct SettingsValues: Equatable {
     var hygieneInbox = "/Inbox/"
     var hygieneDays = 14
     var hygieneTags = true
+    var feedsOn = false          // J-6: daily feed and mail summaries
+    var feedsTime = "06:30"
+    var feedsGroup = ""
+    var feedsLang = "de"
     var pauseOnBattery = true
     var pauseOnMemory = true
     var useKey = false           // E-7: the key itself is only in the Keychain
@@ -188,6 +192,10 @@ struct SettingsValues: Equatable {
         hygieneInbox = job("hygiene")["inbox"] as? String ?? "/Inbox/"
         hygieneDays = job("hygiene")["days"] as? Int ?? 14
         hygieneTags = job("hygiene")["tags"] as? Bool ?? true
+        feedsOn = job("feeds")["enabled"] as? Bool ?? false
+        feedsTime = job("feeds")["time"] as? String ?? "06:30"
+        feedsGroup = job("feeds")["group"] as? String ?? ""
+        feedsLang = job("feeds")["lang"] as? String ?? "de"
         pauseOnBattery = section("power")["pause_on_battery"] as? Bool ?? true
         pauseOnMemory = section("power")["pause_on_memory_pressure"] as? Bool ?? true
     }
@@ -201,8 +209,9 @@ struct SettingsValues: Equatable {
         if parseCases(cases) == nil { p.append(.setCases) }
         if !(0.5...1.0).contains(nearThreshold) || !(0.5...1.0).contains(applyThreshold) { p.append(.setThresholds) }
         if parseScopes(scopes) == nil { p.append(.setScopes) }
-        if ![nightlyTime, digestTime, hygieneTime].allSatisfy(validJobTime) { p.append(.setJobTimeBad) }
+        if ![nightlyTime, digestTime, hygieneTime, feedsTime].allSatisfy(validJobTime) { p.append(.setJobTimeBad) }
         if (digestOn && !digestGroup.hasPrefix("/")) || (hygieneOn && !hygieneGroup.hasPrefix("/"))
+            || (feedsOn && !feedsGroup.hasPrefix("/"))
             || !hygieneInbox.hasPrefix("/") { p.append(.setReportGroup) }
         if !(1...365).contains(hygieneDays) { p.append(.setInboxDays) }
         if entities && !entityGroup.hasPrefix("/") { p.append(.setEntityGroup) }
@@ -237,6 +246,7 @@ struct SettingsValues: Equatable {
                 "hygiene": ["enabled": hygieneOn, "day": hygieneDay, "time": hygieneTime, "group": hygieneGroup,
                             "lang": hygieneLang, "inbox": hygieneInbox, "days": hygieneDays,
                             "tags": hygieneTags] as [String: Any],
+                "feeds": ["enabled": feedsOn, "time": feedsTime, "group": feedsGroup, "lang": feedsLang] as [String: Any],
             ] as [String: Any],
             "power": ["pause_on_battery": pauseOnBattery, "pause_on_memory_pressure": pauseOnMemory],
             "knowledge": ["entities": entities, "entity_group": entityGroup] as [String: Any],
