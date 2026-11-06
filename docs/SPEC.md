@@ -229,8 +229,53 @@ Specified 2026-11-05 at the start of Phase 6. Embedding model: ADR-0011 (Gianni 
   `ask`/`summary`; cited sources are a subset of the retrieved ones; links come from the index, never from
   model text; schema-invalid output gives `ai_schema_mismatch`, never a partial answer.
 
-### 4.21–4.23 `jobs`, `ops`, `release`
-Specified in detail at the start of their phases (7–8) from brief §5 D/E and §8; contracts above (rpc, ai-adapter, dt3-adapter) already cover their needs.
+### 4.21 `jobs` (Phase 7, brief Block D)
+Specified 2026-11-06 at the start of Phase 7.
+
+- **Scope listing (J-1):** new read-only bridge verb `list(database, group, since)` → up to 500
+  `{uuid, modified, kind}` of records directly or deeply inside an enabled scope (`scopes` config), newest first,
+  `modified` > `since` (ISO date or empty). JXA via `getRecordAt` + `children`, depth-first, no smart groups,
+  never creates anything. UNVERIFIED on DT3 3.9 until the J-1 floor check (speed for 1000+ records).
+- **Scheduler (J-2):** engine-internal, no cron/launchd per job. `jobs` config: `nightly` (HH:MM, default 02:30),
+  `digest` (weekday + HH:MM, default Monday 07:30), `hygiene` (weekday, default Sunday). A job runs at most once per
+  due time (state table `jobs_runs`), skips while paused, on battery or under memory pressure (E6), and never runs
+  two at once. Missed runs (Mac asleep) run once at the next tick, not once per missed day.
+- **Nightly incremental (D1):** `list` per scope with `since` = last run → enqueue changed records (queue source
+  `nightly`); unchanged content hash is skipped by the pipeline as today. Index update rides on the pipeline.
+- **Weekly digest (D2):** Markdown note (proposal → review item → accept → `create_markdown` into
+  `jobs.digest_group`, which must exist): new records of the week (names + item links), open deadlines from
+  review items, invoices due (metadata `dt3agenttotal` + due date when known). No AI call; facts from the engine's
+  own tables. de/fr/it/en by `identity`/app language.
+- **Hygiene report (D3):** same delivery as the digest: untagged records and records still in the inbox/import
+  group after N days (config). Read-only.
+- **Tag hygiene (D4):** proposals to merge near-duplicate tags (case/diacritics/plural, edit distance ≤ 2 within the
+  vocabulary and existing tags); review item only, accept = add the kept tag to the affected records' planned
+  changes (never remove a tag on its own).
+- **RSS / mail summaries (D5):** for records of kind RSS/HTML/email in scope: a summary note proposal per day
+  (uses K-6 `summarize`, sanitized input). Opt-in (`jobs.feeds`, default off).
+
+### 4.22 `ops` (Phase 7, brief Block E)
+- **Health (E1):** `status` adds `embed_ok`, `queue_backlog` (oldest queued age in minutes), `last_job`; the app
+  shows the worst state (existing Health enum + "backlog").
+- **Power mode (E6):** `power` config `{pause_on_battery: true, pause_on_memory_pressure: true}`. Battery via
+  `pmset -g batt` (argv, parsed), memory pressure via `sysctl kern.memorystatus_vm_pressure_level` (1 normal,
+  2 warn, 4 critical; pause at ≥ 2). UNVERIFIED on macOS 11 until the floor check. The index server is stopped
+  after 10 min idle and started on demand by the app/engine (frees ~1.4 GB, floor 2026-11-06).
+- **Remote AI (E7):** `ai.url`/`ai.embed_url` may point to the LAN; the app warns for non-private hosts (exists).
+  Optional API key: stored only in the Keychain (`security add-generic-password` / `find-generic-password`,
+  argv, service `codes.modular.dt3agent.ai`), sent as `Authorization: Bearer` only to the configured host,
+  never logged, never in config.json or diagnostics.
+- **Diagnostics (E8):** RPC `diagnostics` → a zip in ~/Downloads with versions, config without identity name and
+  without the API key, queue counts, error codes of the last 7 days, LaunchAgent states, model names and sizes.
+  No document text, names or UUIDs. The app offers "Export diagnostics …".
+- **Phase 6 carry-over (Gianni 2026-11-06):** K-5 entities (opt-in) and answer quality: `ask` answers "not found"
+  without a model call when the best retrieval score is below `knowledge.min_score` (calibrated on the floor);
+  optional larger model (Granite 3B, ADR-0003) selectable in Settings.
+- **Gate:** 48 h soak on the floor Mac with the nightly job, digest and power mode active; memory and CPU logged
+  hourly (without content); no crash, no growth > 20 % in engine memory, no write outside dry-run proposals.
+
+### 4.23 `release`
+Specified at the start of Phase 8 from brief §8.
 
 ## 5. Commands (engine; Swift added in Phase 2)
 
