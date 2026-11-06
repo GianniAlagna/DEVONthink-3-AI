@@ -179,7 +179,10 @@ class Service:
                                                     "AND decided_at IS NULL").fetchone()[0],
                     "index_docs": self.index.count() if self.index else None,
                     "power": {**self.power.state(), "held": self.power.hold(self.cfg.get("power", {}))},
-                    "jobs": {n: self.scheduler.last(n) for n in jobs.ORDER}}
+                    "jobs": {n: self.scheduler.last(n) for n in jobs.ORDER},
+                    # E-1 health: index server, oldest waiting job (minutes), last finished job
+                    "embed_ok": self.index.embedder.health() if self.index else None,
+                    "queue_backlog": self.queue.backlog_minutes(), "last_job": self.queue.last_finished()}
         if method == "process":
             uuid = params["uuid"]
             if not (isinstance(uuid, str) and UUID_RE.fullmatch(uuid)):
