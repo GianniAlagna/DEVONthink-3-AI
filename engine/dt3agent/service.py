@@ -21,6 +21,7 @@ from dt3agent.ics import build_event
 from dt3agent.index import Index
 from dt3agent.intake import ingest_spool
 from dt3agent.knowledge import AskError, ask, summarize
+from dt3agent.power import Power
 from dt3agent.rpc import RPCError
 from dt3agent.undo import MIGRATIONS as UNDO_MIGRATIONS
 from dt3agent.undo import UndoJournal
@@ -60,6 +61,7 @@ class Service:
         self.queue.recover_interrupted()  # one engine per data dir: anything 'running' now was cut off
         self.adapter = DT3Adapter(bridge, UndoJournal(self.undo_con), AuditLog(self.data / "audit"))
         self.index = None
+        self.power = Power()
         self._use_config(self.cfg)
 
     def _use_config(self, cfg: dict) -> None:
@@ -106,8 +108,8 @@ class Service:
     def tick(self) -> str | None:
         """Pick up spool files, then process at most one job. Returns the outcome or error code."""
         ingest_spool(self.spool, self.queue)
-        if self._paused() or self.ai is None:
-            return None
+        if self._paused() or self.ai is None or self.power.hold(self.cfg.get("power", {})):
+            return None  # E-6: the queue keeps filling; work resumes when the Mac is on power again
         return self.pipeline.run_once(self.queue)
 
     # rpc -----------------------------------------------------------------
@@ -134,7 +136,8 @@ class Service:
                                                      "WHERE decided_at IS NULL").fetchone()[0],
                     "urgent_open": self.con.execute("SELECT COUNT(*) FROM review_items WHERE kind = 'urgent' "
                                                     "AND decided_at IS NULL").fetchone()[0],
-                    "index_docs": self.index.count() if self.index else None}
+                    "index_docs": self.index.count() if self.index else None,
+                    "power": {**self.power.state(), "held": self.power.hold(self.cfg.get("power", {}))}}
         if method == "process":
             uuid = params["uuid"]
             if not (isinstance(uuid, str) and UUID_RE.fullmatch(uuid)):
