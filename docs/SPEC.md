@@ -282,6 +282,8 @@ Specified 2026-11-06 at the start of Phase 7.
 ### 4.22 `ops` (Phase 7, brief Block E)
 - **Health (E1):** `status` adds `embed_ok`, `queue_backlog` (oldest queued age in minutes), `last_job`; the app
   shows the worst state (existing Health enum + "backlog").
+  Built 2026-11-06 (engine): `embed_ok` (null without an index server), `queue_backlog` (minutes since the oldest
+  waiting job was queued, null when none waits), `last_job` `{state, error, at}` (error code only for `dead`).
 - **Power mode (E6):** `power` config `{pause_on_battery: true, pause_on_memory_pressure: true}`. Battery via
   `pmset -g batt` (argv, parsed), memory pressure via `sysctl kern.memorystatus_vm_pressure_level` (1 normal,
   2 warn, 4 critical; pause at ≥ 2). UNVERIFIED on macOS 11 until the floor check. The index server is stopped

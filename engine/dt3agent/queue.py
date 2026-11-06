@@ -112,6 +112,21 @@ class Queue:
     def counts(self) -> dict[str, int]:
         return dict(self.con.execute("SELECT state, COUNT(*) FROM jobs GROUP BY state").fetchall())
 
+    def backlog_minutes(self) -> int | None:
+        """E-1: age in minutes of the oldest job still waiting (queued or to retry); None when nothing waits."""
+        row = self.con.execute("SELECT MIN(created_at) FROM jobs WHERE state IN "
+                               "('queued', 'running', 'partial', 'failed')").fetchone()
+        if not row or not row[0]:
+            return None
+        return max(0, int((self.clock() - datetime.fromisoformat(row[0])).total_seconds() // 60))
+
+    def last_finished(self) -> dict | None:
+        """E-1: the most recently finished job: its state and time (no record content)."""
+        row = self.con.execute("SELECT state, last_error, updated_at FROM jobs WHERE state IN "
+                               "('done', 'review', 'skipped', 'dead') "
+                               "ORDER BY updated_at DESC, id DESC LIMIT 1").fetchone()
+        return {"state": row[0], "error": row[1] if row[0] == "dead" else None, "at": row[2]} if row else None
+
     def pull_since(self, database: str, group: str) -> str | None:
         row = self.con.execute("SELECT since FROM pull_state WHERE database = ? AND grp = ?",
                                (database, group)).fetchone()
