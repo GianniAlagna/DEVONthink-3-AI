@@ -67,7 +67,7 @@ DEFAULTS = {
     "jobs": {"nightly": {"enabled": True, "time": "02:30"},
              "digest": {"enabled": False, "day": "mon", "time": "07:30", "group": "", "lang": "de"},
              "hygiene": {"enabled": False, "day": "sun", "time": "03:30", "group": "", "lang": "de",
-                         "inbox": "/Inbox/", "days": 14}},
+                         "inbox": "/Inbox/", "days": 14, "tags": True}},
 }
 
 # Expected type per key; nested dicts are checked one level deep.
@@ -176,7 +176,7 @@ def _check_job(name: str, spec) -> None:
         raise ConfigError(f"jobs.{name}: unknown job or wrong fields")
     ok = (isinstance(spec["enabled"], bool) and isinstance(spec["time"], str) and JOB_TIME_RE.fullmatch(spec["time"])
           and spec.get("day", "mon") in ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
-          and spec.get("lang", "de") in ("de", "fr", "it", "en")
+          and spec.get("lang", "de") in ("de", "fr", "it", "en") and isinstance(spec.get("tags", True), bool)
           and all(isinstance(spec.get(k, "/"), str) and len(spec.get(k, "/")) <= 500 and ".." not in spec.get(k, "/")
                   for k in ("group", "inbox"))
           and (not isinstance(spec.get("days"), bool) and isinstance(spec.get("days", 1), int)

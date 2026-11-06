@@ -271,6 +271,11 @@ Specified 2026-11-06 at the start of Phase 7.
 - **Tag hygiene (D4):** proposals to merge near-duplicate tags (case/diacritics/plural, edit distance ≤ 2 within the
   vocabulary and existing tags); review item only, accept = add the kept tag to the affected records' planned
   changes (never remove a tag on its own).
+  Built 2026-11-06 (`taghygiene.py`): runs inside the hygiene job (`jobs.hygiene.tags`, default on) over the
+  records it already read (no extra DT3 reads). Near-duplicate = same up to case, diacritics or a plural ending,
+  or edit distance ≤ 2 for tags of 6+ letters; digits must match (years stay apart). Kept tag: vocabulary, else
+  the more frequent, else the shorter. Output: `planned` review items with code `tag_hygiene` and
+  `tags_add: [kept]` (max 50 per run, no duplicate open item); accept adds the tag with undo, nothing is removed.
 - **RSS / mail summaries (D5):** for records of kind RSS/HTML/email in scope: a summary note proposal per day
   (uses K-6 `summarize`, sanitized input). Opt-in (`jobs.feeds`, default off).
 
