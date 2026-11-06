@@ -84,7 +84,7 @@ Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC
 - [ ] J-1 bridge verb `list` (read-only, scopes) + floor check — built, floor check open
 - [ ] J-2 scheduler (jobs_runs, due times, skip when paused / battery / memory pressure) — built
 - [ ] J-3 nightly incremental (D1) — built
-- [ ] J-4 weekly digest + hygiene report (D2, D3) as Markdown proposals
+- [ ] J-4 weekly digest + hygiene report (D2, D3) as Markdown proposals — engine built; app review row open
 - [ ] J-5 tag hygiene (D4) proposals
 - [ ] J-6 RSS/mail summaries (D5, opt-in)
 - [ ] E-1 health (embed_ok, backlog, last job) in status + app

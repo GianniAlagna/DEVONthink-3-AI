@@ -63,9 +63,11 @@ DEFAULTS = {
     # E-6 (SPEC §4.22): hold processing on battery and under memory pressure (brief §2.4)
     "power": {"pause_on_battery": True, "pause_on_memory_pressure": True},
     # J-2 (SPEC §4.21): local times; digest and hygiene need a target group and stay off until set
+    # J-4: reports go to an existing group as Markdown, after the user's OK in the review list
     "jobs": {"nightly": {"enabled": True, "time": "02:30"},
-             "digest": {"enabled": False, "day": "mon", "time": "07:30"},
-             "hygiene": {"enabled": False, "day": "sun", "time": "03:30"}},
+             "digest": {"enabled": False, "day": "mon", "time": "07:30", "group": "", "lang": "de"},
+             "hygiene": {"enabled": False, "day": "sun", "time": "03:30", "group": "", "lang": "de",
+                         "inbox": "/Inbox/", "days": 14}},
 }
 
 # Expected type per key; nested dicts are checked one level deep.
@@ -140,13 +142,8 @@ def validate(cfg: dict) -> dict:
     if not all(isinstance(v, bool) for v in cfg.get("power", {}).values()):
         raise ConfigError("power: pause_on_battery and pause_on_memory_pressure are true/false")
     for name, spec in cfg.get("jobs", {}).items():
-        keys = {"enabled", "time"} | ({"day"} if name != "nightly" else set())
-        if not (name in ("nightly", "digest", "hygiene") and isinstance(spec, dict) and set(spec) == keys
-                and isinstance(spec["enabled"], bool) and isinstance(spec["time"], str)
-                and JOB_TIME_RE.fullmatch(spec["time"])
-                and spec.get("day", "mon") in ("mon", "tue", "wed", "thu", "fri", "sat", "sun")):
-            raise ConfigError(f"jobs.{name}: enabled true/false, time HH:MM"
-                              + ("" if name == "nightly" else ", day mon-sun"))
+        # fields missing in an older file get their defaults when loaded
+        _check_job(name, {**DEFAULTS["jobs"].get(name, {}), **spec} if isinstance(spec, dict) else spec)
     ident = cfg.get("identity", {}).get("name")
     if not (ident is None or (isinstance(ident, str) and len(ident) <= 200 and ident.isprintable())):
         raise ConfigError("identity.name: text up to 200 characters")
@@ -173,10 +170,33 @@ def validate(cfg: dict) -> dict:
     return cfg
 
 
+def _check_job(name: str, spec) -> None:
+    default = DEFAULTS["jobs"].get(name)
+    if default is None or not isinstance(spec, dict) or set(spec) != set(default):
+        raise ConfigError(f"jobs.{name}: unknown job or wrong fields")
+    ok = (isinstance(spec["enabled"], bool) and isinstance(spec["time"], str) and JOB_TIME_RE.fullmatch(spec["time"])
+          and spec.get("day", "mon") in ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+          and spec.get("lang", "de") in ("de", "fr", "it", "en")
+          and all(isinstance(spec.get(k, "/"), str) and len(spec.get(k, "/")) <= 500 and ".." not in spec.get(k, "/")
+                  for k in ("group", "inbox"))
+          and (not isinstance(spec.get("days"), bool) and isinstance(spec.get("days", 1), int)
+               and 1 <= spec.get("days", 1) <= 365))
+    if ok and spec["enabled"] and "group" in spec:
+        ok = spec["group"].startswith("/")  # a report needs its target group (it must exist in DT3)
+    if ok and "inbox" in spec:
+        ok = spec["inbox"].startswith("/")
+    if not ok:
+        raise ConfigError(f"jobs.{name}: enabled true/false, time HH:MM, day mon-sun, lang de/fr/it/en, "
+                          "group and inbox like /Group/ (group needed when enabled), days 1-365")
+
+
 def _with_defaults(cfg: dict) -> dict:
     merged = copy.deepcopy(DEFAULTS)
     for key, value in cfg.items():
         merged[key] = {**merged[key], **value} if isinstance(DEFAULTS[key], dict) else value
+    if isinstance(cfg.get("jobs"), dict):  # job settings are filled field by field (new fields get defaults)
+        merged["jobs"] = {n: {**DEFAULTS["jobs"].get(n, {}), **v} if isinstance(v, dict) else v
+                          for n, v in merged["jobs"].items()}
     return merged
 
 
@@ -214,6 +234,8 @@ def merge(cfg: dict, changes: dict) -> dict:
     for key, value in changes.items():
         if key not in DEFAULTS:
             raise ConfigError(f"unknown key: {key}")
+        if key == "jobs" and isinstance(value, dict):  # one job's fields can change alone
+            value = {n: {**out["jobs"].get(n, {}), **v} if isinstance(v, dict) else v for n, v in value.items()}
         out[key] = {**out[key], **value} if isinstance(DEFAULTS[key], dict) and isinstance(value, dict) else value
     return validate(out)
 

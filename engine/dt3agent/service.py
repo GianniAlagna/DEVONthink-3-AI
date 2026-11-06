@@ -11,7 +11,7 @@ import time
 from datetime import UTC, date, datetime
 from pathlib import Path
 
-from dt3agent import __version__, config, duplicates, jobs, naming, nightly, pipeline, review, store
+from dt3agent import __version__, config, duplicates, jobs, naming, nightly, pipeline, reports, review, store
 from dt3agent import queue as queuemod
 from dt3agent.adapter import DT3Adapter
 from dt3agent.ai import AIError, LlamaClient
@@ -31,7 +31,7 @@ from dt3agent.vision import VisionClient
 STATE_MIGRATIONS = ["CREATE TABLE state (key TEXT PRIMARY KEY, value TEXT NOT NULL)"]
 # Order is part of the schema: append only.
 ENGINE_MIGRATIONS = (queuemod.MIGRATIONS + pipeline.MIGRATIONS + STATE_MIGRATIONS + review.MIGRATIONS
-                     + duplicates.MIGRATIONS + review.MIGRATIONS_2 + jobs.MIGRATIONS)
+                     + duplicates.MIGRATIONS + review.MIGRATIONS_2 + jobs.MIGRATIONS + review.MIGRATIONS_3)
 # Settings the app may not change over rpc: the vision helper is a program the engine runs (set by the installer).
 RPC_LOCKED = {"schema_version", "vision"}
 DEFAULT_DATA = Path.home() / "Library/Application Support/DT3 Agent"
@@ -64,8 +64,9 @@ class Service:
         self.index = None
         self.power = Power()
         self.scheduler = jobs.Scheduler(self.con)
-        # name -> callable returning "ok" or a short error code; J-4 adds digest and hygiene
-        self.job_runners = {"nightly": lambda: nightly.run(self.adapter, self.queue, self.cfg.get("scopes", []))}
+        # name -> callable returning "ok" or a short error code
+        self.job_runners = {"nightly": lambda: nightly.run(self.adapter, self.queue, self.cfg.get("scopes", [])),
+                            "digest": lambda: self._report("digest"), "hygiene": lambda: self._report("hygiene")}
         self.local_clock = lambda: datetime.now().astimezone()
         self._use_config(self.cfg)
 
@@ -183,13 +184,20 @@ class Service:
         if method == "review":
             # codes and planned tags only: raw model output may echo document text and stays in the database
             kind = params.get("kind")
-            if kind is not None and kind not in review.KINDS:
+            if kind is not None and kind not in review.KINDS_3:
                 raise RPCError("bad_params")
             rows = self.con.execute("SELECT id, uuid, kind, code, payload_json, created_at, record_missing "
                                     "FROM review_items WHERE decided_at IS NULL AND (? IS NULL OR kind = ?) "
                                     "ORDER BY id DESC LIMIT 20", (kind, kind)).fetchall()
             out, records = [], {}
             for i, u, k, c, p, t, missing in rows:
+                if k == "report":  # no record of its own: nothing to read in DT3
+                    payload = json.loads(p)
+                    row = self._review_row(i, u, k, c, payload, t)
+                    row.update(record_name=payload.get("title"), before=None, record_missing=False,
+                               actions=["accept", "reject"])
+                    out.append(row)
+                    continue
                 if u not in records:
                     records[u] = self._record_state(u, bool(missing))
                 missing, rec = records[u]
@@ -326,6 +334,8 @@ class Service:
         elif k == "deadline":
             after = p.get("after") or {}
             row.update(date=after.get("date"), title=after.get("title"), phrase=p.get("phrase"))
+        elif k == "report":  # J-4: a preview only; the full text stays here (rpc lines are capped at 64 KB)
+            row.update(title=p.get("title"), group=p.get("group"), preview=(p.get("text") or "")[:400])
         return row
 
     def _decide(self, params: dict) -> dict:
@@ -348,7 +358,7 @@ class Service:
                 ok = False
             if not ok:
                 raise RPCError("bad_value")  # edit = another date, YYYY-MM-DD
-        if kind and kind[0] == "urgent" and value is not None:
+        if kind and kind[0] in ("urgent", "report") and value is not None:
             raise RPCError("bad_value")  # accept (move to the urgent group) or reject
         if kind and kind[0] in ("duplicate", "case") and value is not None:
             value = " ".join(value) if isinstance(value, list) else value
@@ -394,6 +404,8 @@ class Service:
         return rec.get({"name": "name", "comment": "comment", "location": "location"}.get(field, ""))
 
     def _apply(self, result: dict, params: dict) -> dict:
+        if result["kind"] == "report":
+            return self._report_note(result, params["id"])
         if result["kind"] in ("duplicate", "case"):
             return self._a10(result, params["id"])
         if result["kind"] == "urgent":
@@ -436,6 +448,29 @@ class Service:
                 code = f"apply_failed_{code}" if re.fullmatch(r"[a-z][a-z0-9_]{0,39}", code) else "apply_failed"
             raise RPCError(code) from e
         return {"applied": True}
+
+    def _report_note(self, result: dict, item_id: int) -> dict:
+        """J-4 after the user's OK: the report as a Markdown note in its group (must exist; never created)."""
+        if result["decision"] == "reject":
+            return {"applied": False}
+        p = result["payload"]
+        try:
+            self.adapter.create_note(p["group"], p["title"], p["text"], batch_id=f"review-{item_id}")
+        except Exception as e:
+            raise RPCError(str(e) if str(e) in ("group_not_found", "not_dt3") else "apply_failed") from e
+        return {"applied": True}
+
+    def _report(self, job: str) -> str:
+        spec = self.cfg["jobs"][job]
+        if not spec.get("group"):
+            return "no_group"
+        now = self.local_clock()
+        if job == "digest":
+            title, text = reports.digest(self.con, self.adapter, now, spec["lang"])
+        else:
+            title, text = reports.hygiene(self.adapter, self.cfg.get("scopes", []), spec, now)
+        reports.propose(self.con, job, title, text, spec["group"], now)
+        return "ok"
 
     def _urgent(self, result: dict, item_id: int) -> dict:
         """B6: accept moves the letter to the urgent group; the group must exist (never created here)."""
