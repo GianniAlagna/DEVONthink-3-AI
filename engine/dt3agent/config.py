@@ -58,6 +58,8 @@ DEFAULTS = {
          "text": "Rechtsvorschlag: innert 10 Tagen nach Zustellung (SchKG Art. 74 Abs. 1) – bitte prüfen"}]},
     "update_check": False,
     "logs": {"content": False},
+    # E-6 (SPEC §4.22): hold processing on battery and under memory pressure (brief §2.4)
+    "power": {"pause_on_battery": True, "pause_on_memory_pressure": True},
 }
 
 # Expected type per key; nested dicts are checked one level deep.
@@ -65,7 +67,7 @@ TYPES = {
     "schema_version": int, "dry_run": bool, "scopes": list, "ai": dict, "naming": dict,
     "thresholds": dict, "update_check": bool, "logs": dict, "tags": dict, "keywords": dict, "vision": dict,
     "identity": dict, "summary": dict, "filing": dict, "duplicates": dict, "cases": list,
-    "retention": dict, "urgent": dict, "knowledge": dict,
+    "retention": dict, "urgent": dict, "knowledge": dict, "power": dict,
 }
 
 
@@ -129,6 +131,8 @@ def validate(cfg: dict) -> dict:
             and not isinstance(rmin, bool) and 0.5 <= rmin <= 0.99
             and isinstance(smin, (int, float)) and not isinstance(smin, bool) and 0.0 <= smin <= 0.9):
         raise ConfigError("knowledge: related is true/false, related_min 0.5-0.99, min_score 0-0.9")
+    if not all(isinstance(v, bool) for v in cfg.get("power", {}).values()):
+        raise ConfigError("power: pause_on_battery and pause_on_memory_pressure are true/false")
     ident = cfg.get("identity", {}).get("name")
     if not (ident is None or (isinstance(ident, str) and len(ident) <= 200 and ident.isprintable())):
         raise ConfigError("identity.name: text up to 200 characters")
