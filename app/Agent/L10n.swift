@@ -7,7 +7,7 @@ import Foundation
 struct L10n {
     enum Key: String, CaseIterable {
         case appName
-        case healthOffline, healthNoAI, healthNoDT3, healthPaused, healthDryRun, healthReady
+        case healthOffline, healthNoAI, healthNoDT3, healthNoIndex, healthBacklog, healthPowerHold, healthPaused, healthDryRun, healthReady
         case processSelected, queuedN, queue, review, urgent
         case pause, resume
         case undo, undoConfirmTitle, undoConfirmText, undoButton, cancel, undoDone
@@ -57,6 +57,9 @@ struct L10n {
             .healthPaused: "Pausiert",
             .healthDryRun: "Testmodus: nur Vorschläge",
             .healthReady: "Bereit",
+            .healthNoIndex: "KI-Index nicht erreichbar: Fragen geht nicht",
+            .healthBacklog: "Warteschlange hängt seit über 2 Stunden",
+            .healthPowerHold: "Wartet: Akku oder Speicher knapp",
             .processSelected: "Ausgewählte Dokumente verarbeiten",
             .queuedN: "%d Dokumente in der Warteschlange",
             .queue: "Warteschlange: %d",
@@ -244,6 +247,9 @@ struct L10n {
             .healthPaused: "Paused",
             .healthDryRun: "Test mode: proposals only",
             .healthReady: "Ready",
+            .healthNoIndex: "AI index not reachable: asking does not work",
+            .healthBacklog: "Queue stuck for over 2 hours",
+            .healthPowerHold: "Waiting: on battery or low memory",
             .processSelected: "Process selected records",
             .queuedN: "%d records queued",
             .queue: "Queue: %d",
@@ -431,6 +437,9 @@ struct L10n {
             .healthPaused: "En pause",
             .healthDryRun: "Mode test : propositions seulement",
             .healthReady: "Prêt",
+            .healthNoIndex: "Index IA injoignable : poser des questions ne fonctionne pas",
+            .healthBacklog: "File d’attente bloquée depuis plus de 2 heures",
+            .healthPowerHold: "En attente : batterie ou mémoire insuffisante",
             .processSelected: "Traiter les documents sélectionnés",
             .queuedN: "%d documents en file d’attente",
             .queue: "File d’attente : %d",
@@ -618,6 +627,9 @@ struct L10n {
             .healthPaused: "In pausa",
             .healthDryRun: "Modalità test: solo proposte",
             .healthReady: "Pronto",
+            .healthNoIndex: "Indice IA non raggiungibile: le domande non funzionano",
+            .healthBacklog: "Coda bloccata da oltre 2 ore",
+            .healthPowerHold: "In attesa: batteria o memoria scarsa",
             .processSelected: "Elabora i documenti selezionati",
             .queuedN: "%d documenti in coda",
             .queue: "Coda: %d",

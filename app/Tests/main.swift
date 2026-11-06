@@ -32,7 +32,16 @@ check(health { $0["paused"] = true } == .paused, "paused")
 check(health { $0["dry_run"] = true } == .dryRun, "dry-run")
 check(health { $0["paused"] = true; $0["ai_ok"] = false } == .noAI, "a problem outranks paused")
 check(Health.offline.needsAttention && !Health.dryRun.needsAttention, "attention only for problems")
-let symbols = [Health.offline, .noAI, .paused, .dryRun, .ready].map { $0.symbol }
+check(health { $0["embed_ok"] = false } == .noIndex, "index server not answering")
+check(health { $0["embed_ok"] = true } == .ready && health { $0["embed_ok"] = NSNull() } == .ready,
+      "no index server set up is fine")
+check(health { $0["queue_backlog"] = 119 } == .ready && health { $0["queue_backlog"] = 120 } == .backlog,
+      "backlog from two hours")
+check(health { $0["power"] = ["held": "battery"] } == .powerHold, "waiting on battery")
+check(health { $0["power"] = ["held": NSNull()] } == .ready, "power not holding")
+check(health { $0["paused"] = true; $0["queue_backlog"] = 500 } == .paused, "paused explains a backlog")
+check(Health.backlog.needsAttention && !Health.powerHold.needsAttention, "backlog needs attention, power hold not")
+let symbols = [Health.offline, .noAI, .backlog, .powerHold, .paused, .dryRun, .ready].map { $0.symbol }
 check(Set(symbols).count == symbols.count, "each state has its own symbol (color is not the only signal)")
 
 // texts
