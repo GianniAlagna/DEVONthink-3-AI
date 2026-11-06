@@ -346,6 +346,12 @@ release, no public download).
   8 GB Mac (Q2) if available; install from DMG, onboarding, Smart Rule, processing, review, undo, ask, reports,
   removal; VoiceOver and keyboard (from Phase 5); 48 h soak (P7-G); memory and time per document recorded.
   Regressions against Phase 2–7 measurements block the release.
+- **Built 2026-11-06 (R-3):** `tools/release.sh VERSION ARCH [IDENTITY]` (checks the version, pinned Python and
+  llama.cpp with checksums, llama-server without build-machine CPU tuning — x86_64 baseline AVX2/FMA/F16C, signs
+  every Mach-O inside, DMG + `.sha256`); the Smart Rule script is bundled as source and compiled by the installer
+  on the user's Mac when no compiled copy is inside (CI has no DT3). `.github/workflows/release.yml`: tag `v*` only,
+  both DMGs on one macos-15 runner, stops without certificate secrets, `gh release create --draft`. Owner steps:
+  `docs/release.md`.
 
 ## 5. Commands (engine; Swift added in Phase 2)
 

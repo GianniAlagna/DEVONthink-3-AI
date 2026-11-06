@@ -44,8 +44,10 @@ cp app/Agent/Info.plist "$UI/Contents/Info.plist"
 mkdir -p "$UI/Contents/Helpers" "$UI/Contents/Resources/engine"
 ditto "$APP" "$UI/Contents/Helpers/DT3 Agent Engine.app"
 rsync -a --exclude __pycache__ --exclude tests engine/dt3agent "$UI/Contents/Resources/engine/"
-# osacompile needs the DT3 dictionary, so the Smart Rule script is only compiled where DT3 is installed
-# (the floor/release Mac). CI has no DT3; the installer then skips the script step.
+# osacompile needs the DT3 dictionary, so the Smart Rule script is only compiled where DT3 is installed.
+# The source is always bundled: without a compiled script (CI, release builds) the installer compiles it on the
+# user's Mac, where DT3 is (R-3).
+cp dt3-scripts/SmartRule-Enqueue.applescript "$UI/Contents/Resources/SmartRule-Enqueue.applescript"
 if [ -d "/Applications/DEVONthink 3.app" ]; then
     osacompile -o "$UI/Contents/Resources/DT3 Agent Enqueue.scpt" dt3-scripts/SmartRule-Enqueue.applescript
 else

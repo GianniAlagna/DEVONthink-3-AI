@@ -110,7 +110,8 @@ final class InstallerModel: ObservableObject {
     }
 
     private func installScript() {
-        guard fm.fileExists(atPath: paths.bundledScript.path) else { return }
+        let compiled = fm.fileExists(atPath: paths.bundledScript.path)
+        guard compiled || fm.fileExists(atPath: paths.bundledScriptSource.path) else { return }
         if dt3Running {
             say(t[.instQuitDT3])  // DT3 reads external scripts only at start (Phase 2 T1)
             return
@@ -118,7 +119,22 @@ final class InstallerModel: ObservableObject {
         do {
             try fm.createDirectory(at: paths.smartRules, withIntermediateDirectories: true)
             if fm.fileExists(atPath: paths.script.path) { try fm.removeItem(at: paths.script) }
-            try fm.copyItem(at: paths.bundledScript, to: paths.script)
+            if compiled {
+                try fm.copyItem(at: paths.bundledScript, to: paths.script)
+            } else {
+                // R-3: compile here, where DT3's dictionary exists (argument list, no shell)
+                let p = Process()
+                p.executableURL = URL(fileURLWithPath: "/usr/bin/osacompile")
+                p.arguments = ["-o", paths.script.path, paths.bundledScriptSource.path]
+                p.standardOutput = FileHandle.nullDevice
+                p.standardError = FileHandle.nullDevice
+                try p.run()
+                p.waitUntilExit()
+                guard p.terminationStatus == 0, fm.fileExists(atPath: paths.script.path) else {
+                    throw NSError(domain: "osacompile", code: Int(p.terminationStatus),
+                                  userInfo: [NSLocalizedDescriptionKey: "osacompile \(p.terminationStatus)"])
+                }
+            }
             say(t[.instScript])
         } catch {
             say(t[.instFailed] + ": " + error.localizedDescription)
