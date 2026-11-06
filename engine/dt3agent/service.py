@@ -144,18 +144,19 @@ class Service:
         """J-2: at most one scheduled job per tick; a job without a runner yet is left alone."""
         now = self.local_clock()
         for name in self.scheduler.due(self.cfg.get("jobs", {}), now):
-            runner = self.job_runners.get(name)
-            if runner is None:
-                continue
-            try:
-                result = runner()
-            except Exception as e:  # a job failure never stops the engine; a short code is kept, never content
-                code = str(e)
-                result = code if isinstance(e, BridgeError) and re.fullmatch(r"[a-z][a-z0-9_]{0,39}", code) \
-                    else "job_failed"
-            self.scheduler.done(name, now, result)
-            return f"job:{name}:{result}"
+            if name in self.job_runners:
+                return f"job:{name}:{self._run_job(name, now)}"
         return None
+
+    def _run_job(self, name: str, now: datetime) -> str:
+        try:
+            result = self.job_runners[name]()
+        except Exception as e:  # a job failure never stops the engine; a short code is kept, never content
+            code = str(e)
+            result = code if isinstance(e, BridgeError) and re.fullmatch(r"[a-z][a-z0-9_]{0,39}", code) \
+                else "job_failed"
+        self.scheduler.done(name, now, result)
+        return result
 
     # rpc -----------------------------------------------------------------
     def handle(self, method: str, params: dict):
@@ -164,7 +165,7 @@ class Service:
                     "undo": set(), "pause": set(), "resume": set(), "live": {"on"},
                     "config_get": set(), "config_set": {"changes"}, "naming_preview": {"template"},
                     "dt3_info": set(), "ask": {"question"}, "summary": {"uuid", "lang"}, "selected": set(),
-                    "list": {"since"} if "since" in params else set(), "diagnostics": set()}
+                    "list": {"since"} if "since" in params else set(), "diagnostics": set(), "run_job": {"name"}}
         expected["decide"] = {"id", "decision"} | ({"value"} if "value" in params else set())
         if method not in expected:
             raise RPCError("unknown_method")  # there is no delete method
@@ -252,6 +253,10 @@ class Service:
                 row["seconds"] = round(time.monotonic() - started, 1)
                 out.append(row)
             return {"scopes": out}
+        if method == "run_job":  # floor checks and "run now": the same runner as the schedule, counted as its run
+            if params["name"] not in self.job_runners:
+                raise RPCError("bad_params")
+            return {"name": params["name"], "result": self._run_job(params["name"], self.local_clock())}
         if method == "diagnostics":  # E-8: a zip without personal data in ~/Downloads
             try:
                 return {"path": str(diagnostics.export(self, self.diagnostics_dir))}
