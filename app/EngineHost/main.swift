@@ -376,7 +376,7 @@ func handle(_ request: [String: Any], bridge: DT3Bridge) throws -> Any {
     case "create_markdown":
         guard args.count == 3, let l = args["location"] as? String, l.hasPrefix("/"), l.count <= 500,
               !l.split(separator: "/").contains(".."), let n = args["name"] as? String, !n.isEmpty, n.count <= 255,
-              let t = args["text"] as? String, t.count <= 2000 else { throw HostError(code: "bad_args") }
+              let t = args["text"] as? String, t.count <= 8000 else { throw HostError(code: "bad_args") }
         try bridge.requireDT3()
         text = try bridge.call("createMarkdown", [l, n, t])
     case "move":

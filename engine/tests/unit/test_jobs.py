@@ -146,3 +146,20 @@ def test_a_failing_job_keeps_only_a_code(tmp_path):
     svc.job_runners["nightly"] = leak
     svc.local_clock = lambda: at(2026, 11, 7, 2, 31)
     assert svc.tick() == "job:nightly:job_failed"
+
+
+def test_one_job_field_can_change_alone_and_reports_need_a_group():
+    cfg = config.merge(config.DEFAULTS, {"jobs": {"nightly": {"time": "03:15"}}})
+    assert cfg["jobs"]["nightly"] == {"enabled": True, "time": "03:15"}
+    with pytest.raises(config.ConfigError):
+        config.merge(config.DEFAULTS, {"jobs": {"digest": {"enabled": True}}})        # no group yet
+    cfg = config.merge(config.DEFAULTS, {"jobs": {"digest": {"enabled": True, "group": "/_Berichte/"}}})
+    assert cfg["jobs"]["digest"]["group"] == "/_Berichte/"
+
+
+def test_old_job_settings_get_new_fields(tmp_path):
+    import json
+    (tmp_path / "config.json").write_text(json.dumps({"jobs": {"digest": {"enabled": False, "day": "tue",
+                                                                          "time": "08:00"}}}))
+    cfg = config.load(tmp_path / "config.json")
+    assert cfg["jobs"]["digest"]["day"] == "tue" and cfg["jobs"]["digest"]["lang"] == "de"

@@ -28,6 +28,27 @@ MIGRATIONS = [
 ]
 # B-0: the record behind an item can disappear in DT3 (deleted, emptied trash). Separate list: append only.
 MIGRATIONS_2 = ["ALTER TABLE review_items ADD COLUMN record_missing INTEGER NOT NULL DEFAULT 0"]
+# J-4: reports (weekly digest, hygiene) are review items too; accept writes them as a Markdown note.
+KINDS_3 = KINDS + ("report",)
+MIGRATIONS_3 = [
+    f"""CREATE TABLE review_items_v3 (
+        id INTEGER PRIMARY KEY,
+        uuid TEXT NOT NULL,
+        kind TEXT NOT NULL CHECK (kind IN {KINDS_3}),
+        code TEXT,
+        payload_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        decided_at TEXT,
+        decision TEXT CHECK (decision IN ('accept', 'edit', 'reject')),
+        value_json TEXT,
+        record_missing INTEGER NOT NULL DEFAULT 0)""",
+    "INSERT INTO review_items_v3 SELECT id, uuid, kind, code, payload_json, created_at, decided_at, decision, "
+    "value_json, record_missing FROM review_items",
+    "DROP TABLE review_items",
+    "ALTER TABLE review_items_v3 RENAME TO review_items",
+]
+# A report has no record of its own; this fixed UUID marks it (never a real DT3 record).
+REPORT_UUID = "00000000-0000-4000-8000-000000000000"
 
 
 class ReviewError(ValueError):

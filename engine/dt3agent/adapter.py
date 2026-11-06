@@ -125,6 +125,15 @@ class DT3Adapter:
                          batch_id=batch_id, result="ok")
         return new
 
+    def create_note(self, location: str, name: str, text: str, *, batch_id: str) -> str:
+        """J-4, after the user's OK: a Markdown note (report) into an existing group. Not part of undo, like the
+        other notes: the engine cannot delete what it created."""
+        self.check_dt3()
+        new = self.bridge.call("create_markdown", location=location, name=name[:200], text=text)["uuid"]
+        self.audit.write(actor="user", action="create_markdown", uuid=new, fields_changed=["note"],
+                         batch_id=batch_id, result="ok")
+        return new
+
     def add_event(self, uuid: str, name: str, ics: str, when: str, *, batch_id: str) -> str:
         """B-5, after the user's OK: import the .ics next to the record and set its DT3 reminder. Like the A10
         actions this creates something the engine cannot delete, so it is not part of undo."""

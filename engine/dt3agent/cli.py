@@ -20,7 +20,8 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("process", help="queue a record (UUID or item link); without one: the DT3 selection")
     p.add_argument("record", nargs="?")
     p = sub.add_parser("review", help="open review items (reason codes, planned tags); optional: one kind")
-    p.add_argument("kind", nargs="?", choices=["planned", "error", "field", "duplicate", "case", "deadline", "urgent"])
+    p.add_argument("kind", nargs="?", choices=["planned", "error", "field", "duplicate", "case", "deadline", "urgent",
+                                               "report"])
     p = sub.add_parser("decide", help="decide a review item: accept | reject | edit TAG [TAG …]")
     p.add_argument("id", type=int)
     p.add_argument("decision", choices=["accept", "reject", "edit"])

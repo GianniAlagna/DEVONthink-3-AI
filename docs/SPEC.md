@@ -260,6 +260,14 @@ Specified 2026-11-06 at the start of Phase 7.
   own tables. de/fr/it/en by `identity`/app language.
 - **Hygiene report (D3):** same delivery as the digest: untagged records and records still in the inbox/import
   group after N days (config). Read-only.
+  Built 2026-11-06 (`reports.py`): config `jobs.digest {…, group, lang}` and `jobs.hygiene {…, group, lang,
+  inbox, days}` (group required when enabled; it must exist in DT3, never created). Each run proposes one review
+  item of kind `report` (fixed UUID `00000000-0000-4000-8000-000000000000`, no DT3 read); a newer report closes
+  the older open one of the same job. Review list shows title, group and a 400-character preview; accept →
+  `create_markdown` (text ≤ 8000 characters; bridge and host limit raised from 2000), reject → nothing, edit →
+  `bad_value`. Digest: records processed in the last 7 days (names read from DT3, at most 40, the rest
+  counted), open deadline items, number of open proposals. Hygiene: at most 300 DT3 reads over the enabled
+  scopes. "Invoices due" is not in the digest yet: amount and due date are not stored together (follow-up).
 - **Tag hygiene (D4):** proposals to merge near-duplicate tags (case/diacritics/plural, edit distance ≤ 2 within the
   vocabulary and existing tags); review item only, accept = add the kept tag to the affected records' planned
   changes (never remove a tag on its own).
