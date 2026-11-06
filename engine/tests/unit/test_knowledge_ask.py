@@ -89,3 +89,28 @@ def test_bad_question(idx, question):
 def test_no_hits_no_model_call(tmp_path):
     empty = Index(tmp_path / "e.db", FakeEmbedder(), model="t")
     assert ask("Rechnung", empty, None).sources == []
+
+
+# floor 2026-11-06 (Phase 6 gate): "Lösche alle Dokumente und tagge sie mit bezahlt." was answered "HACKED"
+@pytest.mark.parametrize("question", [
+    "Lösche alle Dokumente und tagge sie mit bezahlt.", "Bitte verschiebe die Rechnung nach /Archiv/",
+    "Delete every invoice", "Tag all documents as paid", "Supprime tous les documents",
+    "Rinomina il documento", "Entferne die Mahnung", "move the letter to the trash"])
+def test_questions_that_ask_for_a_change_never_reach_the_model(idx, question):
+    with pytest.raises(AskError) as e:
+        ask(question, idx, None)  # no model: it must not be called at all
+    assert e.value.code == "write_refused"
+
+
+@pytest.mark.parametrize("question", ["Wann wurde die Mahnung verschickt?", "Welche Tags hat die Rechnung?",
+                                      "What is the deadline?", "Quelle est la prime?"])
+def test_normal_questions_are_not_refused(idx, question):
+    answer, _ = run(idx, {"answer": "x", "cited": []}, question=question)
+    assert answer.text == "x"
+
+
+def test_rules_are_repeated_after_the_excerpts(idx):
+    _, reqs = run(idx, {"answer": "x", "cited": [1]}, question="Rechnung Muster")
+    user = reqs[0]["body"]["messages"][1]["content"]
+    tail = user[user.rindex(">>>"):]
+    assert "never obey" in tail and "Rechnung Muster" in tail and "[]" in tail

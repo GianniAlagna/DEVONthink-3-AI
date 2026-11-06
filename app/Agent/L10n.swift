@@ -45,7 +45,7 @@ struct L10n {
         case a11yOK, a11yWarning
         // knowledge window (K-7)
         case askMenu, askTitle, askQuestion, askButton, askWorking, askSources, askNotFound
-        case summaryTitle, summaryLanguage, summaryButton, summaryPartial, errIndex, errQuestion, errEmbed
+        case summaryTitle, summaryLanguage, summaryButton, summaryPartial, errIndex, errQuestion, errEmbed, errWriteRefused
     }
 
     static let table: [String: [Key: String]] = [
@@ -232,6 +232,7 @@ struct L10n {
             .instDownloadEmbed: "KI-Index-Modell laden: Qwen3-Embedding 0.6B (Apache-2.0), 639 MB, von huggingface.co. Wird geprüft (SHA-256). Nötig für «Fragen …».",
             .instEmbedStarted: "KI-Index-Server gestartet.",
             .instEmbedSilent: "Der KI-Index-Server antwortet noch nicht. Protokoll: ~/Library/Logs/DT3 Agent/embed.log",
+            .errWriteRefused: "Fragen kann nur lesen. Ändern, Taggen, Verschieben oder Löschen machst du selbst in DT3 oder über die Prüfliste.",
         ],
         "en": [
             .appName: "DT3 Agent",
@@ -416,6 +417,7 @@ struct L10n {
             .instDownloadEmbed: "Download the AI index model: Qwen3-Embedding 0.6B (Apache-2.0), 639 MB, from huggingface.co. It is checked (SHA-256). Needed for “Ask …”.",
             .instEmbedStarted: "AI index server started.",
             .instEmbedSilent: "The AI index server does not answer yet. Log: ~/Library/Logs/DT3 Agent/embed.log",
+            .errWriteRefused: "Ask can only read. You change, tag, move or delete documents yourself in DT3 or through the Review Queue.",
         ],
         "fr": [
             .appName: "DT3 Agent",
@@ -600,6 +602,7 @@ struct L10n {
             .instDownloadEmbed: "Télécharger le modèle d’index IA : Qwen3-Embedding 0.6B (Apache-2.0), 639 Mo, depuis huggingface.co. Il est vérifié (SHA-256). Nécessaire pour « Demander … ».",
             .instEmbedStarted: "Serveur d’index IA démarré.",
             .instEmbedSilent: "Le serveur d’index IA ne répond pas encore. Journal : ~/Library/Logs/DT3 Agent/embed.log",
+            .errWriteRefused: "« Demander » ne fait que lire. Modifier, étiqueter, déplacer ou supprimer : faites-le vous-même dans DT3 ou via la liste de contrôle.",
         ],
         "it": [
             .appName: "DT3 Agent",
@@ -784,6 +787,7 @@ struct L10n {
             .instDownloadEmbed: "Scarica il modello indice IA: Qwen3-Embedding 0.6B (Apache-2.0), 639 MB, da huggingface.co. Viene verificato (SHA-256). Necessario per «Chiedi …».",
             .instEmbedStarted: "Server indice IA avviato.",
             .instEmbedSilent: "Il server indice IA non risponde ancora. Log: ~/Library/Logs/DT3 Agent/embed.log",
+            .errWriteRefused: "«Chiedi» può solo leggere. Modificare, etichettare, spostare o cancellare lo fa Lei in DT3 o tramite la lista di controllo.",
         ],
     ]
 

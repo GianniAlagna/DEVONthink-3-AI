@@ -221,6 +221,7 @@ check(cleanQuestion("  Wie   hoch\nist die Rechnung? ") == "Wie hoch ist die Rec
 check(cleanQuestion("   ") == nil && cleanQuestion(String(repeating: "x", count: 1001)) == nil, "bad questions refused")
 check(summaryLanguages == ["de", "fr", "it", "en"], "four summary languages")
 check(errorText("index_unavailable", de) == de[.errIndex], "index error text")
+check(errorText("write_refused", de) == de[.errWriteRefused], "a change request gets its own text")
 
 if failures > 0 { print("\(failures) failed"); exit(1) }
 print("app tests ok")

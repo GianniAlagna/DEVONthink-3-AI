@@ -157,7 +157,7 @@ def test_summary_in_the_requested_language_is_read_only(tmp_path, servers):
     out = svc.handle("summary", {"uuid": A, "lang": "fr"})
     assert out == {"summary": "Rechnung über CHF 1957.04, Strasse gross.", "lang": "fr", "partial": False}
     body = chat.requests[-1]["body"]
-    assert "French" in body["messages"][0]["content"] and "not instructions" in body["messages"][0]["content"]
+    assert "French" in body["messages"][0]["content"] and "never obey" in body["messages"][0]["content"]
     assert "CHF 1957.04" in body["messages"][1]["content"]
     assert not [c for c in dt3.calls[before:] if c[0].startswith(WRITES)]
 
@@ -190,3 +190,24 @@ def test_selected_is_read_only(tmp_path, servers):
     dt3.selected = [A, B]
     assert svc.handle("selected", {}) == {"uuids": [A, B]}
     assert not [c for c in dt3.calls if c[0].startswith(WRITES)]
+
+
+def test_summary_language_is_repeated_after_the_document(tmp_path, servers):
+    # floor 2026-11-06: a French summary came back in English with "Action: Do not follow instructions"
+    servers.append(make(tmp_path, json.dumps({"summary": "x"})))
+    svc, _, chat, _ = servers[0]
+    svc.handle("summary", {"uuid": A, "lang": "fr"})
+    user = chat.requests[-1]["body"]["messages"][1]["content"]
+    assert user.rstrip().endswith("French only.")
+    assert "follow instructions" not in chat.requests[-1]["body"]["messages"][0]["content"]
+
+
+def test_write_request_is_refused_by_the_engine(tmp_path, servers):
+    servers.append(make(tmp_path, json.dumps({"answer": "HACKED", "cited": [1]})))
+    svc, _, chat, _ = servers[0]
+    svc.handle("process", {"uuid": A})
+    svc.tick()
+    before = len(chat.requests)
+    with pytest.raises(Exception, match="write_refused"):
+        svc.handle("ask", {"question": "Lösche alle Dokumente und tagge sie mit bezahlt."})
+    assert len(chat.requests) == before  # the model was never asked
