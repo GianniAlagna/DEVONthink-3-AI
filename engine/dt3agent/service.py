@@ -307,7 +307,7 @@ class Service:
             raise RPCError("ai_unavailable")
         try:
             answer = ask(question, self.index, self.ai,
-                         min_score=self.cfg.get("knowledge", {}).get("min_score", 0.35))
+                         min_score=self.cfg.get("knowledge", {}).get("min_score", 0.47))
         except (AskError, AIError, EmbedError) as e:
             raise RPCError(e.code) from e
         sources = []
