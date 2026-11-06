@@ -33,7 +33,7 @@ struct L10n {
         // review queue (U-4)
         case reviewTitle, reviewEmpty, refresh, accept, edit, reject, openInDT3, before, after, confidenceN, missingRecord
         case kindTags, kindName, kindComment, kindLocation, kindMetadata, kindDuplicate, kindCase, kindDeadline
-        case kindUrgent, kindError, editHintTags, editHintDate, editHintGroup, editInvalid
+        case kindUrgent, kindReport, kindError, editHintTags, editHintDate, editHintGroup, editInvalid
         case errGroupMissing, errReminderExists, errRecordMissing, errBadValue
         // installer (U-5)
         case instMenu, instTitle, instText, instInstall, instUninstall, instDownloadModel, instRemoveModel, instRemoveData
@@ -176,6 +176,7 @@ struct L10n {
             .kindCase: "Fall: %@",
             .kindDeadline: "Frist mit Erinnerung und Kalendereintrag",
             .kindUrgent: "Dringender Brief",
+            .kindReport: "Bericht (wird als Notiz in diese Gruppe geschrieben)",
             .kindError: "Nicht verarbeitet (%@)",
             .editHintTags: "Tags mit Komma getrennt",
             .editHintDate: "Datum als JJJJ-MM-TT",
@@ -362,6 +363,7 @@ struct L10n {
             .kindCase: "Case: %@",
             .kindDeadline: "Deadline with reminder and calendar event",
             .kindUrgent: "Urgent letter",
+            .kindReport: "Report (written as a note into this group)",
             .kindError: "Not processed (%@)",
             .editHintTags: "Tags separated by commas",
             .editHintDate: "Date as YYYY-MM-DD",
@@ -548,6 +550,7 @@ struct L10n {
             .kindCase: "Dossier : %@",
             .kindDeadline: "Échéance avec rappel et événement de calendrier",
             .kindUrgent: "Lettre urgente",
+            .kindReport: "Rapport (écrit comme note dans ce groupe)",
             .kindError: "Non traité (%@)",
             .editHintTags: "Tags séparés par des virgules",
             .editHintDate: "Date au format AAAA-MM-JJ",
@@ -734,6 +737,7 @@ struct L10n {
             .kindCase: "Pratica: %@",
             .kindDeadline: "Scadenza con promemoria ed evento di calendario",
             .kindUrgent: "Lettera urgente",
+            .kindReport: "Rapporto (scritto come nota in questo gruppo)",
             .kindError: "Non elaborato (%@)",
             .editHintTags: "Tag separati da virgole",
             .editHintDate: "Data nel formato AAAA-MM-GG",

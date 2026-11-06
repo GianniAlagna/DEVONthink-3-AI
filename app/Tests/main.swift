@@ -162,6 +162,13 @@ check(!urgentItem.canEdit && urgentItem.hints == ["SchKG Art. 74"] && urgentItem
 let gone = ReviewItem(json: ["id": 8, "uuid": "U", "kind": "field", "field": "comment", "record_missing": true,
                              "record_name": NSNull(), "before": NSNull(), "actions": ["reject"]])!
 check(gone.missing && gone.recordName == nil && gone.before == "" && gone.actions == ["reject"], "missing record")
+let report = ReviewItem(json: ["id": 9, "uuid": "00000000-0000-4000-8000-000000000000", "kind": "report",
+                               "code": "digest", "record_name": "DT3 Agent – Wochenübersicht 2026-11-09",
+                               "group": "/_Berichte/", "preview": "# DT3 Agent – Wochenübersicht", "actions": ["accept", "reject"]])!
+check(report.title(de).hasPrefix("Bericht") && report.after == "/_Berichte/" && report.preview.hasPrefix("# DT3"),
+      "report item shows title, target group and preview")
+check(report.link == nil && !report.canEdit && report.editValue("x") == nil, "report: no DT3 link, no edit")
+check(tagItem.preview == "", "preview only for reports")
 check(ReviewItem(json: ["kind": "field"]) == nil, "item without id is skipped")
 check(errorText("reminder_exists", en) == "The document already has a reminder. Nothing was changed.", "decide errors")
 
