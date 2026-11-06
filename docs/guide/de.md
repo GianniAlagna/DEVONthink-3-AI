@@ -10,7 +10,7 @@ Quellen. **Er löscht nie etwas in DT3**, und jede Änderung lässt sich rückg�
 
 | | |
 |---|---|
-| macOS | 11 Big Sur oder neuer, Intel oder Apple Silicon |
+| macOS | 11 Big Sur oder neuer; Intel ab 2013 (Haswell) oder Apple Silicon |
 | DEVONthink | 3.9.x (DEVONthink 4 wird nicht unterstützt) |
 | Arbeitsspeicher | 16 GB empfohlen; mit 8 GB einen KI-Server im eigenen Netz verwenden |
 | Speicherplatz | etwa 2.5 GB für App und KI-Modelle |

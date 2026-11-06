@@ -10,7 +10,7 @@ deletes anything in DT3**, and every change can be undone.
 
 | | |
 |---|---|
-| macOS | 11 Big Sur or later, Intel or Apple Silicon |
+| macOS | 11 Big Sur or later; Intel from 2013 (Haswell) or Apple Silicon |
 | DEVONthink | 3.9.x (DEVONthink 4 is not supported) |
 | Memory | 16 GB recommended; with 8 GB use an AI server in your own network |
 | Disk space | about 2.5 GB for the app and AI models |

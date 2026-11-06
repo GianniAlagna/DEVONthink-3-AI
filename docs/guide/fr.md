@@ -10,7 +10,7 @@ documents, lit les QR-factures suisses, repère délais et doublons et répond �
 
 | | |
 |---|---|
-| macOS | 11 Big Sur ou plus récent, Intel ou Apple Silicon |
+| macOS | 11 Big Sur ou plus récent ; Intel dès 2013 (Haswell) ou Apple Silicon |
 | DEVONthink | 3.9.x (DEVONthink 4 n’est pas pris en charge) |
 | Mémoire | 16 Go recommandés ; avec 8 Go, utilisez un serveur IA de votre réseau |
 | Espace disque | environ 2,5 Go pour l’app et les modèles d’IA |

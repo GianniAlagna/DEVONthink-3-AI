@@ -10,7 +10,7 @@ fonti. **Non cancella mai nulla in DT3**, e ogni modifica si può annullare.
 
 | | |
 |---|---|
-| macOS | 11 Big Sur o successivo, Intel o Apple Silicon |
+| macOS | 11 Big Sur o successivo; Intel dal 2013 (Haswell) o Apple Silicon |
 | DEVONthink | 3.9.x (DEVONthink 4 non è supportato) |
 | Memoria | 16 GB consigliati; con 8 GB usi un server IA nella propria rete |
 | Spazio su disco | circa 2,5 GB per l’app e i modelli IA |
