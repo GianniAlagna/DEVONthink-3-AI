@@ -296,7 +296,8 @@ Specified 2026-11-06 at the start of Phase 7.
   refused). The engine reads the key with `security find-generic-password -s codes.modular.dt3agent.ai -w` at
   start and on each config change, and sends it to the AI and index server only over https or to a loopback /
   private / `.local` host. `status.ai_key_found` is true/false (null when not used). The app writes the key with
-  the Security framework (follow-up, app settings).
+  the Security framework (AI tab; trusted apps: the app and /usr/bin/security; UNVERIFIED on macOS 11 that the
+  engine reads it without a prompt) and offers "Export diagnostics …" (General tab, shows the file in Finder).
 - **Diagnostics (E8):** RPC `diagnostics` → a zip in ~/Downloads with versions, config without identity name and
   without the API key, queue counts, error codes of the last 7 days, LaunchAgent states, model names and sizes.
   No document text, names or UUIDs. The app offers "Export diagnostics …".

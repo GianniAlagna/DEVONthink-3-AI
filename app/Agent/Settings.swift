@@ -87,6 +87,14 @@ func validJobTime(_ s: String) -> Bool {
     s.range(of: #"^([01]\d|2[0-3]):[0-5]\d$"#, options: .regularExpression) != nil
 }
 
+/// E-7: an API key as the engine accepts it (one token, printable, at most 512 characters), or nil.
+func cleanKey(_ s: String) -> String? {
+    let k = s.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !k.isEmpty, k.count <= 512, !k.contains(where: { $0.isWhitespace }),
+          k.unicodeScalars.allSatisfy({ $0.value >= 0x21 && $0.value < 0x7f || $0.value > 0x9f }) else { return nil }
+    return k
+}
+
 /// The values the settings window edits. Unknown or locked settings (vision, schema_version, …) are not touched.
 struct SettingsValues: Equatable {
     var dryRun = true
@@ -125,6 +133,7 @@ struct SettingsValues: Equatable {
     var hygieneTags = true
     var pauseOnBattery = true
     var pauseOnMemory = true
+    var useKey = false           // E-7: the key itself is only in the Keychain
 
     init() {}
 
@@ -134,6 +143,7 @@ struct SettingsValues: Equatable {
         name = section("identity")["name"] as? String ?? ""
         aiURL = section("ai")["url"] as? String ?? ""
         context = section("ai")["context"] as? Int ?? 8192
+        useKey = section("ai")["use_key"] as? Bool ?? false
         template = section("naming")["template"] as? String ?? defaultTemplate
         vocabulary = (section("tags")["vocabulary"] as? [String] ?? []).joined(separator: "\n")
         filingEnabled = section("filing")["enabled"] as? Bool ?? false
@@ -201,7 +211,8 @@ struct SettingsValues: Equatable {
         let out: [String: Any] = [
             "dry_run": dryRun,
             "identity": ["name": n.isEmpty ? NSNull() as Any : n as Any] as [String: Any],
-            "ai": ["url": url.isEmpty ? NSNull() as Any : url as Any, "context": context] as [String: Any],
+            "ai": ["url": url.isEmpty ? NSNull() as Any : url as Any, "context": context,
+                   "use_key": useKey] as [String: Any],
             "naming": ["template": template],
             "tags": ["vocabulary": lines(vocabulary)],
             "filing": ["enabled": filingEnabled, "groups": parseMap(filingGroups) ?? [:],

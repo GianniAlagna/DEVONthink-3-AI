@@ -1,7 +1,43 @@
 // Settings window (brief §6.3, U-3). Tabs for what the engine supports today; every save goes through
 // config_set, so the engine checks it. Phase 7 adds the schedule tab (scopes, jobs, reports, power).
 import AppKit
+import Security
 import SwiftUI
+
+/// E-7: the remote AI key in the login Keychain. Only this app and /usr/bin/security (the engine reads the key
+/// with `security find-generic-password -w`) are trusted to read it. The key is never written anywhere else.
+/// UNVERIFIED on macOS 11 until the floor check: that the engine's read needs no extra Keychain prompt.
+enum AIKey {
+    static let service = "codes.modular.dt3agent.ai"
+    static let account = "dt3agent"
+
+    static var stored: Bool {
+        let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
+                                kSecReturnAttributes as String: true]
+        return SecItemCopyMatching(q as CFDictionary, nil) == errSecSuccess
+    }
+
+    static func save(_ key: String) -> Bool {
+        remove()
+        var apps: [SecTrustedApplication] = []
+        for path in [nil, "/usr/bin/security"] as [String?] {
+            var app: SecTrustedApplication?
+            if SecTrustedApplicationCreateFromPath(path, &app) == errSecSuccess, let a = app { apps.append(a) }
+        }
+        var access: SecAccess?
+        guard SecAccessCreate("DT3 Agent AI key" as CFString, apps as CFArray, &access) == errSecSuccess,
+              let acc = access else { return false }
+        let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
+                                kSecAttrAccount as String: account, kSecValueData as String: Data(key.utf8),
+                                kSecAttrAccess as String: acc]
+        return SecItemAdd(q as CFDictionary, nil) == errSecSuccess
+    }
+
+    static func remove() {
+        let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service]
+        SecItemDelete(q as CFDictionary)
+    }
+}
 
 final class SettingsModel: ObservableObject {
     let t: L10n
@@ -12,6 +48,8 @@ final class SettingsModel: ObservableObject {
     @Published var messageIsError = false
     @Published var preview: String?
     @Published var aiTest: Bool?
+    @Published var keyInput = ""
+    @Published var keyStored = AIKey.stored
     var raw: [String: Any] = [:]
 
     init(t: L10n, work: DispatchQueue) {
@@ -67,6 +105,30 @@ final class SettingsModel: ObservableObject {
         rpc("config_set", ["changes": ["ai": ["url": url]]]) { _ in
             self.loaded.aiURL = url
             self.rpc("status", [:]) { result in self.aiTest = (result as? [String: Any])?["ai_ok"] as? Bool ?? false }
+        }
+    }
+
+    func saveKey() {
+        guard let key = cleanKey(keyInput) else { show(t[.setKeyBad], error: true); return }
+        keyInput = ""  // never kept in the window
+        guard AIKey.save(key) else { show(t[.saveFailed], error: true); return }
+        keyStored = true
+        v.useKey = true
+        save()  // the engine reads the key again when its settings change
+    }
+
+    func removeKey() {
+        AIKey.remove()
+        keyStored = false
+        v.useKey = false
+        save()
+    }
+
+    func exportDiagnostics() {
+        rpc("diagnostics", [:]) { result in
+            guard let path = (result as? [String: Any])?["path"] as? String else { return }
+            self.show(self.t[.setDiagnosticsDone], error: false)
+            NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])
         }
     }
 
@@ -185,6 +247,7 @@ struct SettingsView: View {
             HStack {
                 Button(t[.setExport]) { m.exportSettings() }
                 Button(t[.setImport]) { m.importSettings() }
+                Button(t[.setDiagnostics]) { m.exportDiagnostics() }
             }
             Spacer()
         }.padding()
@@ -206,8 +269,23 @@ struct SettingsView: View {
             case .internet: CheckRow(ok: false, text: t[.aiInternet])
             }
             if let ok = m.aiTest { CheckRow(ok: ok, text: ok ? t[.aiOK] : t[.aiFail]) }
+            keyBox
             Spacer()
         }.padding()
+    }
+
+    var keyBox: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Divider()
+            Text(t[.setKeyNote]).font(.callout).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+            HStack {
+                SecureField(t[.setKey], text: $m.keyInput).accessibilityLabel(t[.setKey])
+                Button(t[.setKeySave]) { m.saveKey() }.disabled(m.keyInput.isEmpty)
+                Button(t[.setKeyRemove]) { m.removeKey() }.disabled(!m.keyStored)
+            }
+            CheckRow(ok: m.keyStored, text: m.keyStored ? t[.setKeyStored] : t[.setKeyNone])
+            Toggle(t[.setUseKey], isOn: $m.v.useKey).disabled(!m.keyStored)
+        }
     }
 
     var naming: some View {
