@@ -295,6 +295,11 @@ Specified 2026-11-06 at the start of Phase 7.
 - **Diagnostics (E8):** RPC `diagnostics` → a zip in ~/Downloads with versions, config without identity name and
   without the API key, queue counts, error codes of the last 7 days, LaunchAgent states, model names and sizes.
   No document text, names or UUIDs. The app offers "Export diagnostics …".
+  Built 2026-11-06 (engine, `diagnostics.py`; CLI `dt3agent diagnostics`): settings are redacted safe-by-default
+  (only true/false, numbers and fixed choices such as job times and the naming template stay; other text →
+  "<set>", lists → their length); counts of queue states and open review kinds; job error codes and audit
+  actions of the last 7 days as counts; LaunchAgent states (not_installed / installed_not_loaded / loaded);
+  model file names and sizes. File `~/Downloads/DT3-Agent-Diagnose-<time>.zip`, mode 0600. App button: open.
 - **Phase 6 carry-over (Gianni 2026-11-06):** K-5 entities (opt-in) and answer quality: `ask` answers "not found"
   without a model call when the best retrieval score is below `knowledge.min_score` (calibrated on the floor);
   optional larger model (Granite 3B, ADR-0003) selectable in Settings.

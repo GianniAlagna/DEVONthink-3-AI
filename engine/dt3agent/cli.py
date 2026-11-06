@@ -33,6 +33,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("question", nargs="+")
     p = sub.add_parser("list", help="list the records of every enabled scope (read-only); count and seconds")
     p.add_argument("since", nargs="?", help="only records changed after this date (YYYY-MM-DD)")
+    sub.add_parser("diagnostics", help="write a zip without personal data to ~/Downloads (for support)")
     p = sub.add_parser("live", help="on: write to DT3 · off: dry-run (plan only, the default)")
     p.add_argument("state", choices=["on", "off"])
     a = ap.parse_args(argv)
