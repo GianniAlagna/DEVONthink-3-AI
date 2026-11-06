@@ -113,6 +113,8 @@ Start with [`CONTRIBUTING.md`](CONTRIBUTING.md). Security issues: see [`SECURITY
 
 ## Privacy
 
+User guide: [Deutsch](docs/guide/de.md) · [Français](docs/guide/fr.md) · [Italiano](docs/guide/it.md) · [English](docs/guide/en.md).
+
 All processing happens on your Mac (or on an AI server **you** run in your own network). No telemetry, no cloud calls, no update check; the only download is the AI model, after your consent. Logs contain no document content by default. Details: [`PRIVACY.md`](PRIVACY.md).
 
 ## Support
