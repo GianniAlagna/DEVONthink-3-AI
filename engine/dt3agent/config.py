@@ -14,7 +14,8 @@ DEFAULTS = {
     "schema_version": SCHEMA_VERSION,
     "dry_run": True,
     "scopes": [],  # [{"database": str, "group": str}]; nothing is processed unless listed
-    "ai": {"backend": None, "url": None, "model": None, "context": 8192, "embed_url": None},
+    # use_key (E-7): send the API key from the Keychain (service codes.modular.dt3agent.ai); never stored here
+    "ai": {"backend": None, "url": None, "model": None, "context": 8192, "embed_url": None, "use_key": False},
     "naming": {"template": "{datetime}_{sender}_{receiver}_{subject}", "unknown": "unknown"},
     "thresholds": {"apply": 0.85},
     # Starter list (de-CH); the AI may only pick from it. Edited by the user (onboarding, Phase 5).
@@ -160,6 +161,8 @@ def validate(cfg: dict) -> dict:
         if not (url is None or (isinstance(url, str) and len(url) <= 300
                                 and url.split("://")[0] in ("http", "https") and "://" in url)):
             raise ConfigError(f"ai.{key}: an http:// or https:// address")
+    if not isinstance(ai.get("use_key", False), bool) or "api_key" in ai or "key" in ai:
+        raise ConfigError("ai.use_key is true/false; the key itself belongs in the Keychain, never in config.json")
     if not (ai.get("model") is None or isinstance(ai.get("model"), str)) or not (
             isinstance(ai.get("context", 8192), int) and 512 <= ai.get("context", 8192) <= 262144):
         raise ConfigError("ai: model is text, context 512-262144")

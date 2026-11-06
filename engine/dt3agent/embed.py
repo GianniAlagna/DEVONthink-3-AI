@@ -11,6 +11,7 @@ import urllib.parse
 import urllib.request
 from array import array
 
+from dt3agent import keychain
 from dt3agent.ai import _direct_opener
 
 DIMS = 512
@@ -38,15 +39,17 @@ def normalise(values, dims: int = DIMS) -> array:
 
 
 class EmbedClient:
-    def __init__(self, url: str, *, dims: int = DIMS, timeout: float = 300.0):
+    def __init__(self, url: str, *, dims: int = DIMS, timeout: float = 300.0, api_key: str | None = None):
         parts = urllib.parse.urlsplit(url)
         if parts.scheme not in ("http", "https") or not parts.hostname:
             raise ValueError("embed url must be http(s)://host:port")
         self.url, self.dims, self.timeout = url.rstrip("/"), dims, timeout
+        self.headers = keychain.auth_headers(self.url, api_key)  # E-7: only https or private hosts; never logged
 
     def health(self) -> bool:
         try:
-            with _OPENER.open(self.url + "/health", timeout=min(self.timeout, 5)) as r:
+            with _OPENER.open(urllib.request.Request(self.url + "/health", headers=self.headers),
+                              timeout=min(self.timeout, 5)) as r:
                 return json.load(r).get("status") == "ok"
         except (OSError, ValueError):
             return False
@@ -61,7 +64,7 @@ class EmbedClient:
     def _request(self, batch: list[str]) -> list[array]:
         body = json.dumps({"input": batch, "encoding_format": "float"}).encode()
         req = urllib.request.Request(self.url + "/v1/embeddings", data=body,
-                                     headers={"Content-Type": "application/json"})
+                                     headers={"Content-Type": "application/json", **self.headers})
         try:
             with _OPENER.open(req, timeout=self.timeout) as r:
                 resp = json.load(r)

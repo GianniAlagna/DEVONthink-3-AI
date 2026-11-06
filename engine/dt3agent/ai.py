@@ -10,6 +10,7 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 
+from dt3agent import keychain
 from dt3agent import schema as jsonschema
 
 SYSTEM = ("You extract fields from Swiss business documents. Answer with JSON only. Dates as YYYY-MM-DD. "
@@ -43,16 +44,19 @@ class Extraction:
 
 
 class LlamaClient:
-    def __init__(self, url: str, *, context: int, max_tokens: int = 512, timeout: float = 900.0):
+    def __init__(self, url: str, *, context: int, max_tokens: int = 512, timeout: float = 900.0,
+                 api_key: str | None = None):
         parts = urllib.parse.urlsplit(url)
         if parts.scheme not in ("http", "https") or not parts.hostname:
             raise ValueError("AI url must be http(s)://host:port")
         self.url = url.rstrip("/")
         self.context, self.max_tokens, self.timeout = context, max_tokens, timeout
+        self.headers = keychain.auth_headers(self.url, api_key)  # E-7: only https or private hosts; never logged
 
     def health(self) -> bool:
         try:
-            with _OPENER.open(self.url + "/health", timeout=min(self.timeout, 5)) as r:
+            with _OPENER.open(urllib.request.Request(self.url + "/health", headers=self.headers),
+                              timeout=min(self.timeout, 5)) as r:
                 return json.load(r).get("status") == "ok"
         except (OSError, ValueError):
             return False
@@ -79,7 +83,7 @@ class LlamaClient:
             "chat_template_kwargs": {"enable_thinking": False},
         }
         req = urllib.request.Request(self.url + "/v1/chat/completions", data=json.dumps(body).encode(),
-                                     headers={"Content-Type": "application/json"})
+                                     headers={"Content-Type": "application/json", **self.headers})
         t0 = time.monotonic()
         try:
             with _OPENER.open(req, timeout=self.timeout) as r:

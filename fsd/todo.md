@@ -89,7 +89,7 @@ Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC
 - [ ] J-6 RSS/mail summaries (D5, opt-in)
 - [ ] E-1 health (embed_ok, backlog, last job) in status + app — built (engine + app menu states)
 - [ ] E-6 power mode (battery, memory pressure, idle stop of the index server) — hold built (PR #79), idle stop + floor check open
-- [ ] E-7 remote AI key in the Keychain
+- [ ] E-7 remote AI key in the Keychain — engine built, app field open
 - [ ] E-8 diagnostics export (no personal data) — engine + CLI built, app button open
 - [ ] App: schedules + power settings tabs, export diagnostics
 - [ ] P7-G 48 h soak on the floor Mac

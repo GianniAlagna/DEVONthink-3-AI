@@ -135,7 +135,7 @@ class FakeLlamaServer:
 
             def do_POST(self):
                 body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-                fake.requests.append({"path": self.path, "body": body})
+                fake.requests.append({"path": self.path, "body": body, "auth": self.headers.get("Authorization")})
                 if fake.status != 200:
                     return self._send(fake.status, {"error": {"message": "fake failure"}})
                 if self.path == "/v1/embeddings":  # K-1: deterministic vectors from the text
