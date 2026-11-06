@@ -273,6 +273,10 @@ bundle)
     mkdir -p "$HOME/Applications"
     rm -rf "$HOME/Applications/DT3 Agent.app"
     ditto "build/DT3 Agent.app" "$HOME/Applications/DT3 Agent.app"
+    # floor 2026-11-05: 'open' right after replacing the app failed with kLSNoExecutableErr even with the old
+    # app quit: LaunchServices still knew the old copy. Register the new one before anyone opens it.
+    LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+    [ -x "$LSREGISTER" ] && "$LSREGISTER" -f "$HOME/Applications/DT3 Agent.app" || true
     echo "Built: ~/Applications/DT3 Agent.app ($(du -sh "$HOME/Applications/DT3 Agent.app" | cut -f1))"
     ;;
 app)
