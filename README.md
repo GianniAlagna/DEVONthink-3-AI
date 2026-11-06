@@ -2,7 +2,7 @@
 
 **Local agentic AI for DEVONthink 3 users on macOS.** Names, tags and files your documents, reads Swiss QR-bills, finds duplicates, flags deadlines and lets you chat with your archive — **100 % on your Mac, no cloud, no telemetry, no token limits.**
 
-> **Status: in development (Phase 2 of 8).** The architecture is proven on real hardware (Phase 0), the spec is approved (Phase 1), and the walking skeleton runs end to end on a 2014 MacBook Pro: document → local AI → tag → undo ([report](docs/floor/phase2-report.md)). There is **no installable app yet**. Watch or star the repo to follow progress — contributors welcome (see below).
+> **Status: release candidate (Phase 8 of 8), not published yet.** All features are built and tested on a 2014 MacBook Pro with macOS 11 and DEVONthink 3.9.17 ([floor reports](docs/floor/)). The final release test is running; there is **no public download yet**. Watch or star the repo to follow progress — contributors welcome (see below).
 
 *Working name. DT3 Agent is an independent open-source project and is **not affiliated with, endorsed by or sponsored by DEVONtechnologies**. "DEVONthink" is a trademark of its owner and is used here only to describe compatibility.*
 
@@ -12,7 +12,7 @@
 
 DEVONthink 4 ships with built-in AI; many people stay on **DEVONthink 3** — and many documents (contracts, tax letters, medical and legal files) must never leave the Mac. DT3 Agent adds AI to DT3 **without sending anything anywhere**, and it runs even on a **2014 MacBook Pro with macOS 11 Big Sur**.
 
-## What it will do
+## What it does
 
 | Block | Features |
 |---|---|
@@ -90,13 +90,13 @@ Design decisions are recorded as ADRs in [`docs/adr/`](docs/adr/).
 |---|---|---|
 | 0 | Floor spike on the 2014 MacBook Pro | ✅ done |
 | 1 | Spec + plan ([`docs/SPEC.md`](docs/SPEC.md), [`fsd/plan.md`](fsd/plan.md)) | ✅ approved |
-| 2 | Walking skeleton: trigger → queue → AI → tag → undo | ✅ passed on the floor, awaiting approval |
-| 3 | Block A — inbox pipeline, naming, review, duplicates | ⏳ |
-| 4 | Block B — Swiss QR-bill, UID, deadlines, urgent letters | ⏳ |
-| 5 | Menu-bar app, onboarding, settings, 4 languages | ⏳ |
-| 6 | Block C — index, chat with sources | ⏳ |
-| 7 | Blocks D + E — schedules, health, power mode | ⏳ |
-| 8 | Release — signed DMG, docs de/fr/it/en | ⏳ |
+| 2 | Walking skeleton: trigger → queue → AI → tag → undo | ✅ done |
+| 3 | Block A — inbox pipeline, naming, review, duplicates | ✅ approved |
+| 4 | Block B — Swiss QR-bill, UID, deadlines, urgent letters | ✅ approved |
+| 5 | Menu-bar app, onboarding, settings, 4 languages | ✅ approved |
+| 6 | Block C — index, chat with sources | ✅ approved |
+| 7 | Blocks D + E — schedules, health, power mode | ✅ approved |
+| 8 | Release — signed DMG, docs de/fr/it/en | ⏳ in progress, not published |
 
 ## Get involved
 
@@ -113,7 +113,7 @@ Start with [`CONTRIBUTING.md`](CONTRIBUTING.md). Security issues: see [`SECURITY
 
 ## Privacy
 
-All processing happens on your Mac (or on an AI server **you** run in your own network). No telemetry, no cloud calls; the only network access is user-triggered (model download, optional update check — off by default). Logs contain no document content by default.
+All processing happens on your Mac (or on an AI server **you** run in your own network). No telemetry, no cloud calls, no update check; the only download is the AI model, after your consent. Logs contain no document content by default. Details: [`PRIVACY.md`](PRIVACY.md).
 
 ## Support
 

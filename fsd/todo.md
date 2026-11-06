@@ -95,8 +95,8 @@ Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC
 - [x] **P7 approved** 2026-11-06 (docs/floor/phase7-report.md); P7-G 48 h soak moved to the Phase 8 release test
 
 ## Phase 8 — release (SPEC §4.23); nothing is published until Gianni says go
-- [ ] R-0 Phase 7 report, release spec (§4.23)
-- [ ] R-1 PRIVACY.md, CHANGELOG.md, README status
+- [x] R-0 Phase 7 report, release spec (§4.23)
+- [x] R-1 PRIVACY.md, CHANGELOG.md, README status
 - [ ] R-2 user guide de/fr/it/en
 - [ ] R-3 release build: DMG script, self-signed signing (ADR-0010), tag-only workflow (no tag is pushed by Claude)
 - [ ] R-4 release test plan (floor + Apple Silicon + 8 GB Mac, VoiceOver, 48 h soak) and pre-launch checklist
