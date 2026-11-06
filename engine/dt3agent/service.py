@@ -14,6 +14,7 @@ from pathlib import Path
 from dt3agent import (
     __version__,
     config,
+    diagnostics,
     duplicates,
     jobs,
     naming,
@@ -80,6 +81,7 @@ class Service:
         self.job_runners = {"nightly": lambda: nightly.run(self.adapter, self.queue, self.cfg.get("scopes", [])),
                             "digest": lambda: self._report("digest"), "hygiene": lambda: self._report("hygiene")}
         self.local_clock = lambda: datetime.now().astimezone()
+        self.diagnostics_dir = Path.home() / "Downloads"
         self._use_config(self.cfg)
 
     def _use_config(self, cfg: dict) -> None:
@@ -159,7 +161,7 @@ class Service:
                     "undo": set(), "pause": set(), "resume": set(), "live": {"on"},
                     "config_get": set(), "config_set": {"changes"}, "naming_preview": {"template"},
                     "dt3_info": set(), "ask": {"question"}, "summary": {"uuid", "lang"}, "selected": set(),
-                    "list": {"since"} if "since" in params else set()}
+                    "list": {"since"} if "since" in params else set(), "diagnostics": set()}
         expected["decide"] = {"id", "decision"} | ({"value"} if "value" in params else set())
         if method not in expected:
             raise RPCError("unknown_method")  # there is no delete method
@@ -246,6 +248,11 @@ class Service:
                 row["seconds"] = round(time.monotonic() - started, 1)
                 out.append(row)
             return {"scopes": out}
+        if method == "diagnostics":  # E-8: a zip without personal data in ~/Downloads
+            try:
+                return {"path": str(diagnostics.export(self, self.diagnostics_dir))}
+            except OSError as e:
+                raise RPCError("diagnostics_failed") from e
         if method == "selected":  # read-only: which records are selected in DT3 (for the summary button)
             try:
                 return {"uuids": self.adapter.selected()[:100]}
