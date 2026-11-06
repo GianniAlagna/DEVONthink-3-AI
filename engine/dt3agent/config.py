@@ -69,7 +69,9 @@ DEFAULTS = {
     "jobs": {"nightly": {"enabled": True, "time": "02:30"},
              "digest": {"enabled": False, "day": "mon", "time": "07:30", "group": "", "lang": "de"},
              "hygiene": {"enabled": False, "day": "sun", "time": "03:30", "group": "", "lang": "de",
-                         "inbox": "/Inbox/", "days": 14, "tags": True}},
+                         "inbox": "/Inbox/", "days": 14, "tags": True},
+             # J-6: daily summaries of new RSS / web / mail records in the scopes (opt-in, needs the AI)
+             "feeds": {"enabled": False, "time": "06:30", "group": "", "lang": "de"}},
 }
 
 # Expected type per key; nested dicts are checked one level deep.

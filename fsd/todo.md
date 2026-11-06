@@ -86,7 +86,7 @@ Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC
 - [ ] J-3 nightly incremental (D1) — built
 - [ ] J-4 weekly digest + hygiene report (D2, D3) as Markdown proposals — built (engine + app review row)
 - [ ] J-5 tag hygiene (D4) proposals — built
-- [ ] J-6 RSS/mail summaries (D5, opt-in)
+- [ ] J-6 RSS/mail summaries (D5, opt-in) — engine built; app switch open
 - [ ] E-1 health (embed_ok, backlog, last job) in status + app — built (engine + app menu states)
 - [ ] E-6 power mode (battery, memory pressure, idle stop of the index server) — hold built (PR #79), idle stop + floor check open
 - [ ] E-7 remote AI key in the Keychain — engine built, app field open
