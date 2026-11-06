@@ -32,6 +32,7 @@ struct L10n {
         case tabJobs, setScopes, setScopesNote, setNightly, setDigest, setHygiene, setDay, setTime, setLang
         case setKey, setKeyNote, setKeySave, setKeyRemove, setKeyStored, setKeyNone, setKeyBad, setUseKey
         case setDiagnostics, setDiagnosticsDone, setEntities, setEntityGroup, setEntitiesNote
+        case setFeeds, setFeedsNote
         case setReportGroup, setInbox, setInboxDays, setTagHygiene, setPower, setPauseBattery, setPauseMemory, setJobTimeBad
         case save, revert, saved, setFix
         // review queue (U-4)
@@ -159,6 +160,8 @@ struct L10n {
             .setApply: "Automatisch anwenden ab Sicherheit: %d %%",
             .setApplyNote: "Vorschläge mit weniger Sicherheit kommen in die Prüfliste.",
             .setThresholds: "Werte zwischen 50 und 100 %",
+            .setFeeds: "Feeds und Mails täglich zusammenfassen um",
+            .setFeedsNote: "Neue RSS-, Web- und Mail-Einträge in den Bereichen, höchstens 10 pro Tag. Die Zusammenfassung kommt als Vorschlag in die Prüfliste.",
             .setEntities: "Notizen zu Personen und Firmen vorschlagen",
             .setEntityGroup: "Gruppe für diese Notizen (muss in DT3 bestehen)",
             .setEntitiesNote: "Ab zwei Dokumenten derselben Firma oder Person kommt ein Vorschlag in die Prüfliste. Erst «Annehmen» schreibt die Notiz. Dein eigener Name wird nie vorgeschlagen.",
@@ -379,6 +382,8 @@ struct L10n {
             .setApply: "Apply automatically from confidence: %d %%",
             .setApplyNote: "Proposals with less confidence go to the Review Queue.",
             .setThresholds: "Values between 50 and 100 %",
+            .setFeeds: "Summarise feeds and mail daily at",
+            .setFeedsNote: "New RSS, web and mail records in the scopes, at most 10 a day. The summary arrives as a proposal in the review list.",
             .setEntities: "Propose notes about people and companies",
             .setEntityGroup: "Group for these notes (must exist in DT3)",
             .setEntitiesNote: "From two documents of the same company or person on, a proposal appears in the review list. Only “Accept” writes the note. Your own name is never proposed.",
@@ -599,6 +604,8 @@ struct L10n {
             .setApply: "Appliquer automatiquement à partir d’une confiance de : %d %%",
             .setApplyNote: "Les propositions avec moins de confiance vont dans la liste de contrôle.",
             .setThresholds: "Valeurs entre 50 et 100 %",
+            .setFeeds: "Résumer flux et courriels chaque jour à",
+            .setFeedsNote: "Nouveaux éléments RSS, web et courriel dans les zones, 10 par jour au plus. Le résumé arrive comme proposition dans la liste de contrôle.",
             .setEntities: "Proposer des notes sur les personnes et entreprises",
             .setEntityGroup: "Groupe pour ces notes (doit exister dans DT3)",
             .setEntitiesNote: "Dès deux documents de la même entreprise ou personne, une proposition apparaît dans la liste de contrôle. Seul « Accepter » écrit la note. Votre propre nom n’est jamais proposé.",
@@ -819,6 +826,8 @@ struct L10n {
             .setApply: "Applica automaticamente da una confidenza di: %d %%",
             .setApplyNote: "Le proposte con meno confidenza vanno nella lista di controllo.",
             .setThresholds: "Valori tra 50 e 100 %",
+            .setFeeds: "Riassumere feed e e-mail ogni giorno alle",
+            .setFeedsNote: "Nuovi elementi RSS, web e e-mail negli ambiti, al massimo 10 al giorno. Il riassunto arriva come proposta nella lista di controllo.",
             .setEntities: "Proporre note su persone e aziende",
             .setEntityGroup: "Gruppo per queste note (deve esistere in DT3)",
             .setEntitiesNote: "Da due documenti della stessa azienda o persona, compare una proposta nella lista di controllo. Solo «Accetta» scrive la nota. Il tuo nome non viene mai proposto.",

@@ -172,6 +172,11 @@ check(ev.entities && ev.entityGroup == "/Kontakte/" && ev.problems.isEmpty, "ent
 check((ev.changes["knowledge"] as? [String: Any])?["entity_group"] as? String == "/Kontakte/", "entity group sent")
 ev.entityGroup = ""
 check(ev.problems == [.setEntityGroup], "entity notes need a group")
+var fv = SettingsValues(config: ["jobs": ["feeds": ["enabled": true, "time": "07:00", "group": "/Feeds/", "lang": "it"]]])
+check(fv.feedsOn && fv.feedsTime == "07:00" && fv.feedsLang == "it" && fv.problems.isEmpty, "feeds read")
+check(((fv.changes["jobs"] as? [String: Any])?["feeds"] as? [String: Any])?["group"] as? String == "/Feeds/", "feeds sent")
+fv.feedsGroup = ""
+check(fv.problems == [.setReportGroup], "feeds need a group")
 sv.filingGroups = "broken"
 sv.applyThreshold = 0.2
 check(sv.problems.contains(.setFilingGroups) && sv.problems.contains(.setThresholds), "problems are named")

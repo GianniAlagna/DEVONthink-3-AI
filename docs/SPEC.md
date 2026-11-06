@@ -290,7 +290,7 @@ Specified 2026-11-06 at the start of Phase 7.
   rss/feed/html/web/mail/eml/message (UNVERIFIED kind texts on DT3 3.9) changed since the last run (first run:
   last 24 h; watermark per scope in `pull_state` under `feeds:<group>`), newest 10, each summarised (sanitised,
   no tools); one `report` review item per run; accept writes the note. Results `ok`, `no_items`, `no_group`,
-  `no_ai`. App switch: follow-up.
+  `no_ai`. App: schedule tab (time, language, group).
 
 ### 4.22 `ops` (Phase 7, brief Block E)
 - **Health (E1):** `status` adds `embed_ok`, `queue_backlog` (oldest queued age in minutes), `last_job`; the app

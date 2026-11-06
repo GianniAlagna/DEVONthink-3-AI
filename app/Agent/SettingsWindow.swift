@@ -353,15 +353,37 @@ struct SettingsView: View {
                     TextField("02:30", text: $m.v.nightlyTime).frame(width: 70).accessibilityLabel(t[.setTime])
                 }
                 Divider()
-                report(t[.setDigest], on: $m.v.digestOn, day: $m.v.digestDay, time: $m.v.digestTime,
-                       group: $m.v.digestGroup, lang: $m.v.digestLang)
+                reports
                 Divider()
-                report(t[.setHygiene], on: $m.v.hygieneOn, day: $m.v.hygieneDay, time: $m.v.hygieneTime,
-                       group: $m.v.hygieneGroup, lang: $m.v.hygieneLang)
-                hygieneExtras
+                feedsRow
                 Divider()
                 power
             }.padding()
+        }
+    }
+
+    var reports: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            report(t[.setDigest], on: $m.v.digestOn, day: $m.v.digestDay, time: $m.v.digestTime,
+                   group: $m.v.digestGroup, lang: $m.v.digestLang)
+            Divider()
+            report(t[.setHygiene], on: $m.v.hygieneOn, day: $m.v.hygieneDay, time: $m.v.hygieneTime,
+                   group: $m.v.hygieneGroup, lang: $m.v.hygieneLang)
+            hygieneExtras
+        }
+    }
+
+    var feedsRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Toggle(t[.setFeeds], isOn: $m.v.feedsOn)
+                TextField("06:30", text: $m.v.feedsTime).frame(width: 70).accessibilityLabel(t[.setTime])
+                Picker(t[.setLang], selection: $m.v.feedsLang) {
+                    ForEach(reportLanguages, id: \.self) { l in Text(l.uppercased()).tag(l) }
+                }.frame(width: 160)
+            }
+            LabeledField(label: t[.setReportGroup], text: $m.v.feedsGroup)
+            Text(t[.setFeedsNote]).font(.callout).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
         }
     }
 
