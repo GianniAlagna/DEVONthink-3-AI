@@ -81,8 +81,9 @@ def digest(con, adapter, now: datetime, lang: str) -> tuple[str, str]:
     return title, _cap(text)
 
 
-def hygiene(adapter, scopes: list[dict], spec: dict, now: datetime) -> tuple[str, str]:
-    """Untagged records and records still in the inbox group after N days, within the enabled scopes."""
+def hygiene(adapter, scopes: list[dict], spec: dict, now: datetime, seen: list | None = None) -> tuple[str, str]:
+    """Untagged records and records still in the inbox group after N days, within the enabled scopes.
+    `seen` collects (uuid, tags) of every record read, for the tag hygiene (J-5) without reading twice."""
     t = T[spec["lang"]]
     cutoff = (now - timedelta(days=spec["days"])).astimezone()
     untagged, stale, broken, reads = [], [], [], 0
@@ -100,6 +101,8 @@ def hygiene(adapter, scopes: list[dict], spec: dict, now: datetime) -> tuple[str
                 rec = adapter.read(r["uuid"])
             except BridgeError:
                 continue
+            if seen is not None:
+                seen.append((r["uuid"], [t for t in rec.get("tags") or [] if isinstance(t, str)]))
             link = f"- {_link(rec.get('name'), r['uuid'])}"
             if not rec.get("tags"):
                 untagged.append(link)

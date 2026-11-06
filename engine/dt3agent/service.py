@@ -11,7 +11,19 @@ import time
 from datetime import UTC, date, datetime
 from pathlib import Path
 
-from dt3agent import __version__, config, duplicates, jobs, naming, nightly, pipeline, reports, review, store
+from dt3agent import (
+    __version__,
+    config,
+    duplicates,
+    jobs,
+    naming,
+    nightly,
+    pipeline,
+    reports,
+    review,
+    store,
+    taghygiene,
+)
 from dt3agent import queue as queuemod
 from dt3agent.adapter import DT3Adapter
 from dt3agent.ai import AIError, LlamaClient
@@ -468,9 +480,30 @@ class Service:
         if job == "digest":
             title, text = reports.digest(self.con, self.adapter, now, spec["lang"])
         else:
-            title, text = reports.hygiene(self.adapter, self.cfg.get("scopes", []), spec, now)
+            seen = []
+            title, text = reports.hygiene(self.adapter, self.cfg.get("scopes", []), spec, now, seen)
+            if spec.get("tags"):
+                self._tag_hygiene(seen, now)
         reports.propose(self.con, job, title, text, spec["group"], now)
         return "ok"
+
+    def _tag_hygiene(self, seen: list, now: datetime) -> int:
+        """J-5: near-duplicate tags → one 'add the kept tag' proposal per record (review only, never a removal)."""
+        made = 0
+        for uuid, kept, variant in taghygiene.proposals(seen, self.cfg["tags"]["vocabulary"]):
+            open_same = self.con.execute(
+                "SELECT 1 FROM review_items WHERE uuid = ? AND kind = 'planned' AND code = 'tag_hygiene' "
+                "AND decided_at IS NULL AND json_extract(payload_json, '$.tags_add[0]') = ?", (uuid, kept)).fetchone()
+            if open_same:
+                continue
+            with self.con:
+                self.con.execute("INSERT INTO review_items (uuid, kind, code, payload_json, created_at) "
+                                 "VALUES (?, 'planned', 'tag_hygiene', ?, ?)",
+                                 (uuid, json.dumps({"tags_add": [kept], "variant": variant}), now.isoformat()))
+            self.adapter.audit.write(actor="ai", action="review", uuid=uuid, fields_changed=["tags"],
+                                     batch_id=f"tag-hygiene-{now.date().isoformat()}", result="review")
+            made += 1
+        return made
 
     def _urgent(self, result: dict, item_id: int) -> dict:
         """B6: accept moves the letter to the urgent group; the group must exist (never created here)."""
