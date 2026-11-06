@@ -89,6 +89,10 @@ struct ReviewRow: View {
             if !item.after.isEmpty {
                 Text(t[.after] + ": " + item.after).fixedSize(horizontal: false, vertical: true)
             }
+            if !item.preview.isEmpty {
+                Text(item.preview).font(.caption).foregroundColor(.secondary).lineLimit(8)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             if let c = item.confidence {
                 Text(t.format(.confidenceN, Int((c * 100).rounded()))).font(.caption).foregroundColor(.secondary)
             }

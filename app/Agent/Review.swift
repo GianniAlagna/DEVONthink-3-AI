@@ -18,6 +18,7 @@ struct ReviewItem: Identifiable, Equatable {
     let hints: [String]
     let caseName: String?
     let tagsAdd: [String]
+    let preview: String  // J-4 report: the first lines of the note (the engine keeps the full text)
 
     init?(json j: [String: Any]) {
         guard let id = j["id"] as? Int, let uuid = j["uuid"] as? String, let kind = j["kind"] as? String else {
@@ -36,6 +37,7 @@ struct ReviewItem: Identifiable, Equatable {
         hints = j["hints"] as? [String] ?? []
         caseName = j["case"] as? String
         tagsAdd = j["tags_add"] as? [String] ?? []
+        preview = kind == "report" ? (j["preview"] as? String ?? "") : ""
         let beforeValue = j["before"]
         switch kind {
         case "planned":
@@ -49,7 +51,7 @@ struct ReviewItem: Identifiable, Equatable {
         case "duplicate":
             before = ""
             after = "x-devonthink-item://" + (j["other"] as? String ?? "")
-        case "case", "urgent":
+        case "case", "urgent", "report":
             before = ""
             after = j["group"] as? String ?? ""
         case "deadline":
@@ -85,6 +87,7 @@ struct ReviewItem: Identifiable, Equatable {
         case "case": return t.format(.kindCase, caseName ?? "")
         case "deadline": return t[.kindDeadline]
         case "urgent": return t[.kindUrgent]
+        case "report": return t[.kindReport]
         default: return t.format(.kindError, code ?? "")
         }
     }
@@ -100,7 +103,7 @@ struct ReviewItem: Identifiable, Equatable {
     }
 
     var canEdit: Bool { actions.contains("edit") }
-    var link: URL? { URL(string: "x-devonthink-item://" + uuid) }
+    var link: URL? { kind == "report" ? nil : URL(string: "x-devonthink-item://" + uuid) }  // a report has no record
 
     /// What the edit field starts with.
     var editStart: String {
