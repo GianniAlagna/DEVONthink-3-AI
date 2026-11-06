@@ -292,6 +292,11 @@ Specified 2026-11-06 at the start of Phase 7.
   Optional API key: stored only in the Keychain (`security add-generic-password` / `find-generic-password`,
   argv, service `codes.modular.dt3agent.ai`), sent as `Authorization: Bearer` only to the configured host,
   never logged, never in config.json or diagnostics.
+  Built 2026-11-06 (engine, `keychain.py`): config `ai.use_key` (default false; `api_key`/`key` in config.json is
+  refused). The engine reads the key with `security find-generic-password -s codes.modular.dt3agent.ai -w` at
+  start and on each config change, and sends it to the AI and index server only over https or to a loopback /
+  private / `.local` host. `status.ai_key_found` is true/false (null when not used). The app writes the key with
+  the Security framework (follow-up, app settings).
 - **Diagnostics (E8):** RPC `diagnostics` → a zip in ~/Downloads with versions, config without identity name and
   without the API key, queue counts, error codes of the last 7 days, LaunchAgent states, model names and sizes.
   No document text, names or UUIDs. The app offers "Export diagnostics …".

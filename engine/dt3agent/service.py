@@ -17,6 +17,7 @@ from dt3agent import (
     diagnostics,
     duplicates,
     jobs,
+    keychain,
     naming,
     nightly,
     pipeline,
@@ -88,11 +89,13 @@ class Service:
         """Puts settings into effect at once: AI client, vision helper and pipeline are rebuilt from them."""
         self.cfg = cfg
         ai_cfg = cfg["ai"]
-        self.ai = LlamaClient(ai_cfg["url"], context=ai_cfg["context"]) if ai_cfg.get("url") else None
+        key = keychain.read_key() if ai_cfg.get("use_key") else None  # E-7: read fresh, kept only in the clients
+        self.ai_key = None if not ai_cfg.get("use_key") else key is not None
+        self.ai = LlamaClient(ai_cfg["url"], context=ai_cfg["context"], api_key=key) if ai_cfg.get("url") else None
         v = cfg["vision"]
         self.vision = VisionClient(v["helper"], v["languages"], v["max_pages"]) if v.get("helper") else None
         if ai_cfg.get("embed_url"):  # K-2: the index exists once an embedding server is set (ADR-0011)
-            embedder = EmbedClient(ai_cfg["embed_url"])
+            embedder = EmbedClient(ai_cfg["embed_url"], api_key=key)
             if self.index is None:
                 self.index = Index(self.data / "index.db", embedder, model=EMBED_MODEL)
             self.index.embedder = embedder
@@ -184,7 +187,8 @@ class Service:
                     "jobs": {n: self.scheduler.last(n) for n in jobs.ORDER},
                     # E-1 health: index server, oldest waiting job (minutes), last finished job
                     "embed_ok": self.index.embedder.health() if self.index else None,
-                    "queue_backlog": self.queue.backlog_minutes(), "last_job": self.queue.last_finished()}
+                    "queue_backlog": self.queue.backlog_minutes(), "last_job": self.queue.last_finished(),
+                    "ai_key_found": self.ai_key}  # E-7: null when no key is used; never the key
         if method == "process":
             uuid = params["uuid"]
             if not (isinstance(uuid, str) and UUID_RE.fullmatch(uuid)):
