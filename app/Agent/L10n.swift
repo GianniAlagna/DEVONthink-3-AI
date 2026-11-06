@@ -381,7 +381,7 @@ struct L10n {
             .setThresholds: "Values between 50 and 100 %",
             .setEntities: "Propose notes about people and companies",
             .setEntityGroup: "Group for these notes (must exist in DT3)",
-            .setEntitiesNote: "From two documents of the same company or person on, a proposal appears in the review list. Only "Accept" writes the note. Your own name is never proposed.",
+            .setEntitiesNote: "From two documents of the same company or person on, a proposal appears in the review list. Only “Accept” writes the note. Your own name is never proposed.",
             .setKey: "API key",
             .setKeyNote: "Only for an AI server that asks for a key. The key lives only in the Keychain and is sent only over https or within your own network.",
             .setKeySave: "Save in Keychain",
