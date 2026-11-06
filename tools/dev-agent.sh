@@ -154,6 +154,22 @@ PYEOF
         echo "Engine restarted with the new settings."
     fi
     ;;
+scope)
+    # J-1 floor check: set the enabled scopes through the running engine (validated, in effect at once).
+    # No app setting exists yet (Phase 7 app tabs). Each pair: DATABASE GROUP. Nothing is processed by this.
+    shift
+    [ $# -ge 2 ] && [ $(($# % 2)) -eq 0 ] || { echo 'usage: tools/dev-agent.sh scope "Database" "/Group/" [...]'; exit 2; }
+    "$PY" -I - "$REPO/engine" "$DATA" "$@" <<'PYEOF'
+import sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+from dt3agent import rpc
+pairs = sys.argv[3:]
+scopes = [{"database": pairs[i], "group": pairs[i + 1]} for i in range(0, len(pairs), 2)]
+rpc.call(Path(sys.argv[2]) / "engine.sock", "config_set", {"changes": {"scopes": scopes}})
+print("Scopes saved:", ", ".join(f"{s['database']} {s['group']}" for s in scopes))
+PYEOF
+    ;;
 install)
     mode=${2:-osakit}
     uuid=${3:-}
@@ -298,7 +314,7 @@ uninstall)
     echo "LaunchAgents removed. Logs kept in: $(dirname "$LOG"). Data kept in: $DATA"
     ;;
 *)
-    echo "usage: tools/dev-agent.sh python | llama | smartrule | testconfig NAME | install [osakit|osascript] [record-UUID] [read|tag] | embed | bundle | app | status | uninstall"
+    echo "usage: tools/dev-agent.sh python | llama | smartrule | testconfig NAME | scope DB GROUP … | install [osakit|osascript] [record-UUID] [read|tag] | embed | bundle | app | status | uninstall"
     exit 2
     ;;
 esac
