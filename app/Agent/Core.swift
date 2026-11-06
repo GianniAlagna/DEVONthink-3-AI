@@ -12,6 +12,9 @@ struct EngineStatus: Equatable {
     var queue: [String: Int] = [:]
     var reviewItems = 0
     var urgentOpen = 0
+    var embedOK: Bool?        // E-1: nil without an index server
+    var queueBacklog: Int?    // E-1: minutes the oldest waiting job has waited
+    var powerHeld: String?    // E-6: "battery" or "memory_pressure" while work waits
 
     init() {}
 
@@ -27,6 +30,9 @@ struct EngineStatus: Equatable {
         }
         reviewItems = json["review_items"] as? Int ?? 0
         urgentOpen = json["urgent_open"] as? Int ?? 0
+        embedOK = json["embed_ok"] as? Bool
+        queueBacklog = json["queue_backlog"] as? Int
+        powerHeld = (json["power"] as? [String: Any])?["held"] as? String
     }
 
     /// Jobs still to do: waiting plus the one running now.
@@ -38,6 +44,9 @@ enum Health: Equatable {
     case offline        // engine not reachable
     case noAI           // AI backend missing or not answering
     case noDT3          // DT3 not running or not answering
+    case noIndex        // E-1: index server set up but not answering (asking does not work)
+    case backlog        // E-1: a job has waited longer than Health.backlogMinutes
+    case powerHold      // E-6: on battery or under memory pressure; work waits
     case paused
     case dryRun         // test mode: proposals only, nothing written
     case ready
@@ -46,7 +55,10 @@ enum Health: Equatable {
         guard let s = status else { self = .offline; return }
         if !s.aiConfigured || !s.aiOK { self = .noAI }
         else if s.dt3Version == nil { self = .noDT3 }
+        else if s.embedOK == false { self = .noIndex }
         else if s.paused { self = .paused }
+        else if s.powerHeld != nil { self = .powerHold }
+        else if (s.queueBacklog ?? 0) >= Health.backlogMinutes { self = .backlog }
         else if s.dryRun { self = .dryRun }
         else { self = .ready }
     }
@@ -55,7 +67,9 @@ enum Health: Equatable {
     var symbol: String {
         switch self {
         case .offline: return "xmark.octagon"
-        case .noAI, .noDT3: return "exclamationmark.triangle"
+        case .noAI, .noDT3, .noIndex: return "exclamationmark.triangle"
+        case .backlog: return "hourglass"
+        case .powerHold: return "bolt.slash"
         case .paused: return "pause.circle"
         case .dryRun: return "eye.circle"
         case .ready: return "checkmark.circle"
@@ -67,13 +81,18 @@ enum Health: Equatable {
         case .offline: return .healthOffline
         case .noAI: return .healthNoAI
         case .noDT3: return .healthNoDT3
+        case .noIndex: return .healthNoIndex
+        case .backlog: return .healthBacklog
+        case .powerHold: return .healthPowerHold
         case .paused: return .healthPaused
         case .dryRun: return .healthDryRun
         case .ready: return .healthReady
         }
     }
 
-    var needsAttention: Bool { self == .offline || self == .noAI || self == .noDT3 }
+    static let backlogMinutes = 120  // a few documents take minutes; two hours of waiting means something is stuck
+
+    var needsAttention: Bool { [.offline, .noAI, .noDT3, .noIndex, .backlog].contains(self) }
 }
 
 /// User-facing text for an engine error code. Codes never carry document content (SPEC §4.17).
