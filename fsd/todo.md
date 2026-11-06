@@ -81,14 +81,14 @@ Rule for every rule module: pure Python, table-driven tests, no AI, no I/O (SPEC
 ## Phase 7 — Blocks D + E, SPEC §4.21/4.22
 - [ ] Q-1 answer quality: not-found threshold (no model call below knowledge.min_score)
 - [ ] K-5 entities (opt-in, proposals → Markdown notes in an existing group)
-- [ ] J-1 bridge verb `list` (read-only, scopes) + floor check
+- [ ] J-1 bridge verb `list` (read-only, scopes) + floor check — built, floor check open
 - [ ] J-2 scheduler (jobs_runs, due times, skip when paused / battery / memory pressure)
 - [ ] J-3 nightly incremental (D1)
 - [ ] J-4 weekly digest + hygiene report (D2, D3) as Markdown proposals
 - [ ] J-5 tag hygiene (D4) proposals
 - [ ] J-6 RSS/mail summaries (D5, opt-in)
 - [ ] E-1 health (embed_ok, backlog, last job) in status + app
-- [ ] E-6 power mode (battery, memory pressure, idle stop of the index server)
+- [ ] E-6 power mode (battery, memory pressure, idle stop of the index server) — hold built (PR #79), idle stop + floor check open
 - [ ] E-7 remote AI key in the Keychain
 - [ ] E-8 diagnostics export (no personal data)
 - [ ] App: schedules + power settings tabs, export diagnostics

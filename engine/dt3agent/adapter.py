@@ -27,6 +27,20 @@ class DT3Adapter:
         uuids = self.bridge.call("selected").get("uuids") or []
         return [u for u in uuids[:100] if isinstance(u, str) and UUID_RE.fullmatch(u)]
 
+    LIST_MAX = 500
+
+    def list_scope(self, database: str, group: str, since: str = "") -> list[dict]:
+        """J-1: records inside a scope group (deep), newest first, at most 500. Read-only; malformed rows dropped."""
+        rows = self.bridge.call("list", database=database, group=group, since=since).get("records") or []
+        out = []
+        for r in rows:
+            if (isinstance(r, dict) and isinstance(r.get("uuid"), str) and UUID_RE.fullmatch(r["uuid"])
+                    and isinstance(r.get("modified"), str) and isinstance(r.get("kind"), str)):
+                out.append({"uuid": r["uuid"], "modified": r["modified"], "kind": r["kind"]})
+            if len(out) == self.LIST_MAX:
+                break
+        return out
+
     def read(self, uuid: str) -> dict:
         return self.bridge.call("read", uuid=uuid)
 

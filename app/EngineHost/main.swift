@@ -90,10 +90,10 @@ function walk(db, location) {
   }
   return g;
 }
-function group(location, r) {
+function group(location, r) { return groupIn(r ? r.database() : null, location); }
+function groupIn(db, location) {
   // Floor 2026-11-05: getRecordAt returned nothing for "/Recht/Fall-Muster/" and "/Recht/Fall-Muster".
   // Try getRecordAt with and without the trailing "/", then walk the path from the database root.
-  const db = r ? r.database() : null;
   const paths = [location];
   if (location.length > 1 && location.endsWith('/')) paths.push(location.replace(/\\/+$/, ''));
   for (let i = 0; i < paths.length; i++) {
@@ -103,6 +103,34 @@ function group(location, r) {
   const w = db ? walk(db, location) : null;
   if (isGroup(w)) return w;
   throw new Error('group_not_found');
+}
+function listScope(database, location, since) {
+  // J-1 (SPEC §4.21): records inside one scope group, deep, newest first, at most 500. Read-only:
+  // nothing is created, renamed or moved. Each property is read for all children of a group in one Apple event.
+  // UNVERIFIED on DT3 3.9 until the J-1 floor check (speed for 1000+ records).
+  const dbs = dt3().databases.whose({ name: database })();
+  if (dbs.length === 0) throw new Error('database_not_found');
+  const db = dbs[0];
+  const top = location === '/' ? db.root() : groupIn(db, location);
+  const cutoff = since ? new Date(since) : null;
+  const out = [], seen = {}, stack = [top];
+  let visited = 0;
+  while (stack.length > 0) {
+    const kids = stack.pop().children;
+    const uuids = kids.uuid(), types = kids.type(), mods = kids.modificationDate(), kinds = kids.kind();
+    for (let i = 0; i < uuids.length; i++) {
+      if (++visited > 20000) throw new Error('scope_too_large');
+      if (seen[uuids[i]]) continue;  // replicants appear more than once
+      seen[uuids[i]] = true;
+      const t = String(types[i]).toLowerCase();
+      if (t.indexOf('group') >= 0) { if (t.indexOf('smart') < 0) stack.push(kids[i]); continue; }
+      const m = mods[i];
+      if (cutoff && !(m > cutoff)) continue;
+      out.push({ uuid: uuids[i], modified: m ? m.toISOString() : '', kind: String(kinds[i]) });
+    }
+  }
+  out.sort(function (a, b) { return a.modified < b.modified ? 1 : (a.modified > b.modified ? -1 : 0); });
+  return JSON.stringify({ records: out.slice(0, 500) });
 }
 function duplicatesOf(uuid) {
   return JSON.stringify({ uuids: (rec(uuid).duplicates() || []).slice(0, 20).map(function (d) { return d.uuid(); }) });
@@ -122,7 +150,7 @@ function setTags(uuid, tagsJson) {
 function run(argv) {
   const verbs = { info: info, selected: selected, read: read, readText: readText, readPath: readPath, setTags: setTags,
     setName: setName, setComment: setComment, setMetadata: setMetadata, move: move,
-    duplicatesOf: duplicatesOf, replicateTo: replicateTo, duplicateTo: duplicateTo, createMarkdown: createMarkdown };
+    duplicatesOf: duplicatesOf, replicateTo: replicateTo, duplicateTo: duplicateTo, createMarkdown: createMarkdown, listScope: listScope };
   const f = verbs[argv[0]];
   if (!f) throw new Error('unknown_verb');
   return f.apply(null, argv.slice(1));
@@ -308,6 +336,16 @@ func handle(_ request: [String: Any], bridge: DT3Bridge) throws -> Any {
     case "read_path":
         guard args.count == 1 else { throw HostError(code: "bad_args") }
         text = try bridge.call("readPath", [try uuid()])
+    case "list":
+        // J-1: read-only, so no requireDT3; the same limits as the engine (bridge.py)
+        guard args.count == 3, let db = args["database"] as? String, db.count <= 200,
+              db.range(of: "^[^\\u0000-\\u001f]+$", options: .regularExpression) != nil,
+              let g = args["group"] as? String, g.hasPrefix("/"), g.count <= 500,
+              !g.split(separator: "/").contains(".."), let since = args["since"] as? String,
+              since.isEmpty || since.range(of: "^\\d{4}-\\d{2}-\\d{2}(T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z)?$",
+                                           options: .regularExpression) != nil
+        else { throw HostError(code: "bad_args") }
+        text = try bridge.call("listScope", [db, g, since])
     case "set_tags":
         guard args.count == 2, let tags = args["tags"] as? [String], tags.count <= 100,
               tags.allSatisfy({ !$0.isEmpty && $0.count <= 255 }) else { throw HostError(code: "bad_args") }
