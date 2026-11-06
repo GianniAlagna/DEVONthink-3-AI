@@ -2,11 +2,13 @@
 import copy
 import json
 import os
+import re
 from pathlib import Path
 
 from dt3agent.naming import TOKEN, TOKENS
 
 SCHEMA_VERSION = 1
+JOB_TIME_RE = re.compile(r"([01]\d|2[0-3]):[0-5]\d")
 
 DEFAULTS = {
     "schema_version": SCHEMA_VERSION,
@@ -60,6 +62,10 @@ DEFAULTS = {
     "logs": {"content": False},
     # E-6 (SPEC §4.22): hold processing on battery and under memory pressure (brief §2.4)
     "power": {"pause_on_battery": True, "pause_on_memory_pressure": True},
+    # J-2 (SPEC §4.21): local times; digest and hygiene need a target group and stay off until set
+    "jobs": {"nightly": {"enabled": True, "time": "02:30"},
+             "digest": {"enabled": False, "day": "mon", "time": "07:30"},
+             "hygiene": {"enabled": False, "day": "sun", "time": "03:30"}},
 }
 
 # Expected type per key; nested dicts are checked one level deep.
@@ -67,7 +73,7 @@ TYPES = {
     "schema_version": int, "dry_run": bool, "scopes": list, "ai": dict, "naming": dict,
     "thresholds": dict, "update_check": bool, "logs": dict, "tags": dict, "keywords": dict, "vision": dict,
     "identity": dict, "summary": dict, "filing": dict, "duplicates": dict, "cases": list,
-    "retention": dict, "urgent": dict, "knowledge": dict, "power": dict,
+    "retention": dict, "urgent": dict, "knowledge": dict, "power": dict, "jobs": dict,
 }
 
 
@@ -133,6 +139,14 @@ def validate(cfg: dict) -> dict:
         raise ConfigError("knowledge: related is true/false, related_min 0.5-0.99, min_score 0-0.9")
     if not all(isinstance(v, bool) for v in cfg.get("power", {}).values()):
         raise ConfigError("power: pause_on_battery and pause_on_memory_pressure are true/false")
+    for name, spec in cfg.get("jobs", {}).items():
+        keys = {"enabled", "time"} | ({"day"} if name != "nightly" else set())
+        if not (name in ("nightly", "digest", "hygiene") and isinstance(spec, dict) and set(spec) == keys
+                and isinstance(spec["enabled"], bool) and isinstance(spec["time"], str)
+                and JOB_TIME_RE.fullmatch(spec["time"])
+                and spec.get("day", "mon") in ("mon", "tue", "wed", "thu", "fri", "sat", "sun")):
+            raise ConfigError(f"jobs.{name}: enabled true/false, time HH:MM"
+                              + ("" if name == "nightly" else ", day mon-sun"))
     ident = cfg.get("identity", {}).get("name")
     if not (ident is None or (isinstance(ident, str) and len(ident) <= 200 and ident.isprintable())):
         raise ConfigError("identity.name: text up to 200 characters")

@@ -244,8 +244,16 @@ Specified 2026-11-06 at the start of Phase 7.
   `digest` (weekday + HH:MM, default Monday 07:30), `hygiene` (weekday, default Sunday). A job runs at most once per
   due time (state table `jobs_runs`), skips while paused, on battery or under memory pressure (E6), and never runs
   two at once. Missed runs (Mac asleep) run once at the next tick, not once per missed day.
+  Built 2026-11-06 (`jobs.py`): config `jobs.{nightly: {enabled, time}, digest|hygiene: {enabled, day, time}}`
+  (local time; digest/hygiene off by default, hygiene Sunday 03:30). The first start records a baseline and runs
+  nothing. A failed run counts for its due time (result = short code, never content). `status` adds
+  `jobs: {name: {due, ran_at, result} | null}`. DST can shift one run by an hour.
 - **Nightly incremental (D1):** `list` per scope with `since` = last run → enqueue changed records (queue source
   `nightly`); unchanged content hash is skipped by the pipeline as today. Index update rides on the pipeline.
+  Built 2026-11-06 (`nightly.py`): queue source `pull` (the existing value; no table rebuild), watermark per scope
+  in `pull_state` = newest `modified` seen. The first night only sets the watermark (no bulk queueing of existing
+  records). More than 500 changes in a scope → newest 500 queued, result `capped`. A broken scope (e.g.
+  `group_not_found`) is reported and does not stop the others. Read-only towards DT3.
 - **Weekly digest (D2):** Markdown note (proposal → review item → accept → `create_markdown` into
   `jobs.digest_group`, which must exist): new records of the week (names + item links), open deadlines from
   review items, invoices due (metadata `dt3agenttotal` + due date when known). No AI call; facts from the engine's
