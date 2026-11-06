@@ -120,6 +120,11 @@ class Pipeline:
         if key and row == (key, PIPELINE_VERSION):
             if self.index is not None and not self.index.has(uuid):  # processed before the index existed
                 text, complete = self.adapter.read_text(uuid)
+                if not text.strip() and self.vision is not None:  # a scan: OCR, as in the full path
+                    try:
+                        text, complete = self.vision.ocr(self.adapter.read_path(uuid)), True
+                    except VisionError:
+                        text = ""
                 if complete:
                     self._add_to_index(uuid, record, text)
             self.adapter.audit.write(actor="engine", action="skip", uuid=uuid, fields_changed=[],

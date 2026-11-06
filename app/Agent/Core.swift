@@ -89,6 +89,7 @@ func errorText(_ code: String, _ t: L10n) -> String {
     case "index_unavailable": return t[.errIndex]
     case "question_invalid": return t[.errQuestion]
     case "embed_unreachable": return t[.errEmbed]
+    case "write_refused": return t[.errWriteRefused]
     default: return t[.errOther] + " (" + code + ")"
     }
 }

@@ -128,3 +128,38 @@ def test_pipeline_uses_ocr_for_records_without_text(tmp_path):
     out = Pipeline(adapter, ai, con, dry_run=True, vision=FakeVision("   ")).process(A, batch_id="b3")
     assert (out.status, out.code) == ("review", "no_text")
     assert json.dumps(dt3.records[A]["tags"]) == "[]"
+
+
+def test_scanned_record_processed_before_the_index_is_indexed_with_ocr(tmp_path):
+    # floor 2026-11-06: the QR-bill PDF had been processed in Phase 4, so it took the skip path and stayed
+    # out of the index (read_text is empty for a scan). The skip path now uses OCR as well.
+    from dt3agent import store
+    from dt3agent.adapter import DT3Adapter
+    from dt3agent.audit import AuditLog
+    from dt3agent.embed import normalise
+    from dt3agent.index import Index
+    from dt3agent.pipeline import MIGRATIONS, Pipeline
+    from dt3agent.undo import MIGRATIONS as UNDO
+    from dt3agent.undo import UndoJournal
+    from tests.fakes import FakeDT3, fake_vector
+    from tests.unit.test_pipeline import A, FakeAI
+
+    class FakeVision:
+        def ocr(self, path):
+            return "Empfangsschein Konto CH44 3199 9123 0008 8901 2 Betrag CHF 1957.04"
+
+    class FakeEmbedder:
+        def embed(self, texts, query=False):
+            return [normalise(fake_vector(t)) for t in texts]
+
+    dt3 = FakeDT3({A: {"name": "qrbill.pdf", "tags": [], "contentHash": "h", "text": "", "path": "/db/q.pdf",
+                       "database": "DB"}})
+    con = store.open_db(tmp_path / "e.db", MIGRATIONS)
+    adapter = DT3Adapter(dt3, UndoJournal(store.open_db(tmp_path / "u.db", UNDO)), AuditLog(tmp_path / "a"))
+    # processed in live mode before the index existed (dry-run never marks a record as processed)
+    Pipeline(adapter, FakeAI(["Rechnung"]), con, dry_run=False, vision=FakeVision()).process(A, batch_id="b1")
+    index = Index(tmp_path / "i.db", FakeEmbedder(), model="t")
+    out = Pipeline(adapter, FakeAI(["Rechnung"]), con, dry_run=True, vision=FakeVision(),
+                   index=index).process(A, batch_id="b2")
+    assert out.status == "skipped" and index.has(A)
+    assert index.search("Empfangsschein Betrag")[0].uuid == A
